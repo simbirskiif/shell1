@@ -31,7 +31,8 @@ Item {
             color: Theme.quickSeparator
         }
 
-        Repeater {
+        PanelList {
+            width: parent.width
             model: MockState.wifiNetworks
 
             delegate: Rectangle {
@@ -43,7 +44,7 @@ Item {
                 required property bool connected
                 required property int index
 
-                width: column.width
+                width: ListView.view ? ListView.view.width : implicitWidth
                 height: Theme.quickRowHeight
                 color: rowHover.hovered ? Theme.quickTileHover : "transparent"
                 Behavior on color { ColorAnimation { duration: Theme.quickHoverDuration } }

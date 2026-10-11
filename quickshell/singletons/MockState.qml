@@ -33,11 +33,7 @@ Singleton {
         ListElement { name: "Cafe_Guest"; strength: 1; secured: false; connected: false }
     }
 
-    readonly property string soundSummary: {
-        if (!soundEnabled)
-            return "Muted";
-        return Math.round(volume * 100) + "% · " + outputName;
-    }
+    readonly property string soundSummary: soundEnabled ? Math.round(volume * 100) + "%" : "Muted"
 
     function toggleBluetooth() {
         bluetoothEnabled = !bluetoothEnabled;
@@ -65,15 +61,56 @@ Singleton {
         refresh();
     }
 
+    // Демо-строки: нужны, чтобы посмотреть анимации появления/удаления
+    // элементов списка (qs ipc call bar addWifi / removeWifi и т.д.).
+    function addWifiNetwork() {
+        const index = wifiNetworks.count + 1;
+        wifiNetworks.append({
+            name: "Test_Network_" + index,
+            strength: 1 + (index % 4),
+            secured: index % 2 === 0,
+            connected: false
+        });
+        refresh();
+    }
+
+    function removeWifiNetwork() {
+        if (wifiNetworks.count === 0)
+            return;
+        wifiNetworks.remove(wifiNetworks.count - 1);
+        refresh();
+    }
+
+    function addBluetoothDevice() {
+        const index = bluetoothDevices.count + 1;
+        bluetoothDevices.append({
+            name: "Test Device " + index,
+            icon: "\uf109",
+            connected: false
+        });
+        refresh();
+    }
+
+    function removeBluetoothDevice() {
+        if (bluetoothDevices.count === 0)
+            return;
+        bluetoothDevices.remove(bluetoothDevices.count - 1);
+        refresh();
+    }
+
     function refresh() {
         if (bluetoothEnabled) {
-            const connected = [];
+            // В плитке показываем только первое подключённое устройство:
+            // полный список виден во внутренней панели.
+            let first = "";
             for (let i = 0; i < bluetoothDevices.count; ++i) {
                 const device = bluetoothDevices.get(i);
-                if (device.connected)
-                    connected.push(device.name);
+                if (device.connected) {
+                    first = device.name;
+                    break;
+                }
             }
-            bluetoothSummary = connected.length > 0 ? connected.join(", ") : "No devices";
+            bluetoothSummary = first !== "" ? first : "No devices";
         } else {
             bluetoothSummary = "Off";
         }

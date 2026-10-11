@@ -107,7 +107,10 @@ Singleton {
         path: root.configHome + "/wal/colors.json"
         watchChanges: true
         onLoadedChanged: root.reload()
-        onFileChanged: root.reload()
+        onFileChanged: {
+            configFile.reload();
+            root.scheduleReload();
+        }
     }
 
     FileView {
@@ -115,7 +118,23 @@ Singleton {
         path: root.cacheHome + "/wal/colors.json"
         watchChanges: true
         onLoadedChanged: root.reload()
-        onFileChanged: root.reload()
+        onFileChanged: {
+            cacheFile.reload();
+            root.scheduleReload();
+        }
+    }
+
+    // FileView перечитывает файл асинхронно, поэтому сразу после события
+    // изменения text() ещё старый: парсим повторно с небольшой задержкой.
+    Timer {
+        id: reloadTimer
+        interval: 150
+        onTriggered: root.reload()
+    }
+
+    function scheduleReload() {
+        root.reload();
+        reloadTimer.restart();
     }
 
     Component.onCompleted: root.reload()

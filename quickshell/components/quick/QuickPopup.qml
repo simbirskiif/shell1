@@ -11,19 +11,18 @@ PopupWindow {
 
     required property PanelWindow anchorWindow
 
-    property string panel: ""
+    readonly property string screenName: anchorWindow.screen ? anchorWindow.screen.name : ""
+
+    // Состояние живёт в UiState: так попапом можно управлять снаружи
+    // (qs ipc call bar toggle / wifi / sound / ...).
+    visible: UiState.openedScreen === root.screenName
 
     function toggle() {
-        root.visible = !root.visible;
+        UiState.toggle(root.screenName);
     }
 
     function close() {
-        root.visible = false;
-    }
-
-    onVisibleChanged: {
-        if (!visible)
-            panel = "";
+        UiState.close();
     }
 
     // Правый верхний угол попапа — под кнопкой в баре, растёт вниз-влево.
@@ -34,7 +33,6 @@ PopupWindow {
     anchor.gravity: Edges.Bottom | Edges.Left
 
     color: "transparent"
-    visible: false
 
     implicitWidth: panelItem.implicitWidth + Theme.quickPadding * 2
     implicitHeight: panelItem.implicitHeight + Theme.quickPadding * 2
@@ -90,7 +88,7 @@ PopupWindow {
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.margins: Theme.quickPadding
-            panel: root.panel
+            panel: root.visible ? UiState.panel : ""
         }
     }
 }

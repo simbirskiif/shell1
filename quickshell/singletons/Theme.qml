@@ -28,18 +28,20 @@ Singleton {
     readonly property int controlRadius: 10
 
     // Попап быстрых настроек: ширина общая для всех видов и ограничена.
-    readonly property int quickWidth: 360
+    readonly property int quickWidth: 400
     readonly property int quickRadius: 18
     readonly property int quickPadding: 12
-    readonly property int quickCircleSize: 36
-    readonly property int quickTileHeight: 78
+    readonly property int quickCircleSize: 32
+    readonly property int quickTileHeight: 60
     readonly property int quickTileRadius: 14
     readonly property int quickTileSpacing: 8
     readonly property int quickHeaderHeight: 46
     readonly property int quickRowHeight: 44
 
     readonly property color accent: Wal.accent
-    readonly property color quickBackground: withAlpha(Wal.background, 0.94)
+    // Фон попапа намеренно нейтральный: оттенок палитры сохраняем чуть-чуть,
+    // чтобы панель не спорила с обоями и оставалась читаемой.
+    readonly property color quickBackground: withAlpha(neutralize(Wal.background, 0.82), 0.94)
     readonly property color quickBorder: withAlpha(Wal.foreground, 0.10)
     readonly property color quickTile: withAlpha(Wal.foreground, 0.06)
     readonly property color quickTileHover: withAlpha(Wal.foreground, 0.11)
@@ -68,5 +70,16 @@ Singleton {
         if (!color)
             return Qt.rgba(0, 0, 0, alpha);
         return Qt.rgba(color.r, color.g, color.b, alpha);
+    }
+
+    // Подмешивает к цвету серый той же яркости: amount 1 — полностью серый.
+    function neutralize(color, amount) {
+        if (!color)
+            return Qt.rgba(0.1, 0.1, 0.11, 1);
+        const luma = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+        return Qt.rgba(color.r + (luma - color.r) * amount,
+                       color.g + (luma - color.g) * amount,
+                       color.b + (luma - color.b) * amount,
+                       color.a);
     }
 }

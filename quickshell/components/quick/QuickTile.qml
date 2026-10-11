@@ -3,6 +3,7 @@ import "../../singletons"
 
 // Плитка быстрых настроек: кружок слева переключает состояние,
 // остальная площадь раскрывает панель управления.
+// Название и статус — одной строкой по центру, статус обрезается.
 Rectangle {
     id: root
 
@@ -33,47 +34,47 @@ Rectangle {
         id: circle
         anchors.left: parent.left
         anchors.leftMargin: 10
-        anchors.top: parent.top
-        anchors.topMargin: 10
+        anchors.verticalCenter: parent.verticalCenter
         icon: root.icon
         active: root.active
         onToggled: root.toggled()
     }
 
-    Text {
+    Row {
+        id: titleRow
         anchors.left: circle.right
         anchors.leftMargin: 10
-        anchors.right: parent.right
-        anchors.rightMargin: 26
-        anchors.verticalCenter: circle.verticalCenter
-        text: root.title
-        elide: Text.ElideRight
-        color: Theme.quickText
-        font.family: Theme.fontFamily
-        font.pixelSize: 13
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 6
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.title
+            color: Theme.quickText
+            font.family: Theme.fontFamily
+            font.pixelSize: 12
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.subtitle !== ""
+            text: "·"
+            color: Theme.quickTextDim
+            font.family: Theme.fontFamily
+            font.pixelSize: 12
+        }
     }
 
     Text {
-        anchors.left: parent.left
-        anchors.leftMargin: 12
+        anchors.left: titleRow.right
+        anchors.leftMargin: titleRow.spacing
         anchors.right: parent.right
-        anchors.rightMargin: 12
-        anchors.top: circle.bottom
-        anchors.topMargin: 8
+        anchors.rightMargin: 10
+        anchors.verticalCenter: parent.verticalCenter
         text: root.subtitle
         elide: Text.ElideRight
         color: Theme.quickTextDim
         font.family: Theme.fontFamily
-        font.pixelSize: 10
-    }
-
-    Text {
-        anchors.right: parent.right
-        anchors.rightMargin: 10
-        anchors.verticalCenter: circle.verticalCenter
-        text: "\uf054"
-        color: Theme.quickTextDim
-        font.family: Theme.fontFamily
-        font.pixelSize: 12
+        font.pixelSize: 11
     }
 }
