@@ -8,7 +8,7 @@ Item {
 
     signal backRequested()
 
-    implicitWidth: Theme.quickDetailWidth
+    implicitWidth: Theme.quickWidth
     implicitHeight: column.implicitHeight
 
     Column {
@@ -46,7 +46,7 @@ Item {
                 width: column.width
                 height: Theme.quickRowHeight
                 color: rowHover.hovered ? Theme.quickTileHover : "transparent"
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on color { ColorAnimation { duration: Theme.quickHoverDuration } }
 
                 MouseArea {
                     id: rowHover

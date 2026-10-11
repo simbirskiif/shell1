@@ -4,14 +4,14 @@ import QtQuick
 import Quickshell
 
 // Единая точка правды для цветов, размеров и таймингов оболочки.
-// Цвета взяты из текущей pywal-палитры (~/.cache/wal/colors.json),
-// чтобы бар не выбивался из остального рабочего стола.
+// Цвета приходят из Palette (pywal с откатом на стандартную палитру),
+// производные оттенки считаются здесь, в разметке магических цветов нет.
 Singleton {
     // Бар
     readonly property int barHeight: 44
     readonly property int barPadding: 12
-    readonly property color barBackground: "#cc1e1a18"
-    readonly property color barForeground: "#c9c6c5"
+    readonly property color barBackground: withAlpha(Wal.background, 0.80)
+    readonly property color barForeground: Wal.foreground
 
     // Часы
     readonly property int clockFontSize: 13
@@ -20,43 +20,53 @@ Singleton {
     readonly property int workspaceDotSize: 6
     readonly property int workspaceActiveDotSize: 10
     readonly property int workspaceSpacing: 8
-    readonly property color workspaceActiveColor: "#0a9ee2"
-    readonly property color workspaceInactiveColor: "#796863"
+    readonly property color workspaceActiveColor: Wal.accent
+    readonly property color workspaceInactiveColor: withAlpha(Wal.foreground, 0.45)
 
     // Кнопка статуса в баре
     readonly property int controlHeight: 30
     readonly property int controlRadius: 10
 
-    // Попап быстрых настроек
-    readonly property int quickWidth: 340
-    readonly property int quickDetailWidth: 380
+    // Попап быстрых настроек: ширина общая для всех видов и ограничена.
+    readonly property int quickWidth: 360
     readonly property int quickRadius: 18
     readonly property int quickPadding: 12
-    readonly property int quickTileHeight: 52
+    readonly property int quickCircleSize: 36
+    readonly property int quickTileHeight: 78
     readonly property int quickTileRadius: 14
     readonly property int quickTileSpacing: 8
     readonly property int quickHeaderHeight: 46
     readonly property int quickRowHeight: 44
-    readonly property color accent: "#0a9ee2"
 
-    readonly property color quickBackground: "#f21b1b21"
-    readonly property color quickBorder: "#1affffff"
-    readonly property color quickTile: "#12ffffff"
-    readonly property color quickTileHover: "#1fffffff"
-    readonly property color quickTileActive: "#330a9ee2"
-    readonly property color quickCircleOff: "#26ffffff"
-    readonly property color quickSwitchOff: "#3dffffff"
-    readonly property color quickSeparator: "#1affffff"
-    readonly property color quickText: "#f2f2f2"
-    readonly property color quickTextDim: "#8cffffff"
-    readonly property color quickIconOn: "#10131a"
+    readonly property color accent: Wal.accent
+    readonly property color quickBackground: withAlpha(Wal.background, 0.94)
+    readonly property color quickBorder: withAlpha(Wal.foreground, 0.10)
+    readonly property color quickTile: withAlpha(Wal.foreground, 0.06)
+    readonly property color quickTileHover: withAlpha(Wal.foreground, 0.11)
+    readonly property color quickTileActive: withAlpha(Wal.accent, 0.22)
+    readonly property color quickCircleOff: withAlpha(Wal.foreground, 0.13)
+    readonly property color quickSwitchOff: withAlpha(Wal.foreground, 0.22)
+    readonly property color quickSeparator: withAlpha(Wal.foreground, 0.10)
+    readonly property color quickText: Wal.foreground
+    readonly property color quickTextDim: withAlpha(Wal.foreground, 0.55)
+    readonly property color quickIconOn: Wal.background
 
-    // Анимации
+    // Анимации: окно и смена вида — резкие (OutQuint), мелочи — короткие.
     readonly property int animationDuration: 180
     readonly property int animationEasing: Easing.OutCubic
-    readonly property int quickAnimDuration: 260
-    readonly property int quickAnimEasing: Easing.OutCubic
+    readonly property int quickWindowDuration: 190
+    readonly property int quickWindowEasing: Easing.OutQuint
+    readonly property int quickViewDuration: 160
+    readonly property int quickViewEasing: Easing.OutQuint
+    readonly property int quickHoverDuration: 110
+    readonly property real quickIdleScale: 0.94
 
     // Шрифт
     readonly property string fontFamily: "JetBrainsMono Nerd Font"
+
+    function withAlpha(color, alpha) {
+        if (!color)
+            return Qt.rgba(0, 0, 0, alpha);
+        return Qt.rgba(color.r, color.g, color.b, alpha);
+    }
 }

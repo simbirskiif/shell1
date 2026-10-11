@@ -11,23 +11,23 @@ Item {
 
     signal toggled()
 
-    implicitWidth: 40
-    implicitHeight: 40
+    implicitWidth: Theme.quickCircleSize
+    implicitHeight: Theme.quickCircleSize
 
     Rectangle {
         id: circle
         anchors.fill: parent
         radius: width / 2
         color: root.active ? Theme.accent : Theme.quickCircleOff
-        Behavior on color { ColorAnimation { duration: Theme.quickAnimDuration } }
+        Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
 
         Text {
             anchors.centerIn: parent
             text: root.icon
             color: root.active ? Theme.quickIconOn : Theme.quickTextDim
             font.family: Theme.fontFamily
-            font.pixelSize: 17
-            Behavior on color { ColorAnimation { duration: Theme.quickAnimDuration } }
+            font.pixelSize: 16
+            Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
         }
     }
 
@@ -46,14 +46,14 @@ Item {
             target: circle
             property: "scale"
             to: 0.85
-            duration: 90
+            duration: 70
             easing.type: Easing.OutCubic
         }
         NumberAnimation {
             target: circle
             property: "scale"
             to: 1
-            duration: 180
+            duration: Theme.quickViewDuration
             easing.type: Easing.OutBack
         }
     }

@@ -1,7 +1,7 @@
 import QtQuick
 import "../../singletons"
 
-// Плитка в списке быстрых настроек: слева кружок-переключатель,
+// Плитка быстрых настроек: кружок слева переключает состояние,
 // остальная площадь раскрывает панель управления.
 Rectangle {
     id: root
@@ -14,12 +14,12 @@ Rectangle {
     signal toggled()
     signal expandRequested()
 
+    implicitWidth: Theme.quickWidth / 2
     implicitHeight: Theme.quickTileHeight
-    width: parent ? parent.width : implicitWidth
     radius: Theme.quickTileRadius
     color: root.active ? Theme.quickTileActive
                        : (hover.hovered ? Theme.quickTileHover : Theme.quickTile)
-    Behavior on color { ColorAnimation { duration: Theme.quickAnimDuration } }
+    Behavior on color { ColorAnimation { duration: Theme.quickHoverDuration } }
 
     MouseArea {
         id: hover
@@ -32,38 +32,45 @@ Rectangle {
     StatusCircle {
         id: circle
         anchors.left: parent.left
-        anchors.leftMargin: 8
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.leftMargin: 10
+        anchors.top: parent.top
+        anchors.topMargin: 10
         icon: root.icon
         active: root.active
         onToggled: root.toggled()
     }
 
-    Column {
+    Text {
         anchors.left: circle.right
+        anchors.leftMargin: 10
+        anchors.right: parent.right
+        anchors.rightMargin: 26
+        anchors.verticalCenter: circle.verticalCenter
+        text: root.title
+        elide: Text.ElideRight
+        color: Theme.quickText
+        font.family: Theme.fontFamily
+        font.pixelSize: 13
+    }
+
+    Text {
+        anchors.left: parent.left
         anchors.leftMargin: 12
-        anchors.verticalCenter: parent.verticalCenter
-        spacing: 1
-
-        Text {
-            text: root.title
-            color: Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 13
-        }
-
-        Text {
-            text: root.subtitle
-            color: Theme.quickTextDim
-            font.family: Theme.fontFamily
-            font.pixelSize: 10
-        }
+        anchors.right: parent.right
+        anchors.rightMargin: 12
+        anchors.top: circle.bottom
+        anchors.topMargin: 8
+        text: root.subtitle
+        elide: Text.ElideRight
+        color: Theme.quickTextDim
+        font.family: Theme.fontFamily
+        font.pixelSize: 10
     }
 
     Text {
         anchors.right: parent.right
-        anchors.rightMargin: 12
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.rightMargin: 10
+        anchors.verticalCenter: circle.verticalCenter
         text: "\uf054"
         color: Theme.quickTextDim
         font.family: Theme.fontFamily

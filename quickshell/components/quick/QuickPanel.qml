@@ -1,133 +1,125 @@
 import QtQuick
+import QtQuick.Layouts
 import "../../singletons"
 
-// Содержимое попапа: список плиток либо раскрытая панель управления.
-// Размеры хоста меняются мгновенно от нужного вида, а окно попапа
-// анимированно едет за ними (см. QuickPopup).
+// Содержимое попапа. Один список описаний панелей создаёт и плитку
+// в сетке 2 столбца, и дочерний вид: добавить панель = добавить запись.
 Item {
     id: root
 
     property string panel: ""
 
-    readonly property bool detailOpened: panel !== ""
+    readonly property var panels: [bluetoothEntry, wifiEntry, soundEntry]
 
-    readonly property Item activeDetail: panel === "bluetooth" ? bluetoothPanel
-                                        : panel === "wifi" ? wifiPanel
-                                        : panel === "sound" ? soundPanel
-                                        : null
+    readonly property Item activeDetail: {
+        for (let i = 0; i < detailViews.count; ++i) {
+            const view = detailViews.itemAt(i);
+            if (view && view.active)
+                return view;
+        }
+        return null;
+    }
 
-    implicitWidth: detailOpened ? Theme.quickDetailWidth : Theme.quickWidth
-    implicitHeight: activeDetail ? activeDetail.implicitHeight : mainColumn.implicitHeight
+    implicitWidth: Theme.quickWidth
+    implicitHeight: {
+        if (mainView.active)
+            return mainView.implicitHeight;
+        return root.activeDetail ? root.activeDetail.implicitHeight : mainView.implicitHeight;
+    }
 
-    Column {
-        id: mainColumn
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        spacing: Theme.quickTileSpacing
-        opacity: root.detailOpened ? 0 : 1
-        scale: root.detailOpened ? 0.98 : 1
-        Behavior on opacity {
-            NumberAnimation {
-                duration: Theme.quickAnimDuration
-                easing.type: Theme.quickAnimEasing
+    PanelView {
+        id: mainView
+        anchors.fill: parent
+        active: root.panel === ""
+
+        GridLayout {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            columns: 2
+            columnSpacing: Theme.quickTileSpacing
+            rowSpacing: Theme.quickTileSpacing
+
+            Repeater {
+                model: root.panels
+
+                delegate: QuickTile {
+                    required property var modelData
+
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Theme.quickTileHeight
+                    icon: modelData.icon
+                    title: modelData.title
+                    subtitle: modelData.subtitle
+                    active: modelData.active
+                    onToggled: modelData.toggle()
+                    onExpandRequested: root.panel = modelData.key
+                }
             }
-        }
-        Behavior on scale {
-            NumberAnimation {
-                duration: Theme.quickAnimDuration
-                easing.type: Theme.quickAnimEasing
-            }
-        }
-
-        QuickTile {
-            icon: "\uf293"
-            title: "Bluetooth"
-            subtitle: MockState.bluetoothSummary
-            active: MockState.bluetoothEnabled
-            onToggled: MockState.toggleBluetooth()
-            onExpandRequested: root.panel = "bluetooth"
-        }
-
-        QuickTile {
-            icon: "\uf1eb"
-            title: "Wi-Fi"
-            subtitle: MockState.wifiSummary
-            active: MockState.wifiEnabled
-            onToggled: MockState.toggleWifi()
-            onExpandRequested: root.panel = "wifi"
-        }
-
-        QuickTile {
-            icon: MockState.soundEnabled ? "\uf028" : "\uf026"
-            title: "Sound"
-            subtitle: MockState.soundSummary
-            active: MockState.soundEnabled
-            onToggled: MockState.toggleSound()
-            onExpandRequested: root.panel = "sound"
         }
     }
 
-    PanelBluetooth {
-        id: bluetoothPanel
-        anchors.fill: parent
-        visible: opacity > 0
-        opacity: root.panel === "bluetooth" ? 1 : 0
-        scale: root.panel === "bluetooth" ? 1 : 0.98
-        Behavior on opacity {
-            NumberAnimation {
-                duration: Theme.quickAnimDuration
-                easing.type: Theme.quickAnimEasing
+    Repeater {
+        id: detailViews
+        model: root.panels
+
+        delegate: PanelView {
+            required property var modelData
+
+            anchors.fill: parent
+            active: root.panel === modelData.key
+
+            Loader {
+                anchors.fill: parent
+                sourceComponent: modelData.view
             }
         }
-        Behavior on scale {
-            NumberAnimation {
-                duration: Theme.quickAnimDuration
-                easing.type: Theme.quickAnimEasing
-            }
-        }
-        onBackRequested: root.panel = ""
     }
 
-    PanelWifi {
-        id: wifiPanel
-        anchors.fill: parent
-        visible: opacity > 0
-        opacity: root.panel === "wifi" ? 1 : 0
-        scale: root.panel === "wifi" ? 1 : 0.98
-        Behavior on opacity {
-            NumberAnimation {
-                duration: Theme.quickAnimDuration
-                easing.type: Theme.quickAnimEasing
-            }
+    // Единое описание панели: иконка, подписи, состояние, действие и
+    // дочерний вид. Одна запись создаёт и плитку, и окно управления.
+    QtObject {
+        id: bluetoothEntry
+
+        readonly property string key: "bluetooth"
+        readonly property string title: "Bluetooth"
+        readonly property string icon: "\uf293"
+        readonly property bool active: MockState.bluetoothEnabled
+        readonly property string subtitle: MockState.bluetoothSummary
+        readonly property Component view: Component { PanelBluetooth {} }
+
+        function toggle() {
+            MockState.toggleBluetooth();
         }
-        Behavior on scale {
-            NumberAnimation {
-                duration: Theme.quickAnimDuration
-                easing.type: Theme.quickAnimEasing
-            }
-        }
-        onBackRequested: root.panel = ""
     }
 
-    PanelSound {
-        id: soundPanel
-        anchors.fill: parent
-        visible: opacity > 0
-        opacity: root.panel === "sound" ? 1 : 0
-        scale: root.panel === "sound" ? 1 : 0.98
-        Behavior on opacity {
-            NumberAnimation {
-                duration: Theme.quickAnimDuration
-                easing.type: Theme.quickAnimEasing
-            }
+    QtObject {
+        id: wifiEntry
+
+        readonly property string key: "wifi"
+        readonly property string title: "Wi-Fi"
+        readonly property string icon: "\uf1eb"
+        readonly property bool active: MockState.wifiEnabled
+        readonly property string subtitle: MockState.wifiSummary
+        readonly property Component view: Component { PanelWifi {} }
+
+        function toggle() {
+            MockState.toggleWifi();
         }
-        Behavior on scale {
-            NumberAnimation {
-                duration: Theme.quickAnimDuration
-                easing.type: Theme.quickAnimEasing
-            }
+    }
+
+    QtObject {
+        id: soundEntry
+
+        readonly property string key: "sound"
+        readonly property string title: "Sound"
+        readonly property string icon: MockState.soundEnabled ? "\uf028" : "\uf026"
+        readonly property bool active: MockState.soundEnabled
+        readonly property string subtitle: MockState.soundSummary
+        readonly property Component view: Component { PanelSound {} }
+
+        function toggle() {
+            MockState.toggleSound();
         }
-        onBackRequested: root.panel = ""
     }
 }

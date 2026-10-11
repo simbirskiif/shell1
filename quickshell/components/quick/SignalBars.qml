@@ -27,7 +27,7 @@ Item {
                 y: bars.height - height
                 radius: 1
                 color: index < root.strength ? Theme.accent : Theme.quickTextDim
-                Behavior on color { ColorAnimation { duration: Theme.quickAnimDuration } }
+                Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
             }
         }
     }

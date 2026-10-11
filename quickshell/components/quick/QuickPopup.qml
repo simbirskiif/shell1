@@ -4,8 +4,8 @@ import Quickshell.Hyprland
 import "../../singletons"
 
 // Выпадающая панель быстрых настроек под кнопкой статуса в баре.
-// Высота и ширина окна следуют за содержимым с анимацией —
-// именно это даёт плавное «раскрытие» при переходе во внутреннюю панель.
+// Ширина ограничена темой, высота следует за содержимым с анимацией —
+// вместе с кроссфейдом видов это даёт плавное «раскрытие» внутрь.
 PopupWindow {
     id: root
 
@@ -40,14 +40,14 @@ PopupWindow {
     implicitHeight: panelItem.implicitHeight + Theme.quickPadding * 2
     Behavior on implicitWidth {
         NumberAnimation {
-            duration: Theme.quickAnimDuration
-            easing.type: Theme.quickAnimEasing
+            duration: Theme.quickWindowDuration
+            easing.type: Theme.quickWindowEasing
         }
     }
     Behavior on implicitHeight {
         NumberAnimation {
-            duration: Theme.quickAnimDuration
-            easing.type: Theme.quickAnimEasing
+            duration: Theme.quickWindowDuration
+            easing.type: Theme.quickWindowEasing
         }
     }
 
@@ -69,18 +69,18 @@ PopupWindow {
 
         // Появление: лёгкий рост из угла кнопки.
         opacity: root.visible ? 1 : 0
-        scale: root.visible ? 1 : 0.97
+        scale: root.visible ? 1 : Theme.quickIdleScale
         transformOrigin: Item.TopRight
         Behavior on opacity {
             NumberAnimation {
-                duration: 130
-                easing.type: Easing.OutCubic
+                duration: Theme.quickViewDuration
+                easing.type: Theme.quickViewEasing
             }
         }
         Behavior on scale {
             NumberAnimation {
-                duration: Theme.quickAnimDuration
-                easing.type: Theme.quickAnimEasing
+                duration: Theme.quickWindowDuration
+                easing.type: Theme.quickWindowEasing
             }
         }
 

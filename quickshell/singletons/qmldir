@@ -1,2 +1,3 @@
 singleton Theme 1.0 Theme.qml
+singleton Wal 1.0 Wal.qml
 singleton MockState 1.0 MockState.qml

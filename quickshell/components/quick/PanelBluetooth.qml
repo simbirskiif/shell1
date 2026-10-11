@@ -8,7 +8,7 @@ Item {
 
     signal backRequested()
 
-    implicitWidth: Theme.quickDetailWidth
+    implicitWidth: Theme.quickWidth
     implicitHeight: column.implicitHeight
 
     Column {
@@ -45,7 +45,7 @@ Item {
                 width: column.width
                 height: Theme.quickRowHeight
                 color: rowHover.hovered ? Theme.quickTileHover : "transparent"
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on color { ColorAnimation { duration: Theme.quickHoverDuration } }
 
                 MouseArea {
                     id: rowHover
@@ -64,7 +64,7 @@ Item {
                     height: 26
                     radius: width / 2
                     color: rowItem.connected ? Theme.quickTileActive : Theme.quickCircleOff
-                    Behavior on color { ColorAnimation { duration: Theme.quickAnimDuration } }
+                    Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
 
                     Text {
                         anchors.centerIn: parent
@@ -72,7 +72,7 @@ Item {
                         color: rowItem.connected ? Theme.accent : Theme.quickTextDim
                         font.family: Theme.fontFamily
                         font.pixelSize: 13
-                        Behavior on color { ColorAnimation { duration: Theme.quickAnimDuration } }
+                        Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
                     }
                 }
 
@@ -94,7 +94,7 @@ Item {
                     color: rowItem.connected ? Theme.accent : Theme.quickTextDim
                     font.family: Theme.fontFamily
                     font.pixelSize: 10
-                    Behavior on color { ColorAnimation { duration: Theme.quickAnimDuration } }
+                    Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
                 }
             }
         }

@@ -17,7 +17,7 @@ Item {
         anchors.fill: parent
         radius: height / 2
         color: root.checked ? Theme.accent : Theme.quickSwitchOff
-        Behavior on color { ColorAnimation { duration: Theme.quickAnimDuration } }
+        Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
     }
 
     Rectangle {
@@ -30,8 +30,8 @@ Item {
         color: "#ffffff"
         Behavior on x {
             NumberAnimation {
-                duration: Theme.quickAnimDuration
-                easing.type: Theme.quickAnimEasing
+                duration: Theme.quickViewDuration
+                easing.type: Theme.quickViewEasing
             }
         }
     }

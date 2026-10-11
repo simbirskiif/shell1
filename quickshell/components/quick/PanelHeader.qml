@@ -24,7 +24,7 @@ Item {
         height: 28
         radius: width / 2
         color: backHover.hovered ? Theme.quickTileHover : "transparent"
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Behavior on color { ColorAnimation { duration: Theme.quickHoverDuration } }
 
         Text {
             anchors.centerIn: parent

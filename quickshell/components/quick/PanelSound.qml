@@ -7,7 +7,7 @@ Item {
 
     signal backRequested()
 
-    implicitWidth: Theme.quickDetailWidth
+    implicitWidth: Theme.quickWidth
     implicitHeight: column.implicitHeight
 
     Column {
@@ -44,7 +44,7 @@ Item {
                 color: MockState.soundEnabled ? Theme.quickText : Theme.quickTextDim
                 font.family: Theme.fontFamily
                 font.pixelSize: 16
-                Behavior on color { ColorAnimation { duration: Theme.quickAnimDuration } }
+                Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
             }
 
             Text {

@@ -30,7 +30,7 @@ Item {
         color: Theme.accent
         Behavior on width {
             NumberAnimation {
-                duration: 90
+                duration: Theme.quickHoverDuration
                 easing.type: Easing.OutCubic
             }
         }
@@ -46,7 +46,7 @@ Item {
         color: "#ffffff"
         Behavior on x {
             NumberAnimation {
-                duration: 90
+                duration: Theme.quickHoverDuration
                 easing.type: Easing.OutCubic
             }
         }
