@@ -1,10 +1,11 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import "quick"
 import "../singletons"
 
-// Верхний бар: слева рабочие столы, по центру дата и время.
-// Правая секция пока пустая.
+// Верхний бар: слева рабочие столы, по центру дата и время,
+// справа — кнопка статуса bt/wifi/sound с попапом быстрых настроек.
 PanelWindow {
     id: root
 
@@ -29,5 +30,21 @@ PanelWindow {
     Clock {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
+    }
+
+    ControlButton {
+        anchors.right: parent.right
+        anchors.rightMargin: Theme.barPadding
+        anchors.verticalCenter: parent.verticalCenter
+        bluetoothEnabled: MockState.bluetoothEnabled
+        wifiEnabled: MockState.wifiEnabled
+        soundEnabled: MockState.soundEnabled
+        opened: quickPopup.visible
+        onClicked: quickPopup.toggle()
+    }
+
+    QuickPopup {
+        id: quickPopup
+        anchorWindow: root
     }
 }
