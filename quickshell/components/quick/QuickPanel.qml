@@ -11,7 +11,7 @@ Item {
 
     readonly property string panel: UiState.panel
 
-    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, batteryEntry]
+    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, batteryEntry, settingsEntry]
 
     // В сетке плиток показываем не все панели: батарея живёт в шапке.
     readonly property var gridPanels: root.panels.filter(entry => entry.inGrid)
@@ -50,12 +50,42 @@ Item {
                 height: 36
 
                 BatteryButton {
+                    id: batteryButton
                     anchors.right: parent.right
                     anchors.rightMargin: 4
                     anchors.verticalCenter: parent.verticalCenter
                     level: MockState.batteryLevel
                     charging: MockState.batteryCharging
                     onClicked: batteryEntry.open()
+                }
+
+                // Настройки — слева от батареи.
+                Rectangle {
+                    id: settingsButton
+                    anchors.right: batteryButton.left
+                    anchors.rightMargin: 4
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 30
+                    height: 30
+                    radius: width / 2
+                    color: settingsHover.hovered ? Theme.quickTileHover : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "\uf013"
+                        color: Theme.quickText
+                        font.family: Theme.iconFontFamily
+                        font.pixelSize: 14
+                    }
+
+                    MouseArea {
+                        id: settingsHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: settingsEntry.open()
+                    }
                 }
             }
 
@@ -194,6 +224,27 @@ Item {
 
         function toggle() {
             // У яркости кружок ничего не переключает.
+        }
+    }
+
+    // Настройки: тоже кнопка в шапке (слева от батареи), не плитка.
+    QtObject {
+        id: settingsEntry
+
+        readonly property bool inGrid: false
+        readonly property string key: "settings"
+        readonly property string title: "Settings"
+        readonly property string icon: "\uf013"
+        readonly property bool active: false
+        readonly property string subtitle: ""
+        readonly property Component view: Component { PanelSettings {} }
+
+        function open() {
+            UiState.openDetail(key);
+        }
+
+        function toggle() {
+            // У настроек кружок ничего не переключает.
         }
     }
 

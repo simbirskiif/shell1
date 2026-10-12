@@ -32,7 +32,19 @@ PanelWindow {
         anchors.verticalCenter: parent.verticalCenter
     }
 
+    // Батарея в баре (включается в настройках).
+    BatteryButton {
+        anchors.right: controlButton.left
+        anchors.rightMargin: 6
+        anchors.verticalCenter: parent.verticalCenter
+        visible: MockState.showBatteryPercent
+        level: MockState.batteryLevel
+        charging: MockState.batteryCharging
+        onClicked: UiState.open(root.screen ? root.screen.name : "", "battery")
+    }
+
     ControlButton {
+        id: controlButton
         anchors.right: parent.right
         anchors.rightMargin: Theme.barPadding
         anchors.verticalCenter: parent.verticalCenter

@@ -36,48 +36,18 @@ Item {
             width: parent.width
             height: 150
 
-            Item {
+            // Большая батарейка — тот же дизайн, что и в баре.
+            BatteryIndicator {
                 id: batteryArt
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
-                anchors.topMargin: 20
-                width: 104
-                height: 44
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: 10
-                    color: "transparent"
-                    border.width: 2
-                    border.color: Theme.quickTextDim
-                }
-
-                Rectangle {
-                    anchors.left: parent.right
-                    anchors.leftMargin: 3
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 4
-                    height: 16
-                    radius: 2
-                    color: Theme.quickTextDim
-                }
-
-                Rectangle {
-                    anchors.left: parent.left
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    anchors.margins: 5
-                    width: (batteryArt.width - 10) * MockState.batteryLevel / 100
-                    radius: 6
-                    color: MockState.batteryCharging ? Theme.accent : Theme.quickText
-                    Behavior on width {
-                        MotionNumber {
-                            duration: Theme.motionMedium1
-                            curve: Theme.curveEmphasized
-                        }
-                    }
-                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
-                }
+                anchors.topMargin: 22
+                level: MockState.batteryLevel
+                charging: MockState.batteryCharging
+                bodyWidth: 150
+                bodyHeight: 58
+                bodyRadius: 18
+                nubWidth: 7
             }
 
             Text {

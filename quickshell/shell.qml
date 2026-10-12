@@ -86,6 +86,17 @@ ShellRoot {
             return state();
         }
 
+        // Настройка бара: показывать ли процент батареи.
+        function toggleBarBattery(): string {
+            MockState.showBatteryPercent = !MockState.showBatteryPercent;
+            return state();
+        }
+
+        function settings(): string {
+            UiState.open(UiState.defaultScreen(), "settings");
+            return state();
+        }
+
         function battery(): string {
             UiState.open(UiState.defaultScreen(), "battery");
             return state();
@@ -134,6 +145,7 @@ ShellRoot {
                 + " palette=" + (Wal.walLoaded ? "wal" : "fallback")
                 + " bg=" + Wal.background + " accent=" + Wal.accent
                 + " brightness=" + Math.round(MockState.brightness * 100) + "%"
+                + " barBattery=" + (MockState.showBatteryPercent ? "on" : "off")
                 + " battery=" + MockState.batteryLevel + "%" + (MockState.batteryCharging ? "+" : "")
                 + " mode=" + MockState.powerMode
                 + " ethernet=" + (MockState.ethernetConnected ? "on" : "off")
@@ -143,6 +155,8 @@ ShellRoot {
         }
     }
 }
+
+
 
 
 

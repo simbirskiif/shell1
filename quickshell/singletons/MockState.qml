@@ -15,6 +15,9 @@ Singleton {
     property real volume: 0.65
     property string outputName: "Built-in Speakers"
 
+    // Настройки оболочки.
+    property bool showBatteryPercent: true
+
     // Яркость экрана (пока заглушка). lastBrightness — чтобы вернуть
     // прежнее значение после «выключения» кружком.
     property real brightness: 0.7
