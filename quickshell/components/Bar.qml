@@ -58,6 +58,25 @@ PanelWindow {
         anchorWindow: root
     }
 
+    // Жест двумя пальцами по бару тоже возвращает назад, если открыта
+    // дочерняя панель. acceptedButtons: NoButton — клики пропускаем.
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.NoButton
+        z: 10
+
+        onWheel: wheel => {
+            const dx = wheel.pixelDelta.x !== 0 ? wheel.pixelDelta.x : wheel.angleDelta.x;
+            const dy = wheel.pixelDelta.y !== 0 ? wheel.pixelDelta.y : wheel.angleDelta.y;
+            if (!UiState.swipeActive && Math.abs(dx) <= Math.abs(dy))
+                return;
+            if (dx === 0)
+                return;
+            wheel.accepted = true;
+            UiState.swipeBy(dx, Theme.quickWidth);
+        }
+    }
+
     // Запрос пароля — отдельным модальным окном (у попапа нет клавиатуры).
     PasswordDialog {
         dialogScreen: root.screen

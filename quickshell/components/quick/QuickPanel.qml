@@ -156,18 +156,24 @@ Item {
         }
     }
 
-    // Двумя пальцами влево (горизонтальный скролл) — назад, за пальцем.
-    WheelHandler {
-        acceptedDevices: PointerDevice.TouchPad | PointerDevice.Mouse
-        enabled: root.panel !== ""
+    // Двумя пальцами по панели — назад, за пальцем.
+    // MouseArea, а не WheelHandler: клики в панели работают, значит этот путь
+    // события точно получает. acceptedButtons: NoButton — клики пропускаем.
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.NoButton
+        z: 10
 
-        onWheel: event => {
-            // У тачпадов pixelDelta может быть нулевым — берём angleDelta как есть.
-            const dx = event.pixelDelta.x !== 0 ? event.pixelDelta.x : event.angleDelta.x;
-            const dy = event.pixelDelta.y !== 0 ? event.pixelDelta.y : event.angleDelta.y;
-            if (Math.abs(dx) <= Math.abs(dy))
+        onWheel: wheel => {
+            // У тачпадов pixelDelta часто нулевой — берём angleDelta как есть.
+            const dx = wheel.pixelDelta.x !== 0 ? wheel.pixelDelta.x : wheel.angleDelta.x;
+            const dy = wheel.pixelDelta.y !== 0 ? wheel.pixelDelta.y : wheel.angleDelta.y;
+
+            if (!root.swipeActive && Math.abs(dx) <= Math.abs(dy))
                 return;
-            event.accepted = true;
+            if (dx === 0)
+                return;
+            wheel.accepted = true;
             UiState.swipeBy(dx, root.width);
             swipeEndTimer.restart();
         }
@@ -176,7 +182,9 @@ Item {
     // Жест закончился (у скролла нет события «конец») — доводим или откатываем.
     Timer {
         id: swipeEndTimer
-        interval: 140
+        // У скролла нет события «конец жеста»: считаем его завершённым
+        // по паузе между событиями. 140 мс обрывали медленный свайп.
+        interval: 250
         onTriggered: UiState.endSwipe()
     }
 
