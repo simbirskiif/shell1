@@ -82,6 +82,17 @@ ShellRoot {
             return state();
         }
 
+        // Жест «назад»: сдвинуть/завершить (для проверки без тачпада).
+        function swipe(delta: real): string {
+            UiState.swipeBy(delta, Theme.quickWidth);
+            return state();
+        }
+
+        function endSwipe(): string {
+            UiState.endSwipe();
+            return state();
+        }
+
         // Сценарии подключения (для проверки без мыши).
         function wifiConnect(index: int): string {
             const network = MockState.wifiNetworks.get(index);
@@ -233,6 +244,7 @@ ShellRoot {
                 + " mode=" + MockState.powerMode
                 + " ethernet=" + (MockState.ethernetConnected ? (MockState.ethernetActive ? "active" : "idle") : "off")
                 + " scanning=" + (MockState.wifiScanning || MockState.bluetoothScanning)
+                + " swipe=" + UiState.swipe.toFixed(2)
                 + " pending=" + (MockState.pendingNetwork === "" ? "no" : MockState.pendingNetwork)
                 + " connecting=" + (MockState.connectingWifi || MockState.connectingDevice || "no")
                 + " discoverable=" + (MockState.bluetoothDiscoverable ? "on" : "off")
@@ -241,6 +253,3 @@ ShellRoot {
         }
     }
 }
-
-
-

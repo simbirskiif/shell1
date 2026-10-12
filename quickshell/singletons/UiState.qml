@@ -19,6 +19,35 @@ Singleton {
 
     // Экран, на котором открыт запрос пароля.
     property string dialogScreen: ""
+
+    // --- жест «назад» двумя пальцами -----------------------------------
+    // swipe: 0..1 — насколько ушли назад; swipeCommand: 0 нет, 1 довести,
+    // -1 откатить (анимации живут в панели, она следит за командой).
+    property real swipe: 0
+    property bool swipeActive: false
+    property int swipeCommand: 0
+
+    function swipeBy(delta, width) {
+        if (panel === "" || width <= 0)
+            return;
+        if (!swipeActive) {
+            swipeActive = true;
+            swipe = 0;
+        }
+        swipe = Math.max(0, Math.min(1, swipe + delta / width));
+    }
+
+    function endSwipe() {
+        if (!swipeActive)
+            return;
+        swipeCommand = swipe > 0.3 ? 1 : -1;
+    }
+
+    function clearSwipe() {
+        swipe = 0;
+        swipeActive = false;
+        swipeCommand = 0;
+    }
     property var draftVisible: []
     property var draftAvailable: []
 

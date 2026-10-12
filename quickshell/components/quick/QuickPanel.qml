@@ -23,32 +23,6 @@ Item {
     readonly property var shownEntries: root.entriesFor(root.shownKeys)
     readonly property var poolEntries: root.entriesFor(root.poolKeys)
 
-    readonly property Item activeDetail: {
-        for (let i = 0; i < detailViews.count; ++i) {
-            const view = detailViews.itemAt(i);
-            if (view && view.active)
-                return view;
-        }
-        return null;
-    }
-
-    implicitWidth: Theme.quickWidth
-    implicitHeight: {
-        if (mainView.active)
-            return mainView.implicitHeight;
-        return root.activeDetail ? root.activeDetail.implicitHeight : mainView.implicitHeight;
-    }
-
-    // Открыли дочернюю панель — редактор закрываем.
-    Connections {
-        target: UiState
-
-        function onPanelChanged() {
-            if (UiState.panel !== "")
-                UiState.editing = false;
-        }
-    }
-
     function entryFor(key) {
         for (let i = 0; i < root.panels.length; ++i) {
             if (root.panels[i].key === key)
@@ -94,17 +68,12 @@ Item {
     }
 
     onShownKeysChanged: root.refreshTileSlots()
-    Component.onCompleted: {
-        root.refreshTileSlots();
-        root.refreshPoolSlots();
-    }
 
-    // Индекс плитки в пуле доступных.
     function poolIndex(key) {
         return root.poolKeys.indexOf(key);
     }
 
-    // Последняя позиция плитки в пуле: без этого приходилось бы
+    // Последняя позиция плитки в пуле: без этого пришлось бы
     // самоссылаться на x/y, что дёргает биндинги каждый кадр.
     property var poolSlots: ({})
 
@@ -123,6 +92,11 @@ Item {
     }
 
     onPoolKeysChanged: root.refreshPoolSlots()
+
+    Component.onCompleted: {
+        root.refreshTileSlots();
+        root.refreshPoolSlots();
+    }
 
     // Редактор живёт в UiState — так им можно управлять и снаружи.
     function beginEdit() {
@@ -149,10 +123,98 @@ Item {
         UiState.moveTile(from, to);
     }
 
+    readonly property Item activeDetail: {
+        for (let i = 0; i < detailViews.count; ++i) {
+            const view = detailViews.itemAt(i);
+            if (view && view.active)
+                return view;
+        }
+        return null;
+    }
+
+    implicitWidth: Theme.quickWidth
+    implicitHeight: {
+        // Высота следует за открытой панелью: во время жеста она не должна
+        // прыгать на высоту сетки.
+        if (root.panel === "")
+            return mainView.implicitHeight;
+        return root.activeDetail ? root.activeDetail.implicitHeight : mainView.implicitHeight;
+    }
+
+    // Состояние жеста живёт в UiState — им можно управлять и снаружи.
+    readonly property real swipe: UiState.swipe
+    readonly property bool swipeActive: UiState.swipeActive
+
+    Connections {
+        target: UiState
+
+        function onSwipeCommandChanged() {
+            if (UiState.swipeCommand === 1)
+                swipeCommit.start();
+            else if (UiState.swipeCommand === -1)
+                swipeCancel.start();
+        }
+    }
+
+    // Двумя пальцами влево (горизонтальный скролл) — назад, за пальцем.
+    WheelHandler {
+        acceptedDevices: PointerDevice.TouchPad | PointerDevice.Mouse
+        enabled: root.panel !== ""
+
+        onWheel: event => {
+            const dx = event.pixelDelta.x !== 0 ? event.pixelDelta.x : event.angleDelta.x / 3;
+            const dy = event.pixelDelta.y !== 0 ? event.pixelDelta.y : event.angleDelta.y / 3;
+            if (Math.abs(dx) <= Math.abs(dy))
+                return;
+            event.accepted = true;
+            UiState.swipeBy(dx, root.width);
+            swipeEndTimer.restart();
+        }
+    }
+
+    // Жест закончился (у скролла нет события «конец») — доводим или откатываем.
+    Timer {
+        id: swipeEndTimer
+        interval: 140
+        onTriggered: UiState.endSwipe()
+    }
+
+    Timer {
+        id: swipeResetTimer
+        interval: Theme.motionShort4 + 80
+        onTriggered: UiState.clearSwipe()
+    }
+
+    MotionNumber {
+        id: swipeCommit
+        target: UiState
+        property: "swipe"
+        to: 1
+        duration: Theme.motionMedium1
+        curve: Theme.curveEmphasizedDecelerate
+        onFinished: {
+            UiState.closeDetail();
+            swipeResetTimer.restart();
+        }
+    }
+
+    MotionNumber {
+        id: swipeCancel
+        target: UiState
+        property: "swipe"
+        to: 0
+        duration: Theme.motionShort4
+        curve: Theme.curveEmphasized
+        onFinished: UiState.clearSwipe()
+    }
+
     PanelView {
         id: mainView
         anchors.fill: parent
-        active: root.panel === ""
+        // Во время жеста сетка уже видна и приезжает справа.
+        active: root.panel === "" || root.swipeActive
+        gesture: root.swipeActive ? root.swipe : -1
+        gestureShift: 1
 
         Column {
             id: mainColumn
@@ -423,6 +485,8 @@ Item {
 
             anchors.fill: parent
             active: root.panel === modelData.key
+            gesture: root.swipeActive ? root.swipe : -1
+            gestureShift: -1
 
             Loader {
                 id: viewLoader
