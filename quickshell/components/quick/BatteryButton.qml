@@ -2,9 +2,9 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Батарея в стиле Android: обведённая пилюля с процентом внутри,
-// носик справа, цвет по состоянию (зарядка/низкий заряд), при зарядке —
-// молния. Нажатие открывает панель питания.
+// Батарея в стиле Android: нарисованная батарейка (обводка, заливка уровня,
+// носик) и процент рядом с ней. Цвет зависит от состояния: зарядка —
+// зелёный, <=15% — красный, <=30% — жёлтый. Нажатие открывает панель питания.
 Item {
     id: root
 
@@ -16,93 +16,90 @@ Item {
     readonly property bool low: root.level <= 15
     readonly property bool medium: !root.low && root.level <= 30
 
-    readonly property color lineColor: {
+    readonly property color stateColor: {
         if (root.charging)
             return Theme.chargeColor;
         if (root.low)
             return Theme.lowColor;
         if (root.medium)
             return Theme.mediumColor;
-        return Theme.quickTextDim;
-    }
-
-    readonly property color fillColor: {
-        if (root.charging)
-            return Theme.chargeColor;
-        if (root.low)
-            return Theme.lowColor;
-        if (root.medium)
-            return Theme.mediumColor;
-        return "transparent";
-    }
-
-    readonly property color textColor: {
-        if (root.charging || root.medium)
-            return Theme.quickIconOn;
-        if (root.low)
-            return "#ffffff";
         return Theme.quickText;
     }
 
-    implicitWidth: indicator.width + 10
-    implicitHeight: indicator.height + 10
+    implicitWidth: content.implicitWidth + 18
+    implicitHeight: 34
 
-    Item {
-        id: indicator
+    Row {
+        id: content
         anchors.centerIn: parent
-        width: body.width + 2 + nub.width
-        height: body.height
+        spacing: 8
 
-        Rectangle {
-            id: body
-            anchors.left: parent.left
+        Item {
+            id: cell
             anchors.verticalCenter: parent.verticalCenter
-            width: content.implicitWidth + 22
-            height: 26
-            radius: 8
-            color: root.fillColor
-            border.width: 2
-            border.color: root.lineColor
-            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
-            Behavior on border.color { ColorAnimation { duration: Theme.motionShort4 } }
+            width: 29
+            height: 13
 
-            Row {
-                id: content
-                anchors.centerIn: parent
-                spacing: 3
+            Rectangle {
+                id: shell
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                width: 26
+                height: 13
+                radius: 4
+                color: "transparent"
+                border.width: 2
+                border.color: root.stateColor
+                Behavior on border.color { ColorAnimation { duration: Theme.motionShort4 } }
+            }
 
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.level + "%"
-                    color: root.textColor
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 13
-                    font.weight: Font.DemiBold
-                    Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+            Rectangle {
+                id: levelFill
+                anchors.left: shell.left
+                anchors.leftMargin: 4
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.max(0, (shell.width - 8) * root.level / 100)
+                height: shell.height - 8
+                radius: 1.5
+                color: root.stateColor
+                Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+                Behavior on width {
+                    MotionNumber {
+                        duration: Theme.motionMedium1
+                        curve: Theme.curveEmphasized
+                    }
                 }
+            }
 
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: root.charging
-                    text: "\uf0e7"
-                    color: root.textColor
-                    font.family: Theme.iconFontFamily
-                    font.pixelSize: 11
-                }
+            Rectangle {
+                id: nub
+                anchors.left: shell.right
+                anchors.leftMargin: 1.5
+                anchors.verticalCenter: parent.verticalCenter
+                width: 2.5
+                height: 6
+                radius: 1.25
+                color: root.stateColor
+                Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
             }
         }
 
-        // Носик батареи
-        Rectangle {
-            id: nub
-            anchors.left: body.right
-            anchors.leftMargin: 2
+        Text {
             anchors.verticalCenter: parent.verticalCenter
-            width: 3
-            height: 10
-            radius: 1.5
-            color: root.lineColor
-            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+            text: root.level + "%"
+            color: Theme.quickText
+            font.family: Theme.fontFamily
+            font.pixelSize: 13
+            font.weight: Font.Medium
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.charging
+            text: "\uf0e7"
+            color: Theme.chargeColor
+            font.family: Theme.iconFontFamily
+            font.pixelSize: 11
         }
     }
 

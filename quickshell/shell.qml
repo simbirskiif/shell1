@@ -81,6 +81,11 @@ ShellRoot {
             return state();
         }
 
+        function brightness(): string {
+            UiState.open(UiState.defaultScreen(), "brightness");
+            return state();
+        }
+
         function battery(): string {
             UiState.open(UiState.defaultScreen(), "battery");
             return state();
@@ -138,6 +143,8 @@ ShellRoot {
         }
     }
 }
+
+
 
 
 

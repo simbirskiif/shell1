@@ -175,8 +175,8 @@ Item {
         }
     }
 
-    // Яркость: плитка как у звука, но дочерней панели пока нет —
-    // нажатие на плитку ничего не открывает, кружок гасит экран.
+    // Яркость: плитка как у звука. Кружок слева ничего не делает,
+    // нажатие на остальную часть открывает панель яркости.
     QtObject {
         id: brightnessEntry
 
@@ -186,14 +186,14 @@ Item {
         readonly property string icon: "\uf185"
         readonly property bool active: MockState.brightness > 0
         readonly property string subtitle: Math.round(MockState.brightness * 100) + "%"
-        readonly property Component view: Component { Item { } }
+        readonly property Component view: Component { PanelBrightness {} }
 
         function open() {
-            // Дочерней панели у яркости пока нет.
+            UiState.openDetail(key);
         }
 
         function toggle() {
-            MockState.toggleBrightness();
+            // У яркости кружок ничего не переключает.
         }
     }
 
