@@ -1,20 +1,27 @@
 import QtQuick
-import QtQuick.Layouts
+import ".."
 import "../../singletons"
 
-// Содержимое попапа. Один список описаний панелей создаёт и плитку
-// в сетке 2 столбца, и дочерний вид: добавить панель = добавить запись.
-// Открытая панель хранится в UiState, поэтому связь «плитка ↔ дочерний
-// вид» — это просто ключ дескриптора, без локальных копий состояния.
+// Содержимое попапа. Один список дескрипторов создаёт и плитки, и дочерние
+// виды: добавить панель = добавить запись.
+// Набор и порядок плиток лежит в MockState; в режиме редактирования правится
+// черновик, поэтому закрытие панели отбрасывает изменения.
 Item {
     id: root
 
     readonly property string panel: UiState.panel
+    readonly property bool editing: UiState.editing
 
     readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, batteryEntry, settingsEntry]
 
-    // В сетке плиток показываем не все панели: батарея живёт в шапке.
-    readonly property var gridPanels: root.panels.filter(entry => entry.inGrid)
+    // Плитки, которыми управляет редактор.
+    readonly property var tileEntries: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry]
+
+    readonly property var shownKeys: root.editing ? UiState.draftVisible : MockState.visibleTiles
+    readonly property var poolKeys: root.editing ? UiState.draftAvailable : MockState.availableTiles
+
+    readonly property var shownEntries: root.entriesFor(root.shownKeys)
+    readonly property var poolEntries: root.entriesFor(root.poolKeys)
 
     readonly property Item activeDetail: {
         for (let i = 0; i < detailViews.count; ++i) {
@@ -32,6 +39,63 @@ Item {
         return root.activeDetail ? root.activeDetail.implicitHeight : mainView.implicitHeight;
     }
 
+    // Открыли дочернюю панель — редактор закрываем.
+    Connections {
+        target: UiState
+
+        function onPanelChanged() {
+            if (UiState.panel !== "")
+                UiState.editing = false;
+        }
+    }
+
+    function entryFor(key) {
+        for (let i = 0; i < root.panels.length; ++i) {
+            if (root.panels[i].key === key)
+                return root.panels[i];
+        }
+        return null;
+    }
+
+    function entriesFor(keys) {
+        const result = [];
+        for (let i = 0; i < keys.length; ++i) {
+            const entry = root.entryFor(keys[i]);
+            if (entry)
+                result.push(entry);
+        }
+        return result;
+    }
+
+    function indexOfShown(key) {
+        return root.shownKeys.indexOf(key);
+    }
+
+    // Редактор живёт в UiState — так им можно управлять и снаружи.
+    function beginEdit() {
+        UiState.beginEdit();
+    }
+
+    function saveEdit() {
+        UiState.saveEdit();
+    }
+
+    function cancelEdit() {
+        UiState.cancelEdit();
+    }
+
+    function hideTile(key) {
+        UiState.hideTile(key);
+    }
+
+    function showTile(key) {
+        UiState.showTile(key);
+    }
+
+    function moveTile(from, to) {
+        UiState.moveTile(from, to);
+    }
+
     PanelView {
         id: mainView
         anchors.fill: parent
@@ -44,21 +108,11 @@ Item {
             anchors.top: parent.top
             spacing: Theme.quickTileSpacing
 
-            // Шапка основной панели: справа — батарея.
+            // Шапка: настройки слева, батарея справа.
             Item {
                 width: parent.width
                 height: 36
 
-                BatteryButton {
-                    anchors.right: parent.right
-                    anchors.rightMargin: 4
-                    anchors.verticalCenter: parent.verticalCenter
-                    level: MockState.batteryLevel
-                    charging: MockState.batteryCharging
-                    onClicked: batteryEntry.open()
-                }
-
-                // Настройки — в левом углу шапки.
                 Rectangle {
                     id: settingsButton
                     anchors.left: parent.left
@@ -86,28 +140,262 @@ Item {
                         onClicked: settingsEntry.open()
                     }
                 }
+
+                BatteryButton {
+                    anchors.right: parent.right
+                    anchors.rightMargin: 4
+                    anchors.verticalCenter: parent.verticalCenter
+                    level: MockState.batteryLevel
+                    charging: MockState.batteryCharging
+                    onClicked: batteryEntry.open()
+                }
             }
 
-            GridLayout {
+            // Сетка плиток: позиции считаем сами, поэтому перестановка
+            // анимируется Behavior'ами, а не пересозданием элементов.
+            Item {
+                id: grid
                 width: parent.width
-                columns: 2
-                columnSpacing: Theme.quickTileSpacing
-                rowSpacing: Theme.quickTileSpacing
+
+                readonly property int columns: 2
+                readonly property real spacing: Theme.quickTileSpacing
+                readonly property real cellWidth: (width - spacing) / columns
+                readonly property real cellHeight: Theme.quickTileHeight
+                readonly property int rows: Math.ceil(root.shownEntries.length / columns)
+                readonly property real stepX: cellWidth + spacing
+                readonly property real stepY: cellHeight + spacing
+
+                implicitHeight: rows > 0 ? rows * stepY - spacing : 0
 
                 Repeater {
-                    model: root.gridPanels
+                    model: root.tileEntries
 
                     delegate: QuickTile {
                         required property var modelData
 
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: Theme.quickTileHeight
+                        width: grid.cellWidth
+                        height: grid.cellHeight
+                        order: root.indexOfShown(modelData.key)
+                        columns: grid.columns
+                        stepX: grid.stepX
+                        stepY: grid.stepY
+                        x: order >= 0 ? (order % grid.columns) * grid.stepX : 0
+                        y: order >= 0 ? Math.floor(order / grid.columns) * grid.stepY : 0
+                        visible: opacity > 0
+                        opacity: order >= 0 ? 1 : 0
+
                         icon: modelData.icon
                         title: modelData.title
                         subtitle: modelData.subtitle
                         active: modelData.active
+                        editable: root.editing
                         onToggled: modelData.toggle()
                         onExpandRequested: modelData.open()
+                        onRemoveRequested: root.hideTile(modelData.key)
+                        onReorderRequested: (from, to) => root.moveTile(from, to)
+                    }
+                }
+            }
+
+            // Управление редактором: карандаш, либо сохранить/отменить.
+            Item {
+                width: parent.width
+                height: 40
+
+                Rectangle {
+                    id: editButton
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: !root.editing
+                    width: 32
+                    height: 32
+                    radius: width / 2
+                    color: editHover.hovered ? Theme.quickTileHover : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "\uf040"
+                        color: Theme.quickText
+                        font.family: Theme.iconFontFamily
+                        font.pixelSize: 14
+                    }
+
+                    MouseArea {
+                        id: editHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.beginEdit()
+                    }
+                }
+
+                Row {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 8
+                    visible: root.editing
+
+                    Rectangle {
+                        id: cancelButton
+                        width: 32
+                        height: 32
+                        radius: width / 2
+                        color: cancelHover.hovered ? Theme.quickTileHover : Theme.quickTile
+                        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "\uf00d"
+                            color: Theme.quickText
+                            font.family: Theme.iconFontFamily
+                            font.pixelSize: 13
+                        }
+
+                        MouseArea {
+                            id: cancelHover
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.cancelEdit()
+                        }
+                    }
+
+                    Rectangle {
+                        id: saveButton
+                        width: 32
+                        height: 32
+                        radius: width / 2
+                        color: Theme.accent
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: Theme.quickIconOn
+                            opacity: saveHover.hovered ? 0.08 : 0
+                            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "\uf00c"
+                            color: Theme.quickIconOn
+                            font.family: Theme.iconFontFamily
+                            font.pixelSize: 13
+                        }
+
+                        MouseArea {
+                            id: saveHover
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.saveEdit()
+                        }
+                    }
+                }
+            }
+
+            // Пул доступных плиток — внизу в режиме редактирования.
+            Column {
+                width: parent.width
+                spacing: 0
+                visible: root.editing
+                height: visible ? implicitHeight : 0
+
+                PanelSection { text: "Available" }
+
+                Text {
+                    width: mainColumn.width
+                    height: visible ? 44 : 0
+                    visible: root.poolEntries.length === 0
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    text: "All tiles are on the panel"
+                    color: Theme.quickTextDim
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 12
+                }
+
+                Repeater {
+                    model: root.poolEntries
+
+                    delegate: Item {
+                        id: poolRow
+                        required property var modelData
+
+                        width: mainColumn.width
+                        height: Theme.quickRowHeight
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Theme.quickTileRadius
+                            color: poolHover.hovered ? Theme.quickTileHover : "transparent"
+                            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                        }
+
+                        Rectangle {
+                            id: poolIcon
+                            anchors.left: parent.left
+                            anchors.leftMargin: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 28
+                            height: 28
+                            radius: width / 2
+                            color: Theme.quickCircleOff
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: poolRow.modelData.icon
+                                color: Theme.quickText
+                                font.family: Theme.iconFontFamily
+                                font.pixelSize: 13
+                            }
+                        }
+
+                        Text {
+                            anchors.left: poolIcon.right
+                            anchors.leftMargin: 12
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: poolRow.modelData.title
+                            color: Theme.quickText
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 13
+                        }
+
+                        Rectangle {
+                            id: addButton
+                            anchors.right: parent.right
+                            anchors.rightMargin: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 26
+                            height: 26
+                            radius: width / 2
+                            color: addHover.hovered ? Theme.quickTileActive : Theme.quickCircleOff
+                            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\uf067"
+                                color: Theme.quickText
+                                font.family: Theme.iconFontFamily
+                                font.pixelSize: 10
+                            }
+
+                            MouseArea {
+                                id: addHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.showTile(poolRow.modelData.key)
+                            }
+                        }
+
+                        MouseArea {
+                            id: poolHover
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: root.showTile(poolRow.modelData.key)
+                        }
                     }
                 }
             }

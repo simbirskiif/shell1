@@ -18,6 +18,11 @@ Singleton {
     // Настройки оболочки.
     property bool showBatteryPercent: true
 
+    // Набор плиток основной панели: видимые (в порядке) и доступные.
+    // Меняется только кнопкой «Сохранить» в режиме редактирования.
+    property var visibleTiles: ["bluetooth", "internet", "sound", "brightness"]
+    property var availableTiles: []
+
     // Порядок элементов в баре: порядок в модели = слева-направо.
     readonly property ListModel barItems: ListModel {
         ListElement { itemKey: "battery"; title: "Battery" }

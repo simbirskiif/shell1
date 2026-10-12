@@ -1,9 +1,12 @@
 import QtQuick
+import ".."
 import "../../singletons"
 
 // Плитка быстрых настроек: кружок слева переключает состояние,
 // остальная площадь раскрывает панель управления.
-// Название и статус — одной строкой по центру, статус обрезается.
+// В режиме редактирования плитка чуть уменьшается (визуально, размеры в
+// раскладке не меняются), сверху справа появляется «минус», а перетаскивание
+// меняет порядок плиток.
 Rectangle {
     id: root
 
@@ -12,19 +15,59 @@ Rectangle {
     required property string subtitle
     required property bool active
 
+    property bool editable: false
+    // Позиция в сетке (её задаёт панель) — нужна для перетаскивания.
+    property int order: -1
+    property int columns: 2
+    property real stepX: width
+    property real stepY: height
+
     signal toggled()
     signal expandRequested()
+    signal removeRequested()
+    signal reorderRequested(int from, int to)
 
     implicitWidth: Theme.quickWidth / 2
     implicitHeight: Theme.quickTileHeight
     radius: Theme.quickTileRadius
     color: root.active ? Theme.quickTileActive
-                       : (hover.hovered ? Theme.quickTileHover : Theme.quickTile)
+                       : (hover.hovered && !root.editable ? Theme.quickTileHover : Theme.quickTile)
     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+
+    // В редакторе плитка выглядит меньше, но место занимает то же.
+    scale: root.editable ? 0.92 : 1
+    Behavior on scale {
+        MotionNumber {
+            duration: Theme.motionMedium1
+            curve: Theme.curveEmphasized
+        }
+    }
+
+    Behavior on x {
+        MotionNumber {
+            duration: Theme.motionMedium1
+            curve: Theme.curveEmphasized
+        }
+    }
+
+    Behavior on y {
+        MotionNumber {
+            duration: Theme.motionMedium1
+            curve: Theme.curveEmphasized
+        }
+    }
+
+    Behavior on opacity {
+        MotionNumber {
+            duration: Theme.motionShort4
+            curve: Theme.curveStandard
+        }
+    }
 
     MouseArea {
         id: hover
         anchors.fill: parent
+        enabled: !root.editable
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.expandRequested()
@@ -35,6 +78,7 @@ Rectangle {
         anchors.left: parent.left
         anchors.leftMargin: 10
         anchors.verticalCenter: parent.verticalCenter
+        interactive: !root.editable
         icon: root.icon
         active: root.active
         onToggled: root.toggled()
@@ -76,5 +120,58 @@ Rectangle {
         color: Theme.quickTextDim
         font.family: Theme.fontFamily
         font.pixelSize: 11
+    }
+
+    // Перетаскивание в редакторе: меняем порядок, когда курсор уходит
+    // в другую ячейку сетки.
+    MouseArea {
+        id: dragArea
+        anchors.fill: parent
+        enabled: root.editable
+        preventStealing: true
+        cursorShape: Qt.DragMoveCursor
+
+        onPositionChanged: {
+            if (!pressed || root.order < 0)
+                return;
+            const baseX = (root.order % root.columns) * root.stepX;
+            const baseY = Math.floor(root.order / root.columns) * root.stepY;
+            const col = Math.max(0, Math.min(root.columns - 1, Math.floor((baseX + mouse.x) / root.stepX)));
+            const row = Math.max(0, Math.floor((baseY + mouse.y) / root.stepY));
+            const target = row * root.columns + col;
+            if (target !== root.order)
+                root.reorderRequested(root.order, target);
+        }
+    }
+
+    // «Минус» в правом верхнем углу — убрать плитку в доступные.
+    Rectangle {
+        id: removeButton
+        visible: root.editable
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: 2
+        width: 22
+        height: 22
+        radius: width / 2
+        color: removeHover.hovered ? Theme.lowColor : Theme.withAlpha(Theme.quickText, 0.18)
+        z: 3
+        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+
+        Text {
+            anchors.centerIn: parent
+            text: "\uf068"
+            color: "#ffffff"
+            font.family: Theme.iconFontFamily
+            font.pixelSize: 10
+        }
+
+        MouseArea {
+            id: removeHover
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.removeRequested()
+        }
     }
 }

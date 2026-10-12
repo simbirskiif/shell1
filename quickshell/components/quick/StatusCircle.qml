@@ -10,6 +10,9 @@ Item {
     required property string icon
     required property bool active
 
+    // В режиме редактирования кружок не переключает состояние.
+    property bool interactive: true
+
     signal toggled()
 
     implicitWidth: Theme.quickCircleSize
@@ -34,6 +37,7 @@ Item {
 
     MouseArea {
         anchors.fill: parent
+        enabled: root.interactive
         cursorShape: Qt.PointingHandCursor
         onClicked: {
             root.toggled();

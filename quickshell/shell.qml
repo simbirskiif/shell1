@@ -107,6 +107,39 @@ ShellRoot {
             return state();
         }
 
+        // Режим редактирования плиток: вход, сохранить, отменить.
+        function edit(): string {
+            UiState.open(UiState.defaultScreen(), "");
+            UiState.beginEdit();
+            return state();
+        }
+
+        function saveEdit(): string {
+            UiState.saveEdit();
+            return state();
+        }
+
+        function cancelEdit(): string {
+            UiState.cancelEdit();
+            return state();
+        }
+
+        // Операции редактора (проверка без мыши): скрыть/вернуть/переставить.
+        function hideTile(index: int): string {
+            UiState.hideTile(UiState.draftVisible[index]);
+            return state();
+        }
+
+        function showTile(index: int): string {
+            UiState.showTile(UiState.draftAvailable[index]);
+            return state();
+        }
+
+        function moveTile(from: int, to: int): string {
+            UiState.moveTile(from, to);
+            return state();
+        }
+
         function settings(): string {
             UiState.open(UiState.defaultScreen(), "settings");
             return state();
@@ -156,6 +189,7 @@ ShellRoot {
 
         function state(): string {
             const order = [];
+            const tiles = (UiState.editing ? UiState.draftVisible : MockState.visibleTiles).join(",");
             for (let i = 0; i < MockState.barItems.count; ++i)
                 order.push(MockState.barItems.get(i).itemKey);
             return "opened=" + (UiState.openedScreen === "" ? "no" : UiState.openedScreen)
@@ -163,6 +197,7 @@ ShellRoot {
                 + " palette=" + (Wal.walLoaded ? "wal" : "fallback")
                 + " bg=" + Wal.background + " accent=" + Wal.accent
                 + " brightness=" + Math.round(MockState.brightness * 100) + "%"
+                + " tiles=" + tiles + (UiState.editing ? " [edit]" : "")
                 + " order=" + order.join(",")
                 + " barPercent=" + (MockState.showBatteryPercent ? "on" : "off")
                 + " battery=" + MockState.batteryLevel + "%" + (MockState.batteryCharging ? "+" : "")
@@ -174,3 +209,6 @@ ShellRoot {
         }
     }
 }
+
+
+// fin

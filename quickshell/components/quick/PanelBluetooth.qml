@@ -70,35 +70,6 @@ Item {
             height: visible ? implicitHeight : 0
             spacing: 0
 
-            Item {
-                id: scanningRow
-                width: parent.width
-                height: MockState.bluetoothScanning ? 56 : 0
-                visible: height > 0
-                clip: true
-
-                Row {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 16
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 12
-
-                    LoadingIndicator {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 20
-                        height: 20
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Searching for devices…"
-                        color: Theme.quickTextDim
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 12
-                    }
-                }
-            }
-
             PanelSection { text: "My devices" }
 
             PanelList {

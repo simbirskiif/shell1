@@ -10,6 +10,58 @@ Singleton {
     property string openedScreen: ""
     property string panel: ""
 
+    // Режим редактирования плиток основной панели: правки идут в черновик
+    // и применяются только по saveEdit().
+    property bool editing: false
+    property var draftVisible: []
+    property var draftAvailable: []
+
+    function beginEdit() {
+        draftVisible = MockState.visibleTiles.slice();
+        draftAvailable = MockState.availableTiles.slice();
+        editing = true;
+    }
+
+    function saveEdit() {
+        MockState.visibleTiles = draftVisible.slice();
+        MockState.availableTiles = draftAvailable.slice();
+        editing = false;
+    }
+
+    function cancelEdit() {
+        editing = false;
+    }
+
+    function hideTile(key) {
+        const visible = draftVisible.slice();
+        const index = visible.indexOf(key);
+        if (index < 0)
+            return;
+        visible.splice(index, 1);
+        draftVisible = visible;
+        draftAvailable = draftAvailable.concat([key]);
+    }
+
+    function showTile(key) {
+        const available = draftAvailable.slice();
+        const index = available.indexOf(key);
+        if (index < 0)
+            return;
+        available.splice(index, 1);
+        draftAvailable = available;
+        draftVisible = draftVisible.concat([key]);
+    }
+
+    function moveTile(from, to) {
+        const visible = draftVisible.slice();
+        if (from < 0 || from >= visible.length || from === to)
+            return;
+        const target = Math.max(0, Math.min(visible.length - 1, to));
+        const item = visible.splice(from, 1)[0];
+        visible.splice(target, 0, item);
+        draftVisible = visible;
+    }
+
     readonly property bool opened: openedScreen !== ""
 
     function open(screenName, panelName) {
@@ -20,6 +72,8 @@ Singleton {
     function close() {
         openedScreen = "";
         panel = "";
+        // Правки плиток не сохраняются при закрытии панели.
+        editing = false;
     }
 
     function toggle(screenName) {

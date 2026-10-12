@@ -55,8 +55,12 @@ PopupWindow {
 
     color: "transparent"
 
+    // Панель не должна вылезать за экран: высоту ограничиваем,
+    // а содержимое уходит в прокрутку.
+    readonly property real maxHeight: anchorWindow.screen ? anchorWindow.screen.height - anchorWindow.height - 16 : 10000
+
     implicitWidth: panelItem.implicitWidth + Theme.quickPadding * 2
-    implicitHeight: panelItem.implicitHeight + Theme.quickPadding * 2
+    implicitHeight: Math.min(panelItem.implicitHeight + Theme.quickPadding * 2, root.maxHeight)
     // m3 container transform: контейнер меняет размер на emphasized.
     Behavior on implicitWidth {
         MotionNumber {
@@ -98,12 +102,20 @@ PopupWindow {
             }
         }
 
-        QuickPanel {
-            id: panelItem
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
+        Flickable {
+            id: scroller
+            anchors.fill: parent
             anchors.margins: Theme.quickPadding
+            contentWidth: width
+            contentHeight: panelItem.implicitHeight
+            clip: true
+            interactive: contentHeight > height
+            boundsBehavior: Flickable.StopAtBounds
+
+            QuickPanel {
+                id: panelItem
+                width: scroller.width
+            }
         }
     }
 }
