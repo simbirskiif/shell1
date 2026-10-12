@@ -82,6 +82,34 @@ ShellRoot {
             return state();
         }
 
+        // Сценарии подключения (для проверки без мыши).
+        function wifiConnect(index: int): string {
+            const network = MockState.wifiNetworks.get(index);
+            if (network)
+                MockState.requestWifi(network.name);
+            return state();
+        }
+
+        function password(value: string): string {
+            MockState.pendingPassword = value;
+            return state();
+        }
+
+        function submitPassword(): string {
+            MockState.submitPassword();
+            return state();
+        }
+
+        function cancelPassword(): string {
+            MockState.cancelPassword();
+            return state();
+        }
+
+        function discoverable(): string {
+            MockState.toggleDiscoverable();
+            return state();
+        }
+
         // Заново запустить поиск сетей и устройств.
         function rescan(): string {
             MockState.scanWifi();
@@ -205,8 +233,14 @@ ShellRoot {
                 + " mode=" + MockState.powerMode
                 + " ethernet=" + (MockState.ethernetConnected ? (MockState.ethernetActive ? "active" : "idle") : "off")
                 + " scanning=" + (MockState.wifiScanning || MockState.bluetoothScanning)
+                + " pending=" + (MockState.pendingNetwork === "" ? "no" : MockState.pendingNetwork)
+                + " connecting=" + (MockState.connectingWifi || MockState.connectingDevice || "no")
+                + " discoverable=" + (MockState.bluetoothDiscoverable ? "on" : "off")
                 + " wifi=" + MockState.wifiNetworks.count
                 + " devices=" + MockState.bluetoothDevices.count;
         }
     }
 }
+
+
+

@@ -104,31 +104,34 @@ Singleton {
     }
 
     // Иконки — глифы JetBrainsMono Nerd Font.
+    // security: "open" | "psk" (нужен пароль) | "enterprise" (нужны
+    // сертификаты и прочие доп. действия — такие сети помечаем «!»).
     readonly property ListModel wifiNetworks: ListModel {
-        ListElement { name: "Home_5G"; strength: 4; secured: true; connected: true }
-        ListElement { name: "Home_2.4G"; strength: 3; secured: true; connected: false }
-        ListElement { name: "Neighbour_5G"; strength: 2; secured: true; connected: false }
-        ListElement { name: "Cafe_Guest"; strength: 1; secured: false; connected: false }
+        ListElement { name: "Home_5G"; strength: 4; security: "psk"; saved: true; connected: true; connecting: false }
+        ListElement { name: "Home_2.4G"; strength: 3; security: "psk"; saved: true; connected: false; connecting: false }
+        ListElement { name: "Neighbour_5G"; strength: 2; security: "psk"; saved: false; connected: false; connecting: false }
+        ListElement { name: "Cafe_Guest"; strength: 1; security: "open"; saved: false; connected: false; connecting: false }
+        ListElement { name: "Corp_8021x"; strength: 3; security: "enterprise"; saved: false; connected: false; connecting: false }
     }
 
     // Сохранённые сети: заготовка под «известные» сети вне зоны видимости.
     // strength 0 = уровень неизвестен.
     readonly property ListModel savedWifiNetworks: ListModel {
-        ListElement { name: "Office_WiFi"; strength: 0; secured: true; connected: false }
-        ListElement { name: "Phone_Hotspot"; strength: 0; secured: true; connected: false }
+        ListElement { name: "Office_WiFi"; strength: 0; security: "psk"; saved: true; connected: false; connecting: false }
+        ListElement { name: "Phone_Hotspot"; strength: 0; security: "psk"; saved: true; connected: false; connecting: false }
     }
 
     readonly property ListModel bluetoothDevices: ListModel {
-        ListElement { name: "Pixel 8"; icon: "\uf10b"; connected: false }
-        ListElement { name: "Xbox Controller"; icon: "\uf11b"; connected: true }
-        ListElement { name: "Keychron K3"; icon: "\uf11c"; connected: false }
-        ListElement { name: "MX Master 3"; icon: "\uf245"; connected: false }
+        ListElement { name: "Pixel 8"; icon: "\uf10b"; connected: false; connecting: false }
+        ListElement { name: "Xbox Controller"; icon: "\uf11b"; connected: true; connecting: false }
+        ListElement { name: "Keychron K3"; icon: "\uf11c"; connected: false; connecting: false }
+        ListElement { name: "MX Master 3"; icon: "\uf245"; connected: false; connecting: false }
     }
 
     // Сохранённые (спаренные) устройства — заготовка под «мои устройства».
     readonly property ListModel savedBluetoothDevices: ListModel {
-        ListElement { name: "AirPods Pro"; icon: "\uf025"; connected: true }
-        ListElement { name: "Sony WH-1000XM4"; icon: "\uf025"; connected: false }
+        ListElement { name: "AirPods Pro"; icon: "\uf025"; connected: true; connecting: false }
+        ListElement { name: "Sony WH-1000XM4"; icon: "\uf025"; connected: false; connecting: false }
     }
 
     readonly property string soundSummary: soundEnabled ? Math.round(volume * 100) + "%" : "Muted"
@@ -148,42 +151,131 @@ Singleton {
     }
 
     // Ищем по имени: index в делегатах-компонентах не приходит из модели.
-    function toggleDevice(name) {
-        for (let i = 0; i < bluetoothDevices.count; ++i) {
-            if (bluetoothDevices.get(i).name === name) {
-                bluetoothDevices.setProperty(i, "connected", !bluetoothDevices.get(i).connected);
-                break;
+
+    // --- подключение Wi-Fi -------------------------------------------------
+    // Сеть, для которой спрашиваем пароль, и набранный пароль.
+    property string pendingNetwork: ""
+    property string pendingPassword: ""
+    property string connectingWifi: ""
+
+    function wifiListOf(name) {
+        for (let i = 0; i < savedWifiNetworks.count; ++i) {
+            if (savedWifiNetworks.get(i).name === name)
+                return savedWifiNetworks;
+        }
+        return wifiNetworks;
+    }
+
+    function wifiIndexOf(name) {
+        const list = root.wifiListOf(name);
+        for (let i = 0; i < list.count; ++i) {
+            if (list.get(i).name === name)
+                return i;
+        }
+        return -1;
+    }
+
+    // Решение по нажатию на сеть: пароль -> форма, доп. действия -> ничего,
+    // иначе сразу показываем индикатор подключения.
+    function requestWifi(name) {
+        const index = root.wifiIndexOf(name);
+        if (index < 0)
+            return;
+        const network = root.wifiListOf(name).get(index);
+        if (network.security === "enterprise")
+            return;
+        if (network.security === "psk" && !network.saved) {
+            root.pendingNetwork = name;
+            root.pendingPassword = "";
+            return;
+        }
+        root.startWifiConnect(name);
+    }
+
+    function submitPassword() {
+        if (root.pendingNetwork === "")
+            return;
+        root.startWifiConnect(root.pendingNetwork);
+    }
+
+    function cancelPassword() {
+        root.pendingNetwork = "";
+        root.pendingPassword = "";
+    }
+
+    function startWifiConnect(name) {
+        root.pendingNetwork = "";
+        for (let i = 0; i < wifiNetworks.count; ++i)
+            wifiNetworks.setProperty(i, "connecting", wifiNetworks.get(i).name === name);
+        for (let i = 0; i < savedWifiNetworks.count; ++i)
+            savedWifiNetworks.setProperty(i, "connecting", savedWifiNetworks.get(i).name === name);
+        root.connectingWifi = name;
+        wifiConnectTimer.restart();
+    }
+
+    Timer {
+        id: wifiConnectTimer
+        interval: 1600
+        onTriggered: {
+            for (let i = 0; i < wifiNetworks.count; ++i)
+                wifiNetworks.setProperty(i, "connected", wifiNetworks.get(i).name === root.connectingWifi);
+            for (let i = 0; i < savedWifiNetworks.count; ++i)
+                savedWifiNetworks.setProperty(i, "connected", savedWifiNetworks.get(i).name === root.connectingWifi);
+            for (let i = 0; i < wifiNetworks.count; ++i)
+                wifiNetworks.setProperty(i, "connecting", false);
+            for (let i = 0; i < savedWifiNetworks.count; ++i)
+                savedWifiNetworks.setProperty(i, "connecting", false);
+            root.connectingWifi = "";
+            root.wifiEnabled = true;
+            refresh();
+        }
+    }
+
+    // --- Bluetooth ---------------------------------------------------------
+    property string connectingDevice: ""
+    property bool bluetoothDiscoverable: false
+
+    function toggleDiscoverable() {
+        bluetoothDiscoverable = !bluetoothDiscoverable;
+    }
+
+    function requestDevice(name) {
+        const lists = [savedBluetoothDevices, bluetoothDevices];
+        for (let l = 0; l < lists.length; ++l) {
+            const list = lists[l];
+            for (let i = 0; i < list.count; ++i) {
+                if (list.get(i).name !== name)
+                    continue;
+                if (list.get(i).connected) {
+                    list.setProperty(i, "connected", false);
+                    refresh();
+                    return;
+                }
+                root.connectingDevice = name;
+                list.setProperty(i, "connecting", true);
+                bluetoothConnectTimer.restart();
+                return;
             }
         }
-        refresh();
     }
 
-    function toggleSavedDevice(name) {
-        for (let i = 0; i < savedBluetoothDevices.count; ++i) {
-            if (savedBluetoothDevices.get(i).name === name) {
-                savedBluetoothDevices.setProperty(i, "connected", !savedBluetoothDevices.get(i).connected);
-                break;
+    Timer {
+        id: bluetoothConnectTimer
+        interval: 1400
+        onTriggered: {
+            const lists = [savedBluetoothDevices, bluetoothDevices];
+            for (let l = 0; l < lists.length; ++l) {
+                const list = lists[l];
+                for (let i = 0; i < list.count; ++i) {
+                    if (list.get(i).name !== root.connectingDevice)
+                        continue;
+                    list.setProperty(i, "connected", true);
+                    list.setProperty(i, "connecting", false);
+                }
             }
+            root.connectingDevice = "";
+            refresh();
         }
-        refresh();
-    }
-
-    function selectWifi(name) {
-        for (let i = 0; i < wifiNetworks.count; ++i)
-            wifiNetworks.setProperty(i, "connected", wifiNetworks.get(i).name === name);
-        for (let i = 0; i < savedWifiNetworks.count; ++i)
-            savedWifiNetworks.setProperty(i, "connected", false);
-        wifiEnabled = true;
-        refresh();
-    }
-
-    function selectSavedWifi(name) {
-        for (let i = 0; i < savedWifiNetworks.count; ++i)
-            savedWifiNetworks.setProperty(i, "connected", savedWifiNetworks.get(i).name === name);
-        for (let i = 0; i < wifiNetworks.count; ++i)
-            wifiNetworks.setProperty(i, "connected", false);
-        wifiEnabled = true;
-        refresh();
     }
 
     // Поиск сетей/устройств: имитация асинхронного сканирования.

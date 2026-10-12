@@ -58,6 +58,11 @@ PanelWindow {
         anchorWindow: root
     }
 
+    // Запрос пароля — отдельным модальным окном (у попапа нет клавиатуры).
+    PasswordDialog {
+        dialogScreen: root.screen
+    }
+
     Component {
         id: batteryItem
 

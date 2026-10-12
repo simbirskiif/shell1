@@ -11,12 +11,16 @@ Item {
     required property bool checked
     property bool refreshable: false
     property bool refreshing: false
+    // Дополнительное действие (например, режим обнаружения).
+    property string actionIcon: ""
+    property bool actionChecked: false
     // У некоторых панелей (например «Питание») тумблера нет.
     property bool switchable: true
 
     signal backRequested()
     signal toggled()
     signal refreshRequested()
+    signal actionRequested()
 
     implicitWidth: parent ? parent.width : 0
     implicitHeight: Theme.quickHeaderHeight
@@ -61,59 +65,93 @@ Item {
         font.weight: Font.DemiBold
     }
 
-    ToggleSwitch {
-        id: toggle
-        visible: root.switchable
+    // Правая группа: действие, обновление, переключатель.
+    Row {
         anchors.right: parent.right
-        anchors.rightMargin: 12
+        anchors.rightMargin: 8
         anchors.verticalCenter: parent.verticalCenter
-        checked: root.checked
-        onToggled: root.toggled()
-    }
+        spacing: 4
 
-    // Обновление списка: пока идёт поиск, значок вращается.
-    Item {
-        id: refreshButton
-        anchors.right: root.switchable ? toggle.left : parent.right
-        anchors.rightMargin: 4
-        anchors.verticalCenter: parent.verticalCenter
-        width: 30
-        height: 30
-        visible: root.refreshable
+        Item {
+            id: actionButton
+            width: root.actionIcon !== "" ? 30 : 0
+            height: 30
+            visible: width > 0
 
-        Rectangle {
-            anchors.fill: parent
-            radius: width / 2
-            color: refreshHover.hovered && !root.refreshing ? Theme.quickTileHover : "transparent"
-            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+            Rectangle {
+                anchors.fill: parent
+                radius: width / 2
+                color: root.actionChecked ? Theme.quickTileActive
+                                          : (actionHover.hovered ? Theme.quickTileHover : "transparent")
+                Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                text: root.actionIcon
+                color: root.actionChecked ? Theme.accent : Theme.quickText
+                font.family: Theme.iconFontFamily
+                font.pixelSize: 13
+                Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+            }
+
+            MouseArea {
+                id: actionHover
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.actionRequested()
+            }
         }
 
-        // Пока идёт поиск — вместо значка обновления крутится индикатор.
-        Text {
-            id: refreshIcon
-            anchors.centerIn: parent
-            visible: !root.refreshing
-            text: "\uf021"
-            color: Theme.quickText
-            font.family: Theme.iconFontFamily
-            font.pixelSize: 13
+        Item {
+            id: refreshButton
+            width: root.refreshable ? 30 : 0
+            height: 30
+            visible: width > 0
+
+            Rectangle {
+                anchors.fill: parent
+                radius: width / 2
+                color: refreshHover.hovered && !root.refreshing ? Theme.quickTileHover : "transparent"
+                Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+            }
+
+            // Пока идёт поиск — вместо значка обновления крутится индикатор.
+            Text {
+                id: refreshIcon
+                anchors.centerIn: parent
+                visible: !root.refreshing
+                text: "\uf021"
+                color: Theme.quickText
+                font.family: Theme.iconFontFamily
+                font.pixelSize: 13
+            }
+
+            LoadingIndicator {
+                anchors.centerIn: parent
+                width: 18
+                height: 18
+                visible: root.refreshing
+            }
+
+            MouseArea {
+                id: refreshHover
+                anchors.fill: parent
+                hoverEnabled: true
+                enabled: !root.refreshing
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.refreshRequested()
+            }
         }
 
-        LoadingIndicator {
-            anchors.centerIn: parent
-            width: 18
-            height: 18
-            visible: root.refreshing
+        ToggleSwitch {
+            id: toggle
+            width: root.switchable ? 42 : 0
+            visible: width > 0
+            anchors.verticalCenter: parent.verticalCenter
+            checked: root.checked
+            onToggled: root.toggled()
         }
-
-        MouseArea {
-            id: refreshHover
-            anchors.fill: parent
-            hoverEnabled: true
-            enabled: !root.refreshing
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.refreshRequested()
-        }
-
     }
 }

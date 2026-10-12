@@ -34,12 +34,15 @@ Item {
             checked: MockState.bluetoothEnabled
             refreshable: true
             refreshing: MockState.bluetoothScanning
+            actionIcon: "\uf002"
+            actionChecked: MockState.bluetoothDiscoverable
             onBackRequested: root.backRequested()
             onToggled: {
                 MockState.toggleBluetooth();
                 MockState.scanBluetooth();
             }
             onRefreshRequested: MockState.scanBluetooth()
+            onActionRequested: MockState.toggleDiscoverable()
         }
 
         Rectangle {
@@ -70,6 +73,36 @@ Item {
             height: visible ? implicitHeight : 0
             spacing: 0
 
+            // Режим обнаружения: пока включён, устройство видно другим.
+            Item {
+                width: parent.width
+                height: MockState.bluetoothDiscoverable ? 44 : 0
+                visible: height > 0
+                clip: true
+
+                // Постоянное состояние — иконка, а не крутящийся индикатор.
+                Text {
+                    id: discoverIcon
+                    anchors.left: parent.left
+                    anchors.leftMargin: 16
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "\uf06e"
+                    color: Theme.accent
+                    font.family: Theme.iconFontFamily
+                    font.pixelSize: 14
+                }
+
+                Text {
+                    anchors.left: discoverIcon.right
+                    anchors.leftMargin: 12
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Discoverable — visible to nearby devices"
+                    color: Theme.quickTextDim
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 12
+                }
+            }
+
             PanelSection { text: "My devices" }
 
             PanelList {
@@ -77,7 +110,7 @@ Item {
                 model: MockState.savedBluetoothDevices
 
                 delegate: BluetoothRow {
-                    onActivated: MockState.toggleSavedDevice(name)
+                    onActivated: MockState.requestDevice(name)
                 }
             }
 
@@ -88,7 +121,7 @@ Item {
                 model: MockState.bluetoothDevices
 
                 delegate: BluetoothRow {
-                    onActivated: MockState.toggleDevice(name)
+                    onActivated: MockState.requestDevice(name)
                 }
             }
         }

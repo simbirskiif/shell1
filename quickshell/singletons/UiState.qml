@@ -16,6 +16,9 @@ Singleton {
 
     // Текущая высота попапа — для отладки анимаций размера.
     property real popupHeight: 0
+
+    // Экран, на котором открыт запрос пароля.
+    property string dialogScreen: ""
     property var draftVisible: []
     property var draftAvailable: []
 
