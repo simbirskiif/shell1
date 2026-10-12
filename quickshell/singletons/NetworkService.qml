@@ -1019,6 +1019,7 @@ Singleton {
         if (!target) {
             cancelActiveConnect();
             pskTimeout.stop();
+            pskRetry.stop();
             pendingPasswordCache = "";
             pendingNetwork = "";
             pendingPassword = "";
@@ -1142,13 +1143,11 @@ Singleton {
                 pendingPasswordCache = "";
                 return;
             }
-            if (!connectPsk(network)) {
-                pendingPasswordCache = "";
-                // Сеть пропала из эфира (или её ещё нет в нативном списке):
-                // профиль создавать нечем, показываем ошибку тостом.
-                connectErrorText = "Wi-Fi network is not available";
-                finishFailed(network, "notfound");
-            }
+            // Нативный модуль держит собственный список сетей и сканирует
+            // сам: сразу после открытия панели сети в нём может ещё не быть
+            // (NM к тому же троттлит сканы). Поэтому несколько секунд
+            // повторяем попытку, а не отвечаем «сеть недоступна».
+            tryConnectPsk(network, 0);
         };
 
         if (network.saved && network.uuid !== "") {
@@ -1201,22 +1200,61 @@ Singleton {
                 || security === WifiSecurityType.Sae;
     }
 
-    function connectPsk(network) {
+    // Сколько раз повторяем ожидание сети в нативном списке и с какой паузой.
+    readonly property int pskRetries: 10
+    readonly property int pskRetryInterval: 400
+
+    function tryConnectPsk(network, attempt) {
+        if (connectCancelled)
+            return;
+        pskRetryAttempt = attempt;
         const target = pskNetwork(network.name);
-        if (target === null || !isPskSecurity(target.security)) {
-            log("psk target is not available: " + network.name);
-            return false;
+        if (target === null) {
+            if (attempt >= pskRetries) {
+                log("psk target did not appear in the native list: " + network.name);
+                connectErrorText = "Wi-Fi network is not available";
+                finishFailed(network, "notfound");
+                return;
+            }
+            if (!nativeScannerEnabled)
+                syncNativeScanner();
+            pskRetry.restart();
+            return;
+        }
+        if (!isPskSecurity(target.security)) {
+            log("psk is not applicable, security=" + WifiSecurityType.toString(target.security)
+                + " for " + network.name);
+            connectErrorText = "This network needs a different authentication method";
+            finishFailed(network, "other");
+            return;
         }
         pskTarget = target;
         target.connectWithPsk(pendingPasswordCache);
         pskTimeout.restart();
-        return true;
     }
+
+    Timer {
+        id: pskRetry
+        interval: root.pskRetryInterval
+        onTriggered: {
+            const network = findNetwork(connectingName);
+            if (network === null)
+                return;
+            tryConnectPsk(network, pskRetryAttempt + 1);
+        }
+    }
+
+    property int pskRetryAttempt: 0
 
     // Нативный модуль видит только те сети, которые нашёл его собственный
     // сканер, а состояние берём то, где есть причина сбоя. Держим оба
     // источника согласованными: нативный сканер включаем, пока открыта
     // панель и включено radio.
+    readonly property bool nativeScannerEnabled: {
+        const device = wifiDevice();
+        return device !== null && device.scannerEnabled;
+    }
+
     function syncNativeScanner() {
         const device = wifiDevice();
         if (device !== null)
@@ -1321,6 +1359,7 @@ Singleton {
         // и смена состояния): второй раз ничего не делаем.
         if (connectingName === "")
             return;
+        pskRetry.stop();
         const name = network !== null ? network.name : connectingName;
         const security = network !== null ? network.security : "psk";
         connectingName = "";
@@ -1344,6 +1383,7 @@ Singleton {
         connectCancelled = true;
         cancelActiveConnect();
         pskTimeout.stop();
+        pskRetry.stop();
         // Уже начавшуюся активацию в NM тоже надо прервать: у нативной
         // попытки нет процесса, который можно убить.
         if (pendingUuid !== "")
