@@ -256,8 +256,9 @@ Item {
                     anchors.right: parent.right
                     anchors.rightMargin: 4
                     anchors.verticalCenter: parent.verticalCenter
-                    level: MockState.batteryLevel
-                    charging: MockState.batteryCharging
+                    visible: PowerService.present
+                    level: PowerService.level
+                    charging: PowerService.charging
                     onClicked: batteryEntry.open()
                 }
             }
@@ -624,8 +625,8 @@ Item {
         readonly property string key: "battery"
         readonly property string title: "Battery"
         readonly property string icon: "\uf240"
-        readonly property bool active: MockState.batteryCharging
-        readonly property string subtitle: MockState.batteryLevel + "%"
+        readonly property bool active: PowerService.charging
+        readonly property string subtitle: PowerService.level + "%"
         readonly property Component view: Component { PanelBattery {} }
 
         function open() {
@@ -633,7 +634,7 @@ Item {
         }
 
         function toggle() {
-            MockState.toggleCharging();
+            // Батарея не переключается: состояние приходит от UPower.
         }
     }
 }

@@ -4,8 +4,9 @@ import QtQuick
 import Quickshell
 
 // Тестовые данные для панелей, у которых бэкенда ещё нет: Bluetooth,
-// звук, яркость, батарея. Сеть (Wi-Fi и Ethernet) переехала в
-// NetworkService — реальный backend поверх NetworkManager.
+// звук, яркость. Сеть (Wi-Fi и Ethernet) переехала в NetworkService —
+// реальный backend поверх NetworkManager, батарея и режимы питания — в
+// PowerService (UPower и power-profiles-daemon).
 Singleton {
     id: root
 
@@ -49,30 +50,8 @@ Singleton {
         }
     }
 
-    // Батарея и питание.
-    property int batteryLevel: 82
-    property bool batteryCharging: false
-    property int batteryMinutes: 252
-    property string powerMode: "Balanced"
-
-    readonly property var powerModes: ["Saver", "Balanced", "Performance"]
-
-    readonly property string batteryState: batteryCharging ? "Charging" : "Discharging"
-
-    readonly property string batteryTime: {
-        const hours = Math.floor(batteryMinutes / 60);
-        const minutes = batteryMinutes % 60;
-        const suffix = batteryCharging ? "until full" : "remaining";
-        if (hours > 0)
-            return hours + " h " + minutes + " min " + suffix;
-        return minutes + " min " + suffix;
-    }
-
-    // Демо: переключить «зарядку», чтобы посмотреть второе состояние.
-    function toggleCharging() {
-        batteryCharging = !batteryCharging;
-        batteryMinutes = batteryCharging ? 74 : 252;
-    }
+    // Батарея и режимы питания переехали в PowerService (UPower и
+    // power-profiles-daemon): заглушек здесь больше нет.
 
     // --- Bluetooth ---------------------------------------------------------
     readonly property ListModel bluetoothDevices: ListModel {

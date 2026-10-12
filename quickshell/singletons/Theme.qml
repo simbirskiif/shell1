@@ -66,6 +66,9 @@ Singleton {
     readonly property color lowColor: "#e5484d"
     readonly property color mediumColor: "#f5c518"
 
+    // Плашки-предупреждения внутри панелей (нет backend, недоступна функция).
+    readonly property color warningColor: "#f2b23c"
+
     // --- Material 3 motion -------------------------------------------------
     // Длительности из m3 (short/medium) и кривые emphasized/standard.
     readonly property int motionShort3: 150

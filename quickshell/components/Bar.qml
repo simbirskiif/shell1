@@ -46,6 +46,9 @@ PanelWindow {
             delegate: Loader {
                 required property string itemKey
 
+                // Батареи нет (десктоп) — индикатор не показываем совсем:
+                // Positioner пропускает невидимый элемент вместе с отступом.
+                visible: itemKey !== "battery" || PowerService.present
                 anchors.verticalCenter: parent.verticalCenter
                 sourceComponent: itemKey === "battery" ? batteryItem
                                : itemKey === "status" ? statusItem
@@ -89,8 +92,8 @@ PanelWindow {
 
         BatteryButton {
             showPercent: MockState.showBatteryPercent
-            level: MockState.batteryLevel
-            charging: MockState.batteryCharging
+            level: PowerService.level
+            charging: PowerService.charging
             onClicked: UiState.open(root.screen ? root.screen.name : "", "battery")
         }
     }

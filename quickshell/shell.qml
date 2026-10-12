@@ -54,10 +54,36 @@ ShellRoot {
             return state();
         }
 
-        // Состояние питания (тестовое): зарядка вкл/выкл.
-        function toggleCharging(): string {
-            MockState.toggleCharging();
-            return state();
+        // Режим питания: переключить по имени (проверка без мыши).
+        // Значения: saver | balanced | performance.
+        function profile(name: string): string {
+            PowerService.setProfileByName(name);
+            return power();
+        }
+
+        // Полное состояние питания: батарея, режим, доступность демона.
+        function power(): string {
+            return "profiles=" + (PowerService.profilesAvailable ? "ok" : "down")
+                + " profile=" + PowerService.profileName
+                + " perf=" + (PowerService.hasPerformanceProfile ? "yes" : "no")
+                + " degraded=" + (PowerService.degradationText || "-")
+                + " hold=" + (PowerService.holdsText || "-")
+                + " present=" + (PowerService.present ? "yes" : "no")
+                + " battery=" + PowerService.level + "%"
+                + " state=" + PowerService.stateText
+                + " time=" + (PowerService.timeText || "-")
+                + " energy=" + PowerService.energy.toFixed(1) + "/"
+                              + PowerService.energyCapacity.toFixed(1) + "Wh"
+                + " rate=" + PowerService.powerDraw.toFixed(1) + "W"
+                + " health=" + (PowerService.health >= 0 ? PowerService.health + "%" : "-")
+                + " model=" + (PowerService.model || "-")
+                + " ac=" + (PowerService.onAc ? "yes" : "no");
+        }
+
+        // Заново проверить доступность power-profiles-daemon.
+        function probePower(): string {
+            PowerService.probeProfiles();
+            return power();
         }
 
         // Переключатели радио — удобно для проверки состояний.
@@ -336,8 +362,9 @@ ShellRoot {
                 + " netTile=" + (NetworkService.internetViaEthernet ? "Internet" : "Wi-Fi")
                 + " order=" + order.join(",")
                 + " barPercent=" + (MockState.showBatteryPercent ? "on" : "off")
-                + " battery=" + MockState.batteryLevel + "%" + (MockState.batteryCharging ? "+" : "")
-                + " mode=" + MockState.powerMode
+                + " battery=" + PowerService.level + "%" + (PowerService.charging ? "+" : "")
+                + " mode=" + PowerService.profileName
+                + " profiles=" + (PowerService.profilesAvailable ? "ok" : "down")
                 + " eth=" + (NetworkService.ethernetConnected
                              ? (NetworkService.internetViaEthernet ? "active" : "idle") : "off")
                 + " ethName=" + (NetworkService.ethernetName || "-")
