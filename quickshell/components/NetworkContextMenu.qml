@@ -1,68 +1,99 @@
 import QtQuick
 import Quickshell
+import Quickshell.Wayland
 import "quick"
 import "../singletons"
 
 // Контекстное меню сохранённой Wi-Fi сети (правый клик по строке в списке):
-// сменить пароль и забыть сеть. Удаление спрашивает подтверждение прямо
+// «сменить пароль» и «забыть сеть». Удаление спрашивает подтверждение прямо
 // здесь: у сохранённой сети уходят и пароль, и настройки профиля — например,
 // статический IP.
-PopupWindow {
+//
+// Это не попап: попап привязывается к окну панели, а окно бара — тонкая
+// полоска сверху, и позиционирование от него ненадёжно. Вместо этого —
+// прозрачная поверхность на весь экран: координаты клика глобальные,
+// карточка кладётся прямо по ним, клик мимо закрывает меню.
+PanelWindow {
     id: root
+
+    // Экран берём у окна панели, из которого открыли меню: если окна нет
+    // (диагностический вызов), падаем на первый экран.
+    readonly property ShellScreen menuScreen: {
+        const window = UiState.menuWindow;
+        if (window !== null && window.screen !== undefined && window.screen !== null)
+            return window.screen;
+        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
+    }
 
     readonly property var network: NetworkService.findNetwork(UiState.menuNetwork)
     readonly property bool confirming: NetworkService.forgetPending !== ""
-
-    color: "transparent"
-    visible: UiState.menuNetwork !== ""
-    implicitWidth: 236
-    implicitHeight: cardHeight
-    // Меню закрывается по клику мимо, фокус клавиатуры ему не нужен.
-    grabFocus: false
-
-    // Точка клика в глобальных координатах экрана: меню растёт из курсора
-    // вниз-вправо. Привязка к экрану, а не к окну бара: окно бара — тонкая
-    // полоска сверху, и попап от него позиционируется ненадёжно.
-    screen: root.parentScreen
-    anchor.rect.x: UiState.menuX
-    anchor.rect.y: UiState.menuY
-    anchor.edges: Edges.Top | Edges.Left
-    anchor.gravity: Edges.Bottom | Edges.Right
-
-    // Экран, на котором открыто меню: тот же, что у быстрой панели.
-    readonly property ShellScreen parentScreen: {
-        const screen = Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
-        return screen;
-    }
-
+    // Высота карточки: пункты меню или подтверждение удаления.
     readonly property real cardHeight: (confirming ? confirmItem.implicitHeight
                                                    : column.implicitHeight) + 8
-
-    Connections {
-        target: UiState
-
-        // Быстрая панель закрылась — меню тоже не нужно.
-        function onOpenedScreenChanged() {
-            if (UiState.openedScreen === "")
-                UiState.closeNetworkMenu();
-        }
+    // Не выпускаем карточку за нижний край экрана.
+    readonly property real cardY: {
+        const screenHeight = menuScreen ? menuScreen.height : 1800;
+        return Math.max(4, Math.min(UiState.menuY, screenHeight - cardHeight - 8));
     }
+
+    screen: menuScreen
+    visible: UiState.menuNetwork !== "" && root.menuScreen !== null
+    color: "transparent"
+    anchors {
+        top: true
+        left: true
+        right: true
+        bottom: true
+    }
+    exclusiveZone: 0
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.namespace: "quickshell-network-menu"
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
     onVisibleChanged: if (!visible)
         NetworkService.cancelForget()
+
+    // Клик мимо карточки закрывает меню.
+    MouseArea {
+        anchors.fill: parent
+        onClicked: root.close()
+    }
 
     function close() {
         UiState.closeNetworkMenu();
     }
 
+
+    // Мягкая тень: меню висит поверх произвольного окна, и без неё карточка
+    // сливается с тёмным фоном под ней.
+    Rectangle {
+        x: card.x + 2
+        y: card.y + 6
+        width: card.width
+        height: card.height
+        radius: card.radius
+        color: Qt.rgba(0, 0, 0, 0.35)
+    }
+
     Rectangle {
         id: card
-        width: parent.width
-        height: parent.height
+        x: Math.max(4, Math.min(UiState.menuX,
+                                (root.menuScreen ? root.menuScreen.width : 1000) - width - 8))
+        y: root.cardY
+        width: 236
+        height: root.cardHeight
         radius: 14
-        color: Theme.quickBackground
+        // Фон светлее обычной поверхности и полностью непрозрачный: меню
+        // висит поверх произвольного приложения, и на его фоне карточка
+        // должна читаться как отдельная плоскость, а не как «текст без фона».
+        color: "transparent"
         border.width: 1
-        border.color: Theme.quickBorder
+        border.color: Theme.menuBorder
+
+        // Клики по карточке не должны её закрывать.
+        MouseArea {
+            anchors.fill: parent
+        }
 
         Column {
             id: column

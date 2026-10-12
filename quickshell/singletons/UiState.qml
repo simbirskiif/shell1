@@ -22,20 +22,23 @@ Singleton {
     // Экран, на котором открыт запрос пароля.
     property string dialogScreen: ""
 
-    // Контекстное меню сохранённой сети: какая сеть и где его показать.
-    // Координаты — глобальные, в системе экрана.
+    // Контекстное меню сохранённой сети: какая сеть, где показать (координаты
+    // глобальные) и из какого окна панели его открыли (чтобы понять экран).
     property string menuNetwork: ""
+    property var menuWindow: null
     property real menuX: 0
     property real menuY: 0
 
-    function openNetworkMenu(name, x, y) {
+    function openNetworkMenu(name, menuWindow, x, y) {
         menuNetwork = name;
+        menuWindow = menuWindow;
         menuX = x;
         menuY = y;
     }
 
     function closeNetworkMenu() {
         menuNetwork = "";
+        menuWindow = null;
     }
 
     // --- жест «назад» двумя пальцами -----------------------------------

@@ -134,7 +134,7 @@ ShellRoot {
                 UiState.open(UiState.defaultScreen(), "internet");
             UiState.panel = "internet";
             UiState.dialogScreen = UiState.openedScreen;
-            UiState.openNetworkMenu(name, 2100, 200);
+            UiState.openNetworkMenu(name, null, 1400, 300);
             return menuState();
         }
 

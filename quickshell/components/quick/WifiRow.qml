@@ -17,9 +17,9 @@ Rectangle {
 
     signal activated()
     // Правый клик: контекстное меню (сменить пароль / забыть). Только для
-    // сохранённых сетей — у остальных менять нечего. Координаты — в системе
-    // окна панели, в котором лежит строка.
-    signal contextRequested(real x, real y)
+    // сохранённых сетей — у остальных менять нечего. Координаты — глобальные
+    // (в системе экрана): меню рисуется отдельной поверхностью.
+    signal contextRequested(var menuWindow, real x, real y)
 
     readonly property bool needsExtra: root.security === "enterprise"
     readonly property bool needsPassword: root.security === "psk"
@@ -40,8 +40,14 @@ Rectangle {
             if (mouse.button === Qt.RightButton) {
                 if (!root.saved)
                     return;
-                const point = rowHover.mapToGlobal(mouse.x, mouse.y);
-                root.contextRequested(point.x, point.y);
+                const menuWindow = root.Window.window;
+                if (menuWindow === null)
+                    return;
+                // Глобальная позиция строки + смещение клика внутри неё:
+                // так координаты меню не зависят от особенностей mapToGlobal
+                // внутри попапа.
+                const topLeft = root.mapToGlobal(0, 0);
+                root.contextRequested(menuWindow, topLeft.x + mouse.x, topLeft.y + mouse.y);
                 return;
             }
             root.activated();
