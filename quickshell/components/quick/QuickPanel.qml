@@ -302,6 +302,8 @@ Item {
                         subtitle: modelData.subtitle
                         active: modelData.active
                         editable: root.editing
+                        // Плитка «Wi-Fi»: в кружке живые деления сигнала.
+                        wifiStatus: modelData.wifiTile === true
                         onToggled: modelData.toggle()
                         onExpandRequested: modelData.open()
                         onRemoveRequested: root.hideTile(modelData.key)
@@ -540,6 +542,8 @@ Item {
         // так же; с подключённым проводом это уже «Internet».
         readonly property string title: NetworkService.internetViaEthernet ? "Internet" : "Wi-Fi"
         readonly property string icon: "\uf0ac"
+        // С проводом — глобус, без провода — состояние Wi-Fi делениями.
+        readonly property bool wifiTile: !NetworkService.internetViaEthernet
         readonly property bool active: NetworkService.wifiEnabled || NetworkService.internetViaEthernet
         readonly property string subtitle: NetworkService.internetSummary
         readonly property Component view: Component { PanelInternet {} }

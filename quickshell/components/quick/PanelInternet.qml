@@ -24,6 +24,7 @@ Item {
 
         PanelHeader {
             title: "Internet"
+            wifiStatus: true
             checked: NetworkService.wifiEnabled
             refreshable: true
             refreshing: NetworkService.wifiScanning

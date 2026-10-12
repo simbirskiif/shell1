@@ -94,6 +94,25 @@ Singleton {
     // Имя активной Wi-Fi сети (для плитки и заголовка).
     property string connectedSsid: ""
 
+    // Уровень сигнала сети по её SSID в шкале иконки (0–4).
+    function signalLevel(name) {
+        for (let i = 0; i < scanned.length; ++i) {
+            if (scanned[i].name === name)
+                return wifiIconStrength(scanned[i].strengthRaw);
+        }
+        return 0;
+    }
+
+    // Уровень сигнала активной сети: 1–3 для иконки, 0 — нет данных.
+    readonly property int connectedSignal: {
+        if (connectedSsid === "")
+            return 0;
+        return signalLevel(connectedSsid);
+    }
+
+    // Wi-Fi включён и есть активное подключение.
+    readonly property bool wifiConnected: connectedSsid !== ""
+
     readonly property ListModel wifiNetworks: availableModel
     readonly property ListModel savedWifiNetworks: savedModel
 

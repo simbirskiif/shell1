@@ -14,6 +14,8 @@ Rectangle {
     required property string title
     required property string subtitle
     required property bool active
+    // Плитка Wi-Fi: в кружке деления сигнала вместо обычного глифа.
+    property bool wifiStatus: false
 
     property bool editable: false
     // Показывать ли плитку: скрытая гаснет на месте, а не улетает в угол.
@@ -84,6 +86,7 @@ Rectangle {
         interactive: !root.editable
         icon: root.icon
         active: root.active
+        wifiStatus: root.wifiStatus
         onToggled: root.toggled()
     }
 

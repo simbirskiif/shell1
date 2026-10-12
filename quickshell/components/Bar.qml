@@ -104,6 +104,8 @@ PanelWindow {
         ControlButton {
             bluetoothEnabled: MockState.bluetoothEnabled
             wifiEnabled: NetworkService.wifiEnabled
+            wifiConnected: NetworkService.wifiConnected
+            wifiSignal: NetworkService.connectedSignal
             soundEnabled: MockState.soundEnabled
             opened: quickPopup.visible
             onClicked: quickPopup.toggle()

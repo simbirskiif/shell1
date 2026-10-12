@@ -48,14 +48,18 @@ Rectangle {
         }
     }
 
-    PanelIcon {
+    // Сигнал рисуем делениями: подключён — горят по уровню, не подключён —
+    // все серые (у выключенного radio строки просто нет, их скрывает заглушка).
+    WifiStatusIcon {
         id: iconSlot
         anchors.left: parent.left
-        anchors.leftMargin: 12
+        anchors.leftMargin: 21
         anchors.verticalCenter: parent.verticalCenter
-        icon: "\uf1eb"
+        width: 18
+        height: 18
+        wifiEnabled: NetworkService.wifiEnabled
         connected: root.connected
-        strength: root.strength
+        signal: root.strength
     }
 
     Text {

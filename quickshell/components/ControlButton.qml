@@ -1,4 +1,5 @@
 import QtQuick
+import "quick"
 import "../singletons"
 
 // Кнопка справа в баре: статус Bluetooth / Wi-Fi / звука одной кнопкой.
@@ -7,6 +8,9 @@ Rectangle {
 
     required property bool bluetoothEnabled
     required property bool wifiEnabled
+    // Состояние Wi-Fi: подключён ли и насколько силён сигнал (для делений).
+    required property bool wifiConnected
+    required property int wifiSignal
     required property bool soundEnabled
     required property bool opened
 
@@ -34,12 +38,13 @@ Rectangle {
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
 
-        Text {
-            text: "\uf1eb"
-            color: root.wifiEnabled ? Theme.quickText : Theme.quickTextDim
-            font.family: Theme.iconFontFamily
-            font.pixelSize: 14
-            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        WifiStatusIcon {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 18
+            height: 18
+            wifiEnabled: root.wifiEnabled
+            connected: root.wifiConnected
+            signal: root.wifiSignal
         }
 
         Text {

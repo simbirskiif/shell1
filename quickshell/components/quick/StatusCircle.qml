@@ -10,6 +10,9 @@ Item {
     required property string icon
     required property bool active
 
+    // Иконка Wi-Fi с делениями вместо обычного глифа.
+    property bool wifiStatus: false
+
     // В режиме редактирования кружок не переключает состояние.
     property bool interactive: true
 
@@ -27,11 +30,23 @@ Item {
 
         Text {
             anchors.centerIn: parent
+            visible: !root.wifiStatus
             text: root.icon
             color: root.active ? Theme.quickIconOn : Theme.quickTextDim
             font.family: Theme.iconFontFamily
             font.pixelSize: 16
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        }
+
+        WifiStatusIcon {
+            anchors.centerIn: parent
+            visible: root.wifiStatus
+            width: 18
+            height: 18
+            onAccent: root.active
+            wifiEnabled: NetworkService.wifiEnabled
+            connected: NetworkService.wifiConnected
+            signal: NetworkService.connectedSignal
         }
     }
 

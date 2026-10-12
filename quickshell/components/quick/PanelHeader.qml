@@ -16,6 +16,8 @@ Item {
     property bool actionChecked: false
     // У некоторых панелей (например «Питание») тумблера нет.
     property bool switchable: true
+    // Показывать ли состояние Wi-Fi рядом с названием (панель «Интернет»).
+    property bool wifiStatus: false
 
     signal backRequested()
     signal toggled()
@@ -55,6 +57,7 @@ Item {
     }
 
     Text {
+        id: titleText
         anchors.left: backButton.right
         anchors.leftMargin: 10
         anchors.verticalCenter: parent.verticalCenter
@@ -63,6 +66,19 @@ Item {
         font.family: Theme.fontFamily
         font.pixelSize: 14
         font.weight: Font.DemiBold
+    }
+
+    // Состояние Wi-Fi в шапке панели «Интернет».
+    WifiStatusIcon {
+        anchors.left: titleText.right
+        anchors.leftMargin: 8
+        anchors.verticalCenter: parent.verticalCenter
+        width: 18
+        height: 18
+        visible: root.wifiStatus
+        wifiEnabled: NetworkService.wifiEnabled
+        connected: NetworkService.wifiConnected
+        signal: NetworkService.connectedSignal
     }
 
     // Правая группа: действие, обновление, переключатель.
