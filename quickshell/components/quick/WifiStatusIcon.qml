@@ -56,19 +56,29 @@ Item {
             const w = width;
             const h = height;
             const cx = w / 2;
-            // Центр дуг: сдвинут вниз, чтобы внешняя дуга не обрезалась краем
-            // (Canvas обрезает рисование по своим границам).
-            const top = h * 0.38;
-            const stroke = Math.max(1.5, w * 0.10);
+            const stroke = Math.max(1.4, w * 0.10);
+
+            // Геометрия в долях размера (проверена для 18 px):
+            //   top = 0.62h    — центр дуг
+            //   r1..r3         — радиусы внутренней, средней и внешней дуг
+            //   dotY = 0.82h   — точка-основание
+            // Верх внешней дуги получается на 0.08h от края: сглаживание не
+            // упирается в границу холста, поэтому верх не срезается.
+            const top = h * 0.62;
+            const r1 = w * 0.15;
+            const r2 = w * 0.32;
+            const r3 = w * 0.49;
+            const dotRadius = Math.max(1.1, stroke * 0.7);
+            const dotY = h * 0.82;
 
             const mainColor = root.onAccent ? String(Theme.quickIconOn)
                                             : String(Theme.quickText);
             const dimColor = String(Theme.quickTextDim);
             const onColor = root.connected ? mainColor : dimColor;
 
-            // Три дуги: радиусы считаем от ширины, у каждой свой цвет и
-            // прозрачность — так состояние читается и в 18 пикселей.
-            const radii = [w * 0.18, w * 0.31, w * 0.44];
+            // Три дуги: у каждой свой цвет и прозрачность — так состояние
+            // читается и в 18 пикселей.
+            const radii = [r1, r2, r3];
             const lit = root.wifiEnabled ? root.level : 0;
 
             ctx.lineCap = "round";
@@ -86,7 +96,7 @@ Item {
             ctx.globalAlpha = root.wifiEnabled ? 1.0 : 0.45;
             ctx.fillStyle = (root.wifiEnabled && root.connected) ? onColor : dimColor;
             ctx.beginPath();
-            ctx.arc(cx, top + h * 0.22, stroke * 0.8, 0, Math.PI * 2);
+            ctx.arc(cx, dotY, dotRadius, 0, Math.PI * 2);
             ctx.fill();
 
             // Выключен — перечёркиваем.
