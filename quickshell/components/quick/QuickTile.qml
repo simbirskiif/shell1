@@ -134,7 +134,7 @@ Rectangle {
         preventStealing: true
         cursorShape: Qt.DragMoveCursor
 
-        onPositionChanged: {
+        onPositionChanged: mouse => {
             if (!pressed || root.order < 0)
                 return;
             const baseX = (root.order % root.columns) * root.stepX;

@@ -44,7 +44,13 @@ PopupWindow {
         }
     }
 
-    Component.onCompleted: root.syncVisibility()
+    Component.onCompleted: {
+        root.syncVisibility();
+        UiState.popupHeight = root.implicitHeight;
+    }
+
+    // Публикуем текущую высоту — видно из qs ipc call bar state.
+    onImplicitHeightChanged: UiState.popupHeight = root.implicitHeight
 
     // Правый верхний угол попапа — под кнопкой в баре, растёт вниз-влево.
     anchor.window: anchorWindow

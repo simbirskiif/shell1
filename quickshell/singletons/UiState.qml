@@ -13,6 +13,9 @@ Singleton {
     // Режим редактирования плиток основной панели: правки идут в черновик
     // и применяются только по saveEdit().
     property bool editing: false
+
+    // Текущая высота попапа — для отладки анимаций размера.
+    property real popupHeight: 0
     property var draftVisible: []
     property var draftAvailable: []
 

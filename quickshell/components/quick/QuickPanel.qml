@@ -94,12 +94,35 @@ Item {
     }
 
     onShownKeysChanged: root.refreshTileSlots()
-    Component.onCompleted: root.refreshTileSlots()
+    Component.onCompleted: {
+        root.refreshTileSlots();
+        root.refreshPoolSlots();
+    }
 
     // Индекс плитки в пуле доступных.
     function poolIndex(key) {
         return root.poolKeys.indexOf(key);
     }
+
+    // Последняя позиция плитки в пуле: без этого приходилось бы
+    // самоссылаться на x/y, что дёргает биндинги каждый кадр.
+    property var poolSlots: ({})
+
+    function poolSlotOf(key) {
+        const slot = root.poolSlots[key];
+        return slot === undefined ? -1 : slot;
+    }
+
+    function refreshPoolSlots() {
+        const map = {};
+        for (const key in root.poolSlots)
+            map[key] = root.poolSlots[key];
+        for (let i = 0; i < root.poolKeys.length; ++i)
+            map[root.poolKeys[i]] = i;
+        root.poolSlots = map;
+    }
+
+    onPoolKeysChanged: root.refreshPoolSlots()
 
     // Редактор живёт в UiState — так им можно управлять и снаружи.
     function beginEdit() {
@@ -337,7 +360,9 @@ Item {
 
                 Text {
                     width: mainColumn.width
-                    height: visible ? 44 : 0
+                    // Ровно высота ячейки пула: переход пул 0 <-> 1 вообще
+                    // не меняет высоту панели, поэтому окно не дёргается.
+                    height: visible ? Theme.quickTileHeight : 0
                     visible: root.poolEntries.length === 0
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
@@ -368,11 +393,12 @@ Item {
                             required property var modelData
 
                             readonly property int poolOrder: root.poolIndex(modelData.key)
+                            readonly property int poolSlot: root.poolSlotOf(modelData.key)
 
                             width: poolGrid.cellWidth
                             height: poolGrid.cellHeight
-                            x: poolOrder >= 0 ? (poolOrder % poolGrid.columns) * poolGrid.stepX : x
-                            y: poolOrder >= 0 ? Math.floor(poolOrder / poolGrid.columns) * poolGrid.stepY : y
+                            x: (poolSlot % poolGrid.columns) * poolGrid.stepX
+                            y: Math.floor(poolSlot / poolGrid.columns) * poolGrid.stepY
                             visible: opacity > 0
                             opacity: poolOrder >= 0 ? 1 : 0
                             scale: poolOrder >= 0 ? 0.92 : Theme.motionElementScale * 0.92

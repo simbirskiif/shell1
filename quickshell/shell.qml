@@ -197,6 +197,7 @@ ShellRoot {
                 + " palette=" + (Wal.walLoaded ? "wal" : "fallback")
                 + " bg=" + Wal.background + " accent=" + Wal.accent
                 + " brightness=" + Math.round(MockState.brightness * 100) + "%"
+                + " h=" + Math.round(UiState.popupHeight)
                 + " tiles=" + tiles + (UiState.editing ? " [edit]" : "")
                 + " order=" + order.join(",")
                 + " barPercent=" + (MockState.showBatteryPercent ? "on" : "off")
