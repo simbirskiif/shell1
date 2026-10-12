@@ -118,6 +118,9 @@ Singleton {
     property bool wifiDevPresent: false
     property string wifiDevState: ""
     property string wifiDevConnection: ""
+    // SSID активной сети из `nmcli -f ACTIVE,SSID`: не зависит от кэша
+    // профилей, поэтому доступен и до открытия панели.
+    property string activeSsid: ""
 
     property string wiredDev: ""
     property string wiredConnection: ""
@@ -137,16 +140,29 @@ Singleton {
     property int ssidBusy: 0
 
     // nmcli отдаёт состояние и кодом, и текстом: "connected (externally)",
-    // "100 (connected)", в `device show` — "GENERAL.STATE:100 (connected)".
-    // Сравнивать надо по имени состояния, код зависит от версии NM.
+    // "100 (connected)", "GENERAL.STATE:100 (connected)". Сравнивать надо по
+    // имени состояния: числовой код зависит от версии NM, а пояснение в
+    // скобках бывает лишним ("connected (externally)").
     function parseDeviceState(field) {
         let text = field || "";
         const colon = text.lastIndexOf(":");
         if (colon >= 0)
             text = text.substring(colon + 1);
-        const open = text.indexOf(" (");
-        if (open >= 0)
-            text = text.substring(0, open);
+        text = text.trim();
+        // Ведущий код состояния ("100 connected") отбрасываем.
+        const code = text.match(/^\d+\s+(.*)$/);
+        if (code !== null)
+            text = code[1];
+        // Скобки с пояснением могут стоять и после имени ("connected (site
+        // only)"), и перед ним ("100 (connected)").
+        const inside = text.match(/^\(([^)]+)\)\s*(.*)$/);
+        if (inside !== null)
+            text = inside[1];
+        else {
+            const space = text.indexOf(" ");
+            if (space >= 0)
+                text = text.substring(0, space);
+        }
         return text.trim();
     }
 
@@ -159,6 +175,10 @@ Singleton {
 
     // ───────────── runner ─────────────
 
+    // Процесс отдаёт результат ровно один раз. Обычно к моменту завершения
+    // процесса оба парсера (stdout/stderr) уже закончили; если нет — даём им
+    // один цикл событий через Qt.callLater. Без такой страховки refresh()
+    // мог бы никогда не собрать состояние, и UI застыл бы на старых данных.
     Component {
         id: procComp
 
@@ -169,31 +189,44 @@ Singleton {
             property string input: ""
             property int code: -1
             property int pending: 2
+            property bool exited: false
+            property bool forced: false
 
             environment: ({ LC_ALL: "C" })
             stdinEnabled: proc.input !== ""
 
             stdout: StdioCollector {
-                onStreamFinished: {
-                    proc.pending--;
-                    proc.done();
-                }
+                onStreamFinished: proc.streamDone()
             }
             stderr: StdioCollector {
-                onStreamFinished: {
-                    proc.pending--;
-                    proc.done();
-                }
+                onStreamFinished: proc.streamDone()
             }
             onStarted: if (proc.input !== "")
                 proc.write(proc.input)
             onExited: (exitCode, exitStatus) => {
                 proc.code = exitCode;
-                proc.done();
+                proc.exited = true;
+                // Парсеры могут закончить на следующем цикле событий.
+                Qt.callLater(proc.forceDone);
+                proc.maybeDone();
             }
 
-            function done() {
-                if (proc.code === -1 || proc.pending > 0)
+            function streamDone() {
+                proc.pending--;
+                proc.maybeDone();
+            }
+
+            function forceDone() {
+                if (proc.cb !== null && proc.pending > 0)
+                    root.log("process " + proc.command[0] + ": stream did not finish, using partial output");
+                proc.forced = true;
+                proc.maybeDone();
+            }
+
+            function maybeDone() {
+                if (!proc.exited || proc.code === -1 || proc.cb === null)
+                    return;
+                if (!proc.forced && proc.pending > 0)
                     return;
                 const callback = proc.cb;
                 proc.cb = null;
@@ -373,8 +406,13 @@ Singleton {
             bag.parts++;
         if (root.wifiDev !== "" && root.wifiEnabled) {
             bag.parts++;
-            ask("apstate", ["nmcli", "-t", "-f", "GENERAL.STATE,GENERAL.CONNECTION",
-                            "device", "show", root.wifiDev], bag.cb);
+            ask("apstate", ["nmcli", "device", "show", root.wifiDev], bag.cb);
+            // Имя активной сети нужно и когда панель закрыта: по нему плитка
+            // показывает, к чему мы подключены. `-f ACTIVE,SSID` работает и
+            // без `--rescan no`, поэтому можно не ждать скана.
+            bag.parts++;
+            ask("active", ["nmcli", "-t", "-f", "ACTIVE,SSID",
+                           "device", "wifi", "list", "ifname", root.wifiDev], bag.cb);
         }
         if (root.wifiDev !== "" && root.wifiEnabled && !root.wifiScanning) {
             bag.parts++;
@@ -424,10 +462,27 @@ Singleton {
         } else if (key === "wifi") {
             scanned = parseWifiList(out);
         } else if (key === "apstate") {
-            const cols = splitTerse(lines(out)[0] || "");
-            wifiDevState = parseDeviceState(cols[0]);
-            wifiDevConnection = cols[1] || "";
+            applyDeviceShow(out);
+        } else if (key === "active") {
+            applyActiveSsid(out);
         }
+    }
+
+    // Активная сеть из `nmcli -f ACTIVE,SSID`: строка с ACTIVE=yes.
+    function applyActiveSsid(out) {
+        const rows = lines(out);
+        let found = "";
+        for (let i = 0; i < rows.length; ++i) {
+            const cols = splitTerse(rows[i]);
+            if ((cols[0] || "") === "yes") {
+                found = cols[1] || "";
+                break;
+            }
+        }
+        activeSsid = found;
+        // Имя активной сети не ждёт сборки всех ответов refresh: это то, что
+        // видно на плитке и в заголовке, и оно должно появиться сразу.
+        applyConnectionState();
     }
 
     function applyDevices(out) {
@@ -622,17 +677,13 @@ Singleton {
         });
     }
 
-    function finishRefresh() {
-        // Проводное состояние и имя собираются из уже разобранных частей.
-        const connected = wiredDev !== "" && wiredState === "connected";
-        ethernetConnected = connected;
-        ethernetState = wiredState;
-        ethernetName = wiredConnection !== "" ? wiredConnection : wiredDev;
-        if (!connected)
-            ethernetSpeed = "";
+    // Активная Wi-Fi сеть: сначала прямое поле ACTIVE из списка точек (не
+    // зависит от кэша профилей и работает, даже когда панель закрыта), затем
+    // имя профиля активного соединения с устройства, затем строка IN-USE.
+    function resolveConnectedSsid() {
+        if (activeSsid !== "")
+            return activeSsid;
 
-        // Активная Wi-Fi сеть: имя профиля активного соединения на Wi-Fi
-        // устройстве, иначе — строка с IN-USE из списка точек.
         let ssid = "";
         if (wifiDevConnection !== "") {
             for (const uuid in root.profiles) {
@@ -649,15 +700,31 @@ Singleton {
             if (ssid === "")
                 ssid = wifiDevConnection;
         }
-        if (ssid === "") {
-            for (let i = 0; i < scanned.length; ++i) {
-                if (scanned[i].connected) {
-                    ssid = scanned[i].name;
-                    break;
-                }
-            }
+        if (ssid !== "")
+            return ssid;
+
+        for (let i = 0; i < scanned.length; ++i) {
+            if (scanned[i].connected)
+                return scanned[i].name;
         }
-        connectedSsid = ssid;
+        return "";
+    }
+
+    function finishRefresh() {
+        applyConnectionState();
+    }
+
+    // Собирает из уже разобранных частей то, что видит пользователь:
+    // имя активной сети, состояние провода, список сетей.
+    function applyConnectionState() {
+        const connected = wiredDev !== "" && wiredState === "connected";
+        ethernetConnected = connected;
+        ethernetState = wiredState;
+        ethernetName = wiredConnection !== "" ? wiredConnection : wiredDev;
+        if (!connected)
+            ethernetSpeed = "";
+
+        connectedSsid = resolveConnectedSsid();
         updateModels();
         onWifiReady();
     }
@@ -900,6 +967,7 @@ Singleton {
             connectErrorText = "";
             connectingName = "";
             expectedDisconnect = true;
+            activeSsid = "";
             scanGeneration++;       // ответы текущего скана больше не нужны
             stopScanTimers();
             scanPending = false;
@@ -911,12 +979,16 @@ Singleton {
             savedModel.clear();
             availableModel.clear();
         } else {
-            // Скан запустится сам, как только refresh подтвердит radio и
-            // устройство: очередь гарантирует порядок radio on → скан.
-            // Индикатор появится в тот же момент — пустого экрана без
-            // признаков жизни не будет.
-            if (!wifiScanning)
-                scanPending = true;
+            // Включаем индикатор сразу: пока NM поднимет radio и отдаст
+            // устройство, проходит несколько секунд, и экран не должен
+            // выглядеть так, будто ничего не происходит. Сам скан стартует,
+            // как только устройство станет доступно (onWifiReady).
+            scanPending = true;
+            scanMinElapsed = false;
+            scanReadDone = false;
+            wifiScanning = true;
+            scanMin.restart();
+            scanGuard.restart();
         }
         enqueue(["nmcli", "radio", "wifi", target ? "on" : "off"], () => scheduleRefresh());
     }
@@ -1390,14 +1462,30 @@ Singleton {
     // ───────────── устройство и опрос ─────────────
 
     function readDeviceState() {
-        run(["nmcli", "-t", "-f", "GENERAL.STATE,GENERAL.CONNECTION",
-             "device", "show", wifiDev], (code, out) => {
+        // Внимание: у `nmcli device show <dev>` нет terse-режима с `-f`,
+        // поэтому читаем все GENERAL-поля и разбираем их по имени.
+        run(["nmcli", "device", "show", wifiDev], (code, out) => {
             if (code !== 0)
                 return;
-            const cols = splitTerse(lines(out)[0] || "");
-            wifiDevState = parseDeviceState(cols[0]);
-            wifiDevConnection = cols[1] || "";
+            applyDeviceShow(out);
         });
+    }
+
+    function applyDeviceShow(out) {
+        // Формат `nmcli device show <dev>` (не terse): "GENERAL.STATE:" и
+        // значение, выровненное пробелами. Числовой код состояния зависит от
+        // версии NM, поэтому оставляем имя состояния: "100 (connected)" →
+        // "connected".
+        const rows = lines(out);
+        for (let i = 0; i < rows.length; ++i) {
+            const match = rows[i].match(/^([A-Z0-9.]+):\s*(.*)$/);
+            if (match === null)
+                continue;
+            if (match[1] === "GENERAL.STATE")
+                wifiDevState = parseDeviceState(match[2]);
+            else if (match[1] === "GENERAL.CONNECTION")
+                wifiDevConnection = match[2];
+        }
     }
 
     // Пока идёт подключение — следим за состоянием устройства: так видно
