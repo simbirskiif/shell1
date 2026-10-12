@@ -46,6 +46,12 @@ ShellRoot {
             return internet();
         }
 
+        // Яркость (тестовая заглушка): погасить/вернуть.
+        function toggleBrightness(): string {
+            MockState.toggleBrightness();
+            return state();
+        }
+
         // Состояние питания (тестовое): зарядка вкл/выкл.
         function toggleCharging(): string {
             MockState.toggleCharging();
@@ -122,6 +128,7 @@ ShellRoot {
                 + " panel=" + (UiState.panel === "" ? "main" : UiState.panel)
                 + " palette=" + (Wal.walLoaded ? "wal" : "fallback")
                 + " bg=" + Wal.background + " accent=" + Wal.accent
+                + " brightness=" + Math.round(MockState.brightness * 100) + "%"
                 + " battery=" + MockState.batteryLevel + "%" + (MockState.batteryCharging ? "+" : "")
                 + " mode=" + MockState.powerMode
                 + " ethernet=" + (MockState.ethernetConnected ? "on" : "off")
@@ -131,6 +138,13 @@ ShellRoot {
         }
     }
 }
+
+
+
+
+
+
+
 
 
 

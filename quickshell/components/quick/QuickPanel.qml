@@ -11,7 +11,7 @@ Item {
 
     readonly property string panel: UiState.panel
 
-    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, batteryEntry]
+    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, batteryEntry]
 
     // В сетке плиток показываем не все панели: батарея живёт в шапке.
     readonly property var gridPanels: root.panels.filter(entry => entry.inGrid)
@@ -47,7 +47,7 @@ Item {
             // Шапка основной панели: справа — батарея.
             Item {
                 width: parent.width
-                height: 28
+                height: 36
 
                 BatteryButton {
                     anchors.right: parent.right
@@ -56,38 +56,6 @@ Item {
                     level: MockState.batteryLevel
                     charging: MockState.batteryCharging
                     onClicked: batteryEntry.open()
-                }
-            }
-
-            // Яркость — во всю ширину, как в Android 12+.
-            Rectangle {
-                width: parent.width
-                height: 48
-                radius: Theme.quickTileRadius
-                color: Theme.quickTile
-
-                Text {
-                    id: brightnessIcon
-                    anchors.left: parent.left
-                    anchors.leftMargin: 14
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "\uf185"
-                    color: Theme.quickTextDim
-                    font.family: Theme.iconFontFamily
-                    font.pixelSize: 15
-                }
-
-                PanelSlider {
-                    anchors.left: brightnessIcon.right
-                    anchors.leftMargin: 12
-                    anchors.right: parent.right
-                    anchors.rightMargin: 14
-                    anchors.verticalCenter: parent.verticalCenter
-                    height: 22
-                    value: MockState.brightness
-                    onMoved: v => {
-                        MockState.brightness = v;
-                    }
                 }
             }
 
@@ -204,6 +172,28 @@ Item {
 
         function toggle() {
             MockState.toggleSound();
+        }
+    }
+
+    // Яркость: плитка как у звука, но дочерней панели пока нет —
+    // нажатие на плитку ничего не открывает, кружок гасит экран.
+    QtObject {
+        id: brightnessEntry
+
+        readonly property bool inGrid: true
+        readonly property string key: "brightness"
+        readonly property string title: "Brightness"
+        readonly property string icon: "\uf185"
+        readonly property bool active: MockState.brightness > 0
+        readonly property string subtitle: Math.round(MockState.brightness * 100) + "%"
+        readonly property Component view: Component { Item { } }
+
+        function open() {
+            // Дочерней панели у яркости пока нет.
+        }
+
+        function toggle() {
+            MockState.toggleBrightness();
         }
     }
 

@@ -15,8 +15,19 @@ Singleton {
     property real volume: 0.65
     property string outputName: "Built-in Speakers"
 
-    // Яркость экрана (пока заглушка).
+    // Яркость экрана (пока заглушка). lastBrightness — чтобы вернуть
+    // прежнее значение после «выключения» кружком.
     property real brightness: 0.7
+    property real lastBrightness: 0.7
+
+    function toggleBrightness() {
+        if (brightness > 0) {
+            lastBrightness = brightness;
+            brightness = 0;
+        } else {
+            brightness = lastBrightness > 0 ? lastBrightness : 0.7;
+        }
+    }
 
     // Батарея и питание.
     property int batteryLevel: 82

@@ -56,6 +56,11 @@ Singleton {
     readonly property color quickTextDim: withAlpha(Wal.foreground, 0.55)
     readonly property color quickIconOn: neutralSurface
 
+    // Цвета состояний батареи (как в статус-баре Android).
+    readonly property color chargeColor: "#3ddc84"
+    readonly property color lowColor: "#e5484d"
+    readonly property color mediumColor: "#f5c518"
+
     // --- Material 3 motion -------------------------------------------------
     // Длительности из m3 (short/medium) и кривые emphasized/standard.
     readonly property int motionShort3: 150

@@ -2,8 +2,9 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Кнопка батареи для шапки основной панели: значок по уровню заряда
-// и процент. Нажатие открывает панель питания.
+// Батарея в стиле Android: обведённая пилюля с процентом внутри,
+// носик справа, цвет по состоянию (зарядка/низкий заряд), при зарядке —
+// молния. Нажатие открывает панель питания.
 Item {
     id: root
 
@@ -12,21 +13,97 @@ Item {
 
     signal clicked()
 
-    implicitWidth: content.implicitWidth + 18
-    implicitHeight: 28
+    readonly property bool low: root.level <= 15
+    readonly property bool medium: !root.low && root.level <= 30
 
-    readonly property string glyph: {
+    readonly property color lineColor: {
         if (root.charging)
-            return "\uf0e7";
-        if (root.level >= 90)
-            return "\uf240";
-        if (root.level >= 65)
-            return "\uf241";
-        if (root.level >= 40)
-            return "\uf242";
-        if (root.level >= 15)
-            return "\uf243";
-        return "\uf244";
+            return Theme.chargeColor;
+        if (root.low)
+            return Theme.lowColor;
+        if (root.medium)
+            return Theme.mediumColor;
+        return Theme.quickTextDim;
+    }
+
+    readonly property color fillColor: {
+        if (root.charging)
+            return Theme.chargeColor;
+        if (root.low)
+            return Theme.lowColor;
+        if (root.medium)
+            return Theme.mediumColor;
+        return "transparent";
+    }
+
+    readonly property color textColor: {
+        if (root.charging || root.medium)
+            return Theme.quickIconOn;
+        if (root.low)
+            return "#ffffff";
+        return Theme.quickText;
+    }
+
+    implicitWidth: indicator.width + 10
+    implicitHeight: indicator.height + 10
+
+    Item {
+        id: indicator
+        anchors.centerIn: parent
+        width: body.width + 2 + nub.width
+        height: body.height
+
+        Rectangle {
+            id: body
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            width: content.implicitWidth + 22
+            height: 26
+            radius: 8
+            color: root.fillColor
+            border.width: 2
+            border.color: root.lineColor
+            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+            Behavior on border.color { ColorAnimation { duration: Theme.motionShort4 } }
+
+            Row {
+                id: content
+                anchors.centerIn: parent
+                spacing: 3
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.level + "%"
+                    color: root.textColor
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 13
+                    font.weight: Font.DemiBold
+                    Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: root.charging
+                    text: "\uf0e7"
+                    color: root.textColor
+                    font.family: Theme.iconFontFamily
+                    font.pixelSize: 11
+                }
+            }
+        }
+
+        // Носик батареи
+        Rectangle {
+            id: nub
+            anchors.left: body.right
+            anchors.leftMargin: 2
+            anchors.verticalCenter: parent.verticalCenter
+            width: 3
+            height: 10
+            radius: 1.5
+            color: root.lineColor
+            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        }
     }
 
     Rectangle {
@@ -34,30 +111,6 @@ Item {
         radius: height / 2
         color: hover.hovered ? Theme.quickTileHover : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
-    }
-
-    Row {
-        id: content
-        anchors.centerIn: parent
-        spacing: 6
-
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: root.glyph
-            color: root.charging ? Theme.accent : Theme.quickText
-            font.family: Theme.iconFontFamily
-            font.pixelSize: 14
-            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
-        }
-
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: root.level + "%"
-            color: Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 12
-            font.weight: Font.Medium
-        }
     }
 
     MouseArea {
