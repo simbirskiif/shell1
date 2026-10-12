@@ -11,6 +11,9 @@ Item {
     required property string title
     required property string description
     required property string actionText
+    // Кнопка скрывается, когда действие невозможно: например, Wi-Fi
+    // заблокирован аппаратным переключателем и включить его нельзя.
+    property bool showAction: true
 
     signal actionRequested()
 
@@ -51,7 +54,7 @@ Item {
 
         Item {
             width: 1
-            height: 6
+            height: root.showAction ? 6 : 0
         }
 
         // Кнопка в стиле m3 filled button со state layer на ховере.
@@ -59,7 +62,8 @@ Item {
             id: button
             anchors.horizontalCenter: parent.horizontalCenter
             width: buttonLabel.implicitWidth + 44
-            height: 36
+            height: root.showAction ? 36 : 0
+            visible: root.showAction
             radius: height / 2
             color: Theme.accent
 

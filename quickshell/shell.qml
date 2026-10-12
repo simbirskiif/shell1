@@ -60,7 +60,20 @@ ShellRoot {
 
         // Переключатели радио — удобно для проверки состояний.
         function toggleWifi(): string {
-            MockState.toggleWifi();
+            NetworkService.toggleWifi();
+            NetworkService.scanWifi();
+            return state();
+        }
+
+        // Явные состояния radio (проверка без гонки с оптимистичным UI).
+        function wifiOn(): string {
+            NetworkService.setWifiEnabled(true);
+            NetworkService.scanWifi();
+            return state();
+        }
+
+        function wifiOff(): string {
+            NetworkService.setWifiEnabled(false);
             return state();
         }
 
@@ -69,16 +82,78 @@ ShellRoot {
             return state();
         }
 
-        // Цикл: активен -> подключён, но не активен -> отключён -> активен.
-        function toggleEthernet(): string {
-            if (!MockState.ethernetConnected) {
-                MockState.ethernetConnected = true;
-                MockState.ethernetActive = true;
-            } else if (MockState.ethernetActive) {
-                MockState.ethernetActive = false;
-            } else {
-                MockState.ethernetConnected = false;
+        // Обновить список сетей (скан).
+        function scanWifi(): string {
+            NetworkService.scanWifi();
+            return state();
+        }
+
+        // Подключение/отключение сети по имени из моделей сервиса.
+        function wifiConnect(name: string): string {
+            NetworkService.requestWifi(name);
+            return state();
+        }
+
+        // То же по индексу в списке доступных сетей (для скриптов).
+        function wifiConnectIndex(index: int): string {
+            const model = NetworkService.wifiNetworks.count > 0
+                        ? NetworkService.wifiNetworks : NetworkService.savedWifiNetworks;
+            const network = model.get(index);
+            if (network)
+                NetworkService.requestWifi(network.name);
+            return state();
+        }
+
+        function password(value: string): string {
+            NetworkService.pendingPassword = value;
+            return state();
+        }
+
+        function submitPassword(value: string): string {
+            NetworkService.submitPassword(value !== "" ? value : NetworkService.pendingPassword);
+            return state();
+        }
+
+        function cancelPassword(): string {
+            NetworkService.cancelPending();
+            return state();
+        }
+
+        function openPortal(): string {
+            NetworkService.openPortal();
+            return state();
+        }
+
+        // Список сетей и профилей — для проверки без мыши и скриншотов.
+        function networks(): string {
+            const parts = [];
+            for (let i = 0; i < NetworkService.savedWifiNetworks.count; ++i) {
+                const n = NetworkService.savedWifiNetworks.get(i);
+                parts.push("saved[" + i + "]=" + n.name + "/" + n.security
+                           + (n.connected ? "/on" : "") + (n.connecting ? "/..." : ""));
             }
+            for (let i = 0; i < NetworkService.wifiNetworks.count; ++i) {
+                const n = NetworkService.wifiNetworks.get(i);
+                parts.push("avail[" + i + "]=" + n.name + "/" + n.security + "/sig" + n.strength
+                           + (n.connected ? "/on" : "") + (n.connecting ? "/..." : ""));
+            }
+            return parts.join(" ");
+        }
+
+        // Подробности для отладки: устройство, маршрут, скорость.
+        function net(): string {
+            return "dev=" + (NetworkService.wifiDev || "-")
+                + " state=" + (NetworkService.wifiDevState || "-")
+                + " hw=" + NetworkService.wifiHardBlocked
+                + " wiredDev=" + (NetworkService.ethernetName || "-")
+                + " wiredState=" + (NetworkService.ethernetState || "-")
+                + " speed=" + (NetworkService.ethernetSpeed || "-")
+                + " route=" + (NetworkService.defaultRouteDev || "-")
+                + " connectivity=" + NetworkService.connectivity;
+        }
+
+        function ethernet(): string {
+            NetworkService.requestEthernet();
             return state();
         }
 
@@ -93,29 +168,6 @@ ShellRoot {
             return state();
         }
 
-        // Сценарии подключения (для проверки без мыши).
-        function wifiConnect(index: int): string {
-            const network = MockState.wifiNetworks.get(index);
-            if (network)
-                MockState.requestWifi(network.name);
-            return state();
-        }
-
-        function password(value: string): string {
-            MockState.pendingPassword = value;
-            return state();
-        }
-
-        function submitPassword(): string {
-            MockState.submitPassword();
-            return state();
-        }
-
-        function cancelPassword(): string {
-            MockState.cancelPassword();
-            return state();
-        }
-
         function discoverable(): string {
             MockState.toggleDiscoverable();
             return state();
@@ -123,7 +175,7 @@ ShellRoot {
 
         // Заново запустить поиск сетей и устройств.
         function rescan(): string {
-            MockState.scanWifi();
+            NetworkService.scanWifi();
             MockState.scanBluetooth();
             return state();
         }
@@ -201,12 +253,12 @@ ShellRoot {
 
         // Демо-строки: посмотреть анимации появления/удаления в списках.
         function addWifi(): string {
-            MockState.addWifiNetwork();
+            NetworkService.addDemoNetwork();
             return state();
         }
 
         function removeWifi(): string {
-            MockState.removeWifiNetwork();
+            NetworkService.removeDemoNetwork();
             return state();
         }
 
@@ -242,13 +294,23 @@ ShellRoot {
                 + " barPercent=" + (MockState.showBatteryPercent ? "on" : "off")
                 + " battery=" + MockState.batteryLevel + "%" + (MockState.batteryCharging ? "+" : "")
                 + " mode=" + MockState.powerMode
-                + " ethernet=" + (MockState.ethernetConnected ? (MockState.ethernetActive ? "active" : "idle") : "off")
-                + " scanning=" + (MockState.wifiScanning || MockState.bluetoothScanning)
+                + " eth=" + (NetworkService.ethernetConnected
+                             ? (NetworkService.internetViaEthernet ? "active" : "idle") : "off")
+                + " ethName=" + (NetworkService.ethernetName || "-")
+                + " ethSpeed=" + (NetworkService.ethernetSpeed || "-")
+                + " scanning=" + (NetworkService.wifiScanning || MockState.bluetoothScanning)
                 + " swipe=" + UiState.swipe.toFixed(2)
-                + " pending=" + (MockState.pendingNetwork === "" ? "no" : MockState.pendingNetwork)
-                + " connecting=" + (MockState.connectingWifi || MockState.connectingDevice || "no")
+                + " pending=" + (NetworkService.pendingNetwork === "" ? "no" : NetworkService.pendingNetwork)
+                + " connecting=" + (NetworkService.connectingName || MockState.connectingDevice || "no")
+                + " err=" + (NetworkService.connectError || "-")
+                + " connectivity=" + NetworkService.connectivity
+                + " backend=" + (NetworkService.backendAvailable ? "ok" : "down")
+                + " radio=" + (NetworkService.wifiEnabled ? "on" : "off")
+                + " hwblock=" + (NetworkService.wifiHardBlocked ? "yes" : "no")
                 + " discoverable=" + (MockState.bluetoothDiscoverable ? "on" : "off")
-                + " wifi=" + MockState.wifiNetworks.count
+                + " wifi=" + NetworkService.wifiNetworks.count
+                + " saved=" + NetworkService.savedWifiNetworks.count
+                + " ssid=" + (NetworkService.connectedSsid || "-")
                 + " devices=" + MockState.bluetoothDevices.count;
         }
     }

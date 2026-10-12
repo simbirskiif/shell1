@@ -2,28 +2,18 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Панель «Интернет»: подключённый Ethernet, списки сетей и форма пароля
-// для сети, которую видим впервые.
+// Панель «Интернет»: подключённый Ethernet, списки сетей Wi-Fi и диалог
+// пароля. Данные и действия — в NetworkService; здесь только отображение.
 Item {
     id: root
 
     signal backRequested()
 
-    // Пароль спрашиваем отдельным модальным окном.
-    readonly property bool askingPassword: false
-
     implicitWidth: Theme.quickWidth
     implicitHeight: column.implicitHeight
 
-    // Открыли панель — запускаем поиск сетей.
-    Connections {
-        target: UiState
-
-        function onPanelChanged() {
-            if (UiState.panel === "internet")
-                MockState.scanWifi();
-        }
-    }
+    // Открытие панели, скан и периодическое обновление живут в NetworkService:
+    // сервис сам следит за UiState.panel === "internet".
 
     Column {
         id: column
@@ -34,15 +24,12 @@ Item {
 
         PanelHeader {
             title: "Internet"
-            checked: MockState.wifiEnabled
+            checked: NetworkService.wifiEnabled
             refreshable: true
-            refreshing: MockState.wifiScanning
+            refreshing: NetworkService.wifiScanning
             onBackRequested: root.backRequested()
-            onToggled: {
-                MockState.toggleWifi();
-                MockState.scanWifi();
-            }
-            onRefreshRequested: MockState.scanWifi()
+            onToggled: NetworkService.setWifiEnabled(!NetworkService.wifiEnabled)
+            onRefreshRequested: NetworkService.scanWifi()
         }
 
         Rectangle {
@@ -54,17 +41,34 @@ Item {
         // --- список сетей ------------------------------------------------
         Column {
             width: parent.width
-            visible: !root.askingPassword
-            height: !root.askingPassword ? implicitHeight : 0
             spacing: 0
+
+            // Заглушка, если nmcli/NM недоступны: показывать пустой список
+            // хуже, чем объяснить причину.
+            PanelDisabled {
+                width: parent.width
+                visible: !NetworkService.backendAvailable
+                height: visible ? implicitHeight : 0
+                icon: "\uf1eb"
+                title: "No network backend"
+                description: "NetworkManager is not available"
+                actionText: ""
+            }
 
             // Подключённый модем / проводное соединение — виден всегда.
             Item {
                 id: ethernetRow
                 width: parent.width
-                height: MockState.ethernetConnected ? Theme.quickRowHeight : 0
+                height: NetworkService.ethernetConnected ? Theme.quickRowHeight : 0
                 visible: height > 0
                 clip: true
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: NetworkService.requestEthernet()
+                }
 
                 PanelIcon {
                     id: ethernetIcon
@@ -72,14 +76,14 @@ Item {
                     anchors.leftMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
                     icon: "\uf1e6"
-                    connected: MockState.internetViaEthernet
+                    connected: NetworkService.internetViaEthernet
                 }
 
                 Text {
                     anchors.left: ethernetIcon.right
                     anchors.leftMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
-                    text: MockState.ethernetName
+                    text: NetworkService.ethernetName
                     color: Theme.quickText
                     font.family: Theme.fontFamily
                     font.pixelSize: 13
@@ -89,47 +93,56 @@ Item {
                     anchors.right: parent.right
                     anchors.rightMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
-                    text: MockState.internetViaEthernet ? MockState.ethernetSpeed : "Not active"
+                    text: NetworkService.ethernetSummary
                     color: Theme.quickTextDim
                     font.family: Theme.fontFamily
                     font.pixelSize: 11
                 }
             }
 
+            // Captive portal: сеть подключена, но интернет откроется только
+            // после входа на странице.
+            PortalBanner {
+                width: parent.width
+                visible: NetworkService.connectivity === "portal"
+                height: visible ? implicitHeight : 0
+                onSignInRequested: NetworkService.openPortal()
+            }
+
             // Wi-Fi выключен — единый экран-заглушка.
             PanelDisabled {
                 width: parent.width
-                visible: !MockState.wifiEnabled
-                height: !MockState.wifiEnabled ? implicitHeight : 0
+                visible: NetworkService.backendAvailable && !NetworkService.wifiEnabled
+                height: visible ? implicitHeight : 0
                 icon: "\uf1eb"
-                title: "Wi-Fi is off"
-                description: "Turn Wi-Fi on to see available networks"
+                title: NetworkService.wifiHardBlocked ? "Wi-Fi is blocked" : "Wi-Fi is off"
+                description: NetworkService.wifiHardBlocked
+                             ? "Disabled by hardware switch"
+                             : "Turn Wi-Fi on to see available networks"
                 actionText: "Turn on"
-                onActionRequested: {
-                    MockState.toggleWifi();
-                    MockState.scanWifi();
-                }
+                showAction: !NetworkService.wifiHardBlocked
+                onActionRequested: NetworkService.toggleWifi()
             }
 
             // Wi-Fi включён: сначала сохранённые сети, затем доступные.
             Column {
                 id: enabledContent
                 width: parent.width
-                visible: MockState.wifiEnabled
-                height: MockState.wifiEnabled ? implicitHeight : 0
+                visible: NetworkService.backendAvailable && NetworkService.wifiEnabled
+                height: visible ? implicitHeight : 0
                 spacing: 0
 
                 PanelSection { text: "Saved" }
 
                 PanelList {
                     width: parent.width
-                    model: MockState.savedWifiNetworks
+                    model: NetworkService.savedWifiNetworks
 
                     delegate: WifiRow {
                         onActivated: {
                             UiState.dialogScreen = UiState.openedScreen;
-                            MockState.requestWifi(name);
-                            if (MockState.pendingNetwork !== "")
+                            NetworkService.requestWifi(name);
+                            if (NetworkService.pendingNetwork !== "")
                                 UiState.close();
                         }
                     }
@@ -139,13 +152,13 @@ Item {
 
                 PanelList {
                     width: parent.width
-                    model: MockState.wifiNetworks
+                    model: NetworkService.wifiNetworks
 
                     delegate: WifiRow {
                         onActivated: {
                             UiState.dialogScreen = UiState.openedScreen;
-                            MockState.requestWifi(name);
-                            if (MockState.pendingNetwork !== "")
+                            NetworkService.requestWifi(name);
+                            if (NetworkService.pendingNetwork !== "")
                                 UiState.close();
                         }
                     }
