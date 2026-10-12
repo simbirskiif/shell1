@@ -50,10 +50,11 @@ Item {
 
     // За пальцем вид едет лишь частично: остальное делают прозрачность и
     // масштаб. Иначе на половине жеста оба вида стоят за краями панели.
+    // Уходящий уезжает в сторону жеста, приходящий въезжает с обратной.
     readonly property real gestureX: {
         if (!root.gestureDriven)
             return 0;
-        const share = root.gestureShift > 0 ? (1 - root.gesture) : -root.gesture;
+        const share = root.gestureShift > 0 ? -(1 - root.gesture) : root.gesture;
         return root.gestureDirection * share * root.width * Theme.gestureParallax;
     }
 
@@ -67,7 +68,9 @@ Item {
         root.reveal = root.active ? 1 : 0;
     }
 
-    onGestureChanged: {
+    // Достаточно один раз на входе в жест: дальше раскрытием рулит палец,
+    // а «мигать» при смене panel успевает onActiveChanged.
+    onGestureDrivenChanged: {
         if (root.gestureDriven)
             root.snapReveal();
     }

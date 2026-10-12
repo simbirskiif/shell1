@@ -152,6 +152,21 @@ Item {
     readonly property real swipe: UiState.swipe
     readonly property bool swipeActive: UiState.swipeActive
 
+    // Ключ панели, которую уводит текущий жест. Фиксируем его на старте:
+    // во время доводки panel успевает стать пустым, а вид ещё должен
+    // доехать до конца под управлением пальца.
+    property string gestureKey: ""
+
+    onSwipeActiveChanged: {
+        if (root.swipeActive)
+            root.gestureKey = root.panel;
+    }
+
+    // Жест идёт от дочерней панели к сетке плиток: в нём участвуют ровно
+    // два вида — уходящая панель и сетка. Остальные панели трогать нельзя,
+    // иначе они все разом всплывают поверх друг друга.
+    readonly property bool gestureTowardMain: root.swipeActive && root.gestureKey !== ""
+
     // Двумя пальцами по панели — назад, за пальцем.
     // MouseArea, а не WheelHandler: клики в панели работают, значит этот путь
     // события точно получает. acceptedButtons: NoButton — клики пропускаем.
@@ -177,9 +192,10 @@ Item {
     PanelView {
         id: mainView
         anchors.fill: parent
-        // Во время жеста сетка уже видна и приезжает справа.
-        active: root.panel === "" || root.swipeActive
-        gesture: root.swipeActive ? root.swipe : -1
+        // Во время жеста сетка уже видна и приезжает справа. active от жеста
+        // не зависит: раскрытие ведёт палец, а не переход между состояниями.
+        active: root.panel === ""
+        gesture: root.gestureTowardMain ? root.swipe : -1
         gestureShift: 1
         gestureDirection: UiState.swipeDirection
 
@@ -452,7 +468,10 @@ Item {
 
             anchors.fill: parent
             active: root.panel === modelData.key
-            gesture: root.swipeActive ? root.swipe : -1
+            // Жест ведёт только та панель, которую уводим: у остальных
+            // gesture остаётся -1, поэтому они не всплывают.
+            gesture: (root.gestureTowardMain && root.gestureKey === modelData.key)
+                     ? root.swipe : -1
             gestureShift: -1
             gestureDirection: UiState.swipeDirection
 
