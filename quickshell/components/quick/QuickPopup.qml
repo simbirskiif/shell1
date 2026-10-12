@@ -46,11 +46,19 @@ PopupWindow {
 
     Component.onCompleted: {
         root.syncVisibility();
-        UiState.popupHeight = root.implicitHeight;
+        UiState.popupHeight = card.height;
     }
 
-    // Публикуем текущую высоту — видно из qs ipc call bar state.
-    onImplicitHeightChanged: UiState.popupHeight = root.implicitHeight
+    Connections {
+        target: card
+
+        // Публикуем видимую высоту (высоту карточки) — видно из
+        // `qs ipc call bar state`. Высота окна во время жеста постоянна,
+        // поэтому по ней прогресс не отследить.
+        function onHeightChanged() {
+            UiState.popupHeight = card.height;
+        }
+    }
 
     // Правый верхний угол попапа — под кнопкой в баре, растёт вниз-влево.
     anchor.window: anchorWindow
@@ -66,15 +74,15 @@ PopupWindow {
     readonly property real maxHeight: anchorWindow.screen ? anchorWindow.screen.height - anchorWindow.height - 16 : 10000
 
     implicitWidth: panelItem.implicitWidth + Theme.quickPadding * 2
-    implicitHeight: Math.min(panelItem.implicitHeight + Theme.quickPadding * 2, root.maxHeight)
+    // Без жеста окно ровно по карточке, во время жеста — с запасом по высоте
+    // (максимум из двух панелей). Так размер поверхности меняется один раз
+    // за жест, а не каждый кадр: иначе композитор каждый кадр пересоздаёт
+    // буфер, и анимация лагает.
+    implicitHeight: panelItem.gestureSizing
+        ? Math.min(panelItem.gestureRoom + Theme.quickPadding * 2, root.maxHeight)
+        : card.height
     // m3 container transform: контейнер меняет размер на emphasized.
     Behavior on implicitWidth {
-        MotionNumber {
-            duration: Theme.motionMedium2
-            curve: Theme.curveEmphasized
-        }
-    }
-    Behavior on implicitHeight {
         MotionNumber {
             duration: Theme.motionMedium2
             curve: Theme.curveEmphasized
@@ -83,7 +91,19 @@ PopupWindow {
 
     Rectangle {
         id: card
-        anchors.fill: parent
+        // Только сверху: во время жеста окно выше карточки, и низ карточки
+        // едет сам — обычной перерисовкой сцены, без ресайза поверхности.
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: Math.min(panelItem.contentHeight + Theme.quickPadding * 2, root.maxHeight)
+        // Высота едет за сменой панели, а во время жеста — за пальцем.
+        Behavior on height {
+            MotionNumber {
+                duration: Theme.motionMedium2
+                curve: Theme.curveEmphasized
+            }
+        }
         clip: true
         radius: Theme.quickRadius
         color: Theme.quickBackground

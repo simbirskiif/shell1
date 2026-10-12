@@ -133,19 +133,29 @@ Item {
     }
 
     implicitWidth: Theme.quickWidth
-    implicitHeight: {
-        const mainHeight = mainView.implicitHeight;
-        // Высота следует за открытой панелью: во время жеста она не должна
-        // прыгать на высоту сетки.
+
+    // Высоты обоих участников жеста: сетки и открытой дочерней панели.
+    readonly property real mainHeight: mainView.implicitHeight
+    readonly property real detailHeight: root.activeDetail ? root.activeDetail.implicitHeight : root.mainHeight
+
+    // Высота содержимого: без жеста — высота открытой панели, во время
+    // жеста ею рулит палец — от панели к сетке и обратно.
+    readonly property real contentHeight: {
         if (root.panel === "")
-            return mainHeight;
-        const detailHeight = root.activeDetail ? root.activeDetail.implicitHeight : mainHeight;
-        // Во время жеста окно едет вместе с пальцем: высота плавно переходит
-        // от дочерней панели к сетке и обратно.
-        if (root.swipeActive)
-            return detailHeight + (mainHeight - detailHeight) * root.swipe;
-        return detailHeight;
+            return root.mainHeight;
+        if (root.gestureTowardMain)
+            return root.detailHeight + (root.mainHeight - root.detailHeight) * root.swipe;
+        return root.detailHeight;
     }
+
+    // Во время жеста окну нужен запас по высоте: если менять размер самой
+    // поверхности каждый кадр, композитор столько же раз пересоздаёт буфер
+    // и всё лагает. Окно берёт максимум из двух панелей, а видимую высоту
+    // внутри ведёт карточка — это уже обычная перерисовка сцены.
+    readonly property real gestureRoom: Math.max(root.mainHeight, root.detailHeight)
+    readonly property bool gestureSizing: root.gestureTowardMain
+
+    implicitHeight: root.contentHeight
 
     // Состояние жеста живёт в UiState — им можно управлять и снаружи,
     // и оно общее с зоной жеста в баре.
@@ -399,7 +409,7 @@ Item {
                 width: parent.width
                 spacing: 0
                 visible: root.editing
-                height: visible ? implicitHeight : 0
+                height: root.editing ? implicitHeight : 0
 
                 PanelSection { text: "Available" }
 
@@ -407,8 +417,10 @@ Item {
                     width: mainColumn.width
                     // Ровно высота ячейки пула: переход пул 0 <-> 1 вообще
                     // не меняет высоту панели, поэтому окно не дёргается.
-                    height: visible ? Theme.quickTileHeight : 0
+                    // Условие своё, а не visible: visible гаснет и вместе
+                    // со скрытым предком — тогда высота бы схлопнулась.
                     visible: root.poolEntries.length === 0
+                    height: root.poolEntries.length === 0 ? Theme.quickTileHeight : 0
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     text: "All tiles are on the panel"

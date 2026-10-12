@@ -55,7 +55,7 @@ Item {
         Column {
             width: parent.width
             visible: !root.askingPassword
-            height: visible ? implicitHeight : 0
+            height: !root.askingPassword ? implicitHeight : 0
             spacing: 0
 
             // Подключённый модем / проводное соединение — виден всегда.
@@ -100,7 +100,7 @@ Item {
             PanelDisabled {
                 width: parent.width
                 visible: !MockState.wifiEnabled
-                height: visible ? implicitHeight : 0
+                height: !MockState.wifiEnabled ? implicitHeight : 0
                 icon: "\uf1eb"
                 title: "Wi-Fi is off"
                 description: "Turn Wi-Fi on to see available networks"
@@ -116,7 +116,7 @@ Item {
                 id: enabledContent
                 width: parent.width
                 visible: MockState.wifiEnabled
-                height: visible ? implicitHeight : 0
+                height: MockState.wifiEnabled ? implicitHeight : 0
                 spacing: 0
 
                 PanelSection { text: "Saved" }

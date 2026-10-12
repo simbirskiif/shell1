@@ -55,7 +55,7 @@ Item {
         PanelDisabled {
             width: parent.width
             visible: !MockState.bluetoothEnabled
-            height: visible ? implicitHeight : 0
+            height: !MockState.bluetoothEnabled ? implicitHeight : 0
             icon: "\uf293"
             title: "Bluetooth is off"
             description: "Turn Bluetooth on to find nearby devices"
@@ -70,7 +70,7 @@ Item {
             id: enabledContent
             width: parent.width
             visible: MockState.bluetoothEnabled
-            height: visible ? implicitHeight : 0
+            height: MockState.bluetoothEnabled ? implicitHeight : 0
             spacing: 0
 
             // Режим обнаружения: пока включён, устройство видно другим.

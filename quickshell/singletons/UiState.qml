@@ -113,12 +113,21 @@ Singleton {
     function stepSwipe() {
         const dt = swipePhysics.interval;
         const target = swipeSettling ? swipeSettleTarget : swipeTarget;
-        // Пока палец на панели — следуем за ним плотно (лёгкая инерция),
-        // после отпускания ведём «тяжелее»: быстрый старт и торможение.
-        const omega = swipeSettling ? 0.019 : 0.045;
-        // Критически задемпфированная пружина: без перелётов, но с инерцией.
-        swipeVelocity += (omega * omega * (target - swipe) - 2 * omega * swipeVelocity) * dt;
-        swipe += swipeVelocity * dt;
+        // Пока палец на панели — следуем за ним почти вплотную (лёгкая
+        // инерция, но без ощущения «залипания»), после отпускания ведём
+        // «тяжелее»: быстрый старт и торможение.
+        const omega = swipeSettling ? 0.019 : 0.055;
+        // Точное решение критически задемпфированной пружины:
+        //   x(t) = T + (a + b t) e^(-w t),  a = x0 - T,  b = v0 + w a
+        // В отличие от численного шага оно устойчиво при любых w и dt.
+        // «В лоб» шаг Эйлера при w*dt около единицы раскачивал прогресс:
+        // вид начинал мигать на соседних кадрах.
+        const a = swipe - target;
+        const b = swipeVelocity + omega * a;
+        const decay = Math.exp(-omega * dt);
+        const path = a + b * dt;
+        swipe = target + path * decay;
+        swipeVelocity = (b - omega * path) * decay;
 
         if (swipe <= 0) {
             swipe = 0;
