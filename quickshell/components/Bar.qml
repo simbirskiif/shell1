@@ -5,7 +5,7 @@ import "quick"
 import "../singletons"
 
 // Верхний бар: слева рабочие столы, по центру дата и время,
-// справа — кнопка статуса bt/wifi/sound с попапом быстрых настроек.
+// справа — элементы из настроек (батарея, кнопка статуса и будущие).
 PanelWindow {
     id: root
 
@@ -32,31 +32,52 @@ PanelWindow {
         anchors.verticalCenter: parent.verticalCenter
     }
 
-    // Батарея в баре (включается в настройках).
-    BatteryButton {
-        anchors.right: controlButton.left
-        anchors.rightMargin: 6
-        anchors.verticalCenter: parent.verticalCenter
-        visible: MockState.showBatteryPercent
-        level: MockState.batteryLevel
-        charging: MockState.batteryCharging
-        onClicked: UiState.open(root.screen ? root.screen.name : "", "battery")
-    }
-
-    ControlButton {
-        id: controlButton
+    // Порядок элементов задаётся в настройках (MockState.barItems).
+    Row {
         anchors.right: parent.right
         anchors.rightMargin: Theme.barPadding
         anchors.verticalCenter: parent.verticalCenter
-        bluetoothEnabled: MockState.bluetoothEnabled
-        wifiEnabled: MockState.wifiEnabled
-        soundEnabled: MockState.soundEnabled
-        opened: quickPopup.visible
-        onClicked: quickPopup.toggle()
+        spacing: 6
+
+        Repeater {
+            model: MockState.barItems
+
+            delegate: Loader {
+                required property string itemKey
+
+                anchors.verticalCenter: parent.verticalCenter
+                sourceComponent: itemKey === "battery" ? batteryItem
+                               : itemKey === "status" ? statusItem
+                               : null
+            }
+        }
     }
 
     QuickPopup {
         id: quickPopup
         anchorWindow: root
+    }
+
+    Component {
+        id: batteryItem
+
+        BatteryButton {
+            showPercent: MockState.showBatteryPercent
+            level: MockState.batteryLevel
+            charging: MockState.batteryCharging
+            onClicked: UiState.open(root.screen ? root.screen.name : "", "battery")
+        }
+    }
+
+    Component {
+        id: statusItem
+
+        ControlButton {
+            bluetoothEnabled: MockState.bluetoothEnabled
+            wifiEnabled: MockState.wifiEnabled
+            soundEnabled: MockState.soundEnabled
+            opened: quickPopup.visible
+            onClicked: quickPopup.toggle()
+        }
     }
 }

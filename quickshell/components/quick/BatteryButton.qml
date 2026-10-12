@@ -10,6 +10,9 @@ Item {
     required property int level
     required property bool charging
 
+    // В баре процент можно отключить в настройках — иконка остаётся.
+    property bool showPercent: true
+
     signal clicked()
 
     implicitWidth: content.implicitWidth + 18
@@ -28,6 +31,9 @@ Item {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
+            // оптическое выравнивание: строка шрифта выше центра иконки
+            anchors.verticalCenterOffset: 1
+            visible: root.showPercent
             text: root.level + "%"
             color: Theme.quickText
             font.family: Theme.fontFamily
@@ -37,6 +43,7 @@ Item {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenterOffset: 1
             visible: root.charging
             text: "\uf0e7"
             color: Theme.chargeColor

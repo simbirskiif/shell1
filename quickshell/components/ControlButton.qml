@@ -22,6 +22,8 @@ Rectangle {
     Row {
         id: content
         anchors.centerIn: parent
+        // глифы тоже сидят выше центра строки — выравниваем с батареей
+        anchors.verticalCenterOffset: 1
         spacing: 10
 
         Text {

@@ -50,7 +50,6 @@ Item {
                 height: 36
 
                 BatteryButton {
-                    id: batteryButton
                     anchors.right: parent.right
                     anchors.rightMargin: 4
                     anchors.verticalCenter: parent.verticalCenter
@@ -59,11 +58,11 @@ Item {
                     onClicked: batteryEntry.open()
                 }
 
-                // Настройки — слева от батареи.
+                // Настройки — в левом углу шапки.
                 Rectangle {
                     id: settingsButton
-                    anchors.right: batteryButton.left
-                    anchors.rightMargin: 4
+                    anchors.left: parent.left
+                    anchors.leftMargin: 4
                     anchors.verticalCenter: parent.verticalCenter
                     width: 30
                     height: 30

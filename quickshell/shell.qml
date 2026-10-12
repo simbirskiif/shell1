@@ -86,6 +86,13 @@ ShellRoot {
             return state();
         }
 
+        // Порядок элементов бара: сдвинуть первый в конец (для проверки).
+        function rotateBarItems(): string {
+            if (MockState.barItems.count > 1)
+                MockState.barItems.move(0, MockState.barItems.count - 1, 1);
+            return state();
+        }
+
         // Настройка бара: показывать ли процент батареи.
         function toggleBarBattery(): string {
             MockState.showBatteryPercent = !MockState.showBatteryPercent;
@@ -140,12 +147,16 @@ ShellRoot {
         }
 
         function state(): string {
+            const order = [];
+            for (let i = 0; i < MockState.barItems.count; ++i)
+                order.push(MockState.barItems.get(i).itemKey);
             return "opened=" + (UiState.openedScreen === "" ? "no" : UiState.openedScreen)
                 + " panel=" + (UiState.panel === "" ? "main" : UiState.panel)
                 + " palette=" + (Wal.walLoaded ? "wal" : "fallback")
                 + " bg=" + Wal.background + " accent=" + Wal.accent
                 + " brightness=" + Math.round(MockState.brightness * 100) + "%"
-                + " barBattery=" + (MockState.showBatteryPercent ? "on" : "off")
+                + " order=" + order.join(",")
+                + " barPercent=" + (MockState.showBatteryPercent ? "on" : "off")
                 + " battery=" + MockState.batteryLevel + "%" + (MockState.batteryCharging ? "+" : "")
                 + " mode=" + MockState.powerMode
                 + " ethernet=" + (MockState.ethernetConnected ? "on" : "off")
@@ -155,23 +166,3 @@ ShellRoot {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

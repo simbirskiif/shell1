@@ -18,6 +18,19 @@ Singleton {
     // Настройки оболочки.
     property bool showBatteryPercent: true
 
+    // Порядок элементов в баре: порядок в модели = слева-направо.
+    readonly property ListModel barItems: ListModel {
+        ListElement { itemKey: "battery"; title: "Battery" }
+        ListElement { itemKey: "status"; title: "Quick settings" }
+    }
+
+    function moveBarItem(index, delta) {
+        const target = index + delta;
+        if (target < 0 || target >= barItems.count)
+            return;
+        barItems.move(index, target, 1);
+    }
+
     // Яркость экрана (пока заглушка). lastBrightness — чтобы вернуть
     // прежнее значение после «выключения» кружком.
     property real brightness: 0.7
