@@ -1,4 +1,5 @@
 import QtQuick
+import ".."
 import "../../singletons"
 
 // Круглая иконка строки: значок сети или устройства.
@@ -19,7 +20,7 @@ Item {
         anchors.fill: parent
         radius: width / 2
         color: root.connected ? Theme.quickTileActive : Theme.quickCircleOff
-        Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
+        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
     }
 
     Rectangle {
@@ -30,9 +31,9 @@ Item {
         border.color: Theme.accent
         opacity: root.connected ? 1 : 0
         Behavior on opacity {
-            NumberAnimation {
-                duration: Theme.quickViewDuration
-                easing.type: Theme.quickViewEasing
+            MotionNumber {
+                duration: Theme.motionShort3
+                curve: Theme.curveStandard
             }
         }
     }
@@ -44,6 +45,6 @@ Item {
         opacity: root.strength > 0 ? 0.45 + 0.55 * (root.strength / 4) : 1
         font.family: Theme.iconFontFamily
         font.pixelSize: 15
-        Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
+        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
     }
 }

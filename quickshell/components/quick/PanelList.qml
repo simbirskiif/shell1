@@ -1,4 +1,5 @@
 import QtQuick
+import ".."
 import "../../singletons"
 
 // Список строк внутренней панели. Заготовки анимаций появления,
@@ -12,7 +13,7 @@ ListView {
     // иначе окно сжимается быстрее и обрезает гаснущую строку.
     property real frameHeight: 0
 
-    implicitHeight: frameHeight
+    implicitHeight: Math.max(frameHeight, contentHeight)
     height: implicitHeight
     interactive: false
     boundsBehavior: Flickable.StopAtBounds
@@ -27,55 +28,56 @@ ListView {
 
     Timer {
         id: shrinkTimer
-        interval: Theme.quickViewDuration
+        interval: Theme.motionShort4
         onTriggered: root.frameHeight = root.contentHeight
     }
 
-    // Появление элемента: проявляется и дорастает.
+    // m3 enter: элемент проявляется и дорастает с 80%.
     add: Transition {
-        NumberAnimation {
+        MotionNumber {
             property: "opacity"
             from: 0
             to: 1
-            duration: Theme.quickViewDuration
-            easing.type: Theme.quickViewEasing
+            duration: Theme.motionMedium1
+            curve: Theme.curveEmphasizedDecelerate
         }
-        NumberAnimation {
+        MotionNumber {
             property: "scale"
-            from: Theme.quickIdleScale
+            from: Theme.motionElementScale
             to: 1
-            duration: Theme.quickViewDuration
-            easing.type: Theme.quickViewEasing
+            duration: Theme.motionMedium1
+            curve: Theme.curveEmphasizedDecelerate
         }
     }
 
-    // Удаление: элемент растворяется и сжимается.
+    // m3 exit: элемент растворяется и сжимается.
     remove: Transition {
-        NumberAnimation {
+        MotionNumber {
             property: "opacity"
             to: 0
-            duration: Theme.quickViewDuration
-            easing.type: Theme.quickViewEasing
+            duration: Theme.motionShort4
+            curve: Theme.curveEmphasizedAccelerate
         }
-        NumberAnimation {
+        MotionNumber {
             property: "scale"
-            to: Theme.quickIdleScale
-            duration: Theme.quickViewDuration
-            easing.type: Theme.quickViewEasing
+            to: Theme.motionElementScale
+            duration: Theme.motionShort4
+            curve: Theme.curveEmphasizedAccelerate
         }
     }
 
     // Соседи переезжают на освободившееся или занятое место.
     displaced: Transition {
-        NumberAnimation {
+        MotionNumber {
             property: "y"
-            duration: Theme.quickWindowDuration
-            easing.type: Theme.quickWindowEasing
+            duration: Theme.motionMedium1
+            curve: Theme.curveEmphasized
         }
-        NumberAnimation {
+        MotionNumber {
             property: "opacity"
             to: 1
-            duration: Theme.quickViewDuration
+            duration: Theme.motionShort4
+            curve: Theme.curveStandard
         }
     }
 

@@ -1,4 +1,5 @@
 import QtQuick
+import ".."
 import "../../singletons"
 
 // Переключатель в стиле macOS: пилюля с уезжающим кружком.
@@ -17,7 +18,7 @@ Item {
         anchors.fill: parent
         radius: height / 2
         color: root.checked ? Theme.accent : Theme.quickSwitchOff
-        Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
+        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
     }
 
     Rectangle {
@@ -29,9 +30,9 @@ Item {
         radius: width / 2
         color: "#ffffff"
         Behavior on x {
-            NumberAnimation {
-                duration: Theme.quickViewDuration
-                easing.type: Theme.quickViewEasing
+            MotionNumber {
+                duration: Theme.motionShort4
+                curve: Theme.curveEmphasized
             }
         }
     }

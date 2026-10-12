@@ -3,14 +3,14 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-// Единая точка правды для цветов, размеров и таймингов оболочки.
-// Цвета приходят из Palette (pywal с откатом на стандартную палитру),
-// производные оттенки считаются здесь, в разметке магических цветов нет.
+// Единая точка правды для цветов, размеров, таймингов и кривых движения.
+// Цвета приходят из Wal (pywal с откатом на стандартную палитру),
+// производные оттенки считаются здесь, в разметке магических значений нет.
 Singleton {
     // Бар
     readonly property int barHeight: 44
     readonly property int barPadding: 12
-    readonly property color barBackground: withAlpha(Wal.background, 0.80)
+    readonly property color barBackground: withAlpha(darken(neutralize(Wal.background, 0.6), 0.7), 0.90)
     readonly property color barForeground: Wal.foreground
 
     // Часы
@@ -37,31 +37,48 @@ Singleton {
     readonly property int quickTileSpacing: 8
     readonly property int quickHeaderHeight: 46
     readonly property int quickRowHeight: 44
+    readonly property int quickSectionHeight: 28
 
     readonly property color accent: Wal.accent
-    // Фон попапа заметно темнее и почти нейтральный: оттенок палитры
-    // сохраняем чуть-чуть, чтобы панель не спорила с обоями.
-    readonly property color quickBackground: withAlpha(darken(neutralize(Wal.background, 0.9), 0.6), 0.97)
-    readonly property color quickBorder: withAlpha(Wal.foreground, 0.10)
-    readonly property color quickTile: withAlpha(Wal.foreground, 0.06)
-    readonly property color quickTileHover: withAlpha(Wal.foreground, 0.11)
-    readonly property color quickTileActive: withAlpha(Wal.accent, 0.22)
-    readonly property color quickCircleOff: withAlpha(Wal.foreground, 0.13)
-    readonly property color quickSwitchOff: withAlpha(Wal.foreground, 0.22)
-    readonly property color quickSeparator: withAlpha(Wal.foreground, 0.10)
+
+    // Панели быстрых настроек намеренно почти нейтральные: тёмная база
+    // фиксированная, от обоев остаётся лишь лёгкий оттенок.
+    readonly property color neutralSurface: "#151519"
+    readonly property color quickBackground: withAlpha(mix(neutralSurface, Wal.background, 0.08), 0.98)
+    readonly property color quickBorder: withAlpha(Wal.foreground, 0.08)
+    readonly property color quickTile: withAlpha(Wal.foreground, 0.04)
+    readonly property color quickTileHover: withAlpha(Wal.foreground, 0.08)
+    readonly property color quickTileActive: withAlpha(Wal.accent, 0.12)
+    readonly property color quickCircleOff: withAlpha(Wal.foreground, 0.10)
+    readonly property color quickSwitchOff: withAlpha(Wal.foreground, 0.20)
+    readonly property color quickSeparator: withAlpha(Wal.foreground, 0.08)
     readonly property color quickText: Wal.foreground
     readonly property color quickTextDim: withAlpha(Wal.foreground, 0.55)
-    readonly property color quickIconOn: Wal.background
+    readonly property color quickIconOn: neutralSurface
 
-    // Анимации: окно и смена вида — резкие (OutQuint), мелочи — короткие.
-    readonly property int animationDuration: 180
-    readonly property int animationEasing: Easing.OutCubic
-    readonly property int quickWindowDuration: 190
-    readonly property int quickWindowEasing: Easing.OutQuint
-    readonly property int quickViewDuration: 160
-    readonly property int quickViewEasing: Easing.OutQuint
-    readonly property int quickHoverDuration: 110
-    readonly property real quickIdleScale: 0.94
+    // --- Material 3 motion -------------------------------------------------
+    // Длительности из m3 (short/medium) и кривые emphasized/standard.
+    readonly property int motionShort3: 150
+    readonly property int motionShort4: 200
+    readonly property int motionMedium1: 250
+    readonly property int motionMedium2: 300
+    readonly property int motionLong1: 450
+
+    readonly property var curveEmphasized: [0.2, 0.0, 0.0, 1.0]
+    readonly property var curveEmphasizedDecelerate: [0.05, 0.7, 0.1, 1.0]
+    readonly property var curveEmphasizedAccelerate: [0.3, 0.0, 0.8, 0.15]
+    readonly property var curveStandard: [0.2, 0.0, 0.0, 1.0]
+    readonly property var curveStandardDecelerate: [0.0, 0.0, 0.0, 1.0]
+    readonly property var curveStandardAccelerate: [0.3, 0.0, 1.0, 1.0]
+
+    // Fade through: уходящий вид гаснет за первые 30% времени,
+    // приходящий проявляется в оставшиеся 70% (m3 transition patterns).
+    readonly property real motionFadeOutShare: 0.3
+
+    // Масштабы входа/выхода: 92% у видов (fade through) и 80% у элементов
+    // списков (m3 enter/exit), чтобы переходы читались одинаково.
+    readonly property real motionFadeThroughScale: 0.92
+    readonly property real motionElementScale: 0.8
 
     // Шрифты: интерфейс — Google Sans, глифы-иконки — Nerd Font.
     readonly property string fontFamily: "Google Sans"
@@ -88,5 +105,16 @@ Singleton {
         if (!color)
             return Qt.rgba(0, 0, 0, 1);
         return Qt.rgba(color.r * factor, color.g * factor, color.b * factor, color.a);
+    }
+
+    function mix(a, b, t) {
+        if (!a)
+            return b;
+        if (!b)
+            return a;
+        return Qt.rgba(a.r + (b.r - a.r) * t,
+                       a.g + (b.g - a.g) * t,
+                       a.b + (b.b - a.b) * t,
+                       a.a + (b.a - a.a) * t);
     }
 }

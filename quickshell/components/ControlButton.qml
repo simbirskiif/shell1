@@ -17,7 +17,7 @@ Rectangle {
     radius: Theme.controlRadius
     color: root.opened ? Theme.quickTileActive
                        : (hover.hovered ? Theme.quickTileHover : "transparent")
-    Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
+    Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
 
     Row {
         id: content
@@ -29,7 +29,7 @@ Rectangle {
             color: root.bluetoothEnabled ? Theme.quickText : Theme.quickTextDim
             font.family: Theme.iconFontFamily
             font.pixelSize: 14
-            Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
+            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
 
         Text {
@@ -37,7 +37,7 @@ Rectangle {
             color: root.wifiEnabled ? Theme.quickText : Theme.quickTextDim
             font.family: Theme.iconFontFamily
             font.pixelSize: 14
-            Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
+            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
 
         Text {
@@ -45,7 +45,7 @@ Rectangle {
             color: root.soundEnabled ? Theme.quickText : Theme.quickTextDim
             font.family: Theme.iconFontFamily
             font.pixelSize: 14
-            Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
+            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
     }
 

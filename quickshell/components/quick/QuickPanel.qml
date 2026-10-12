@@ -11,7 +11,7 @@ Item {
 
     readonly property string panel: UiState.panel
 
-    readonly property var panels: [bluetoothEntry, wifiEntry, soundEntry]
+    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry]
 
     readonly property Item activeDetail: {
         for (let i = 0; i < detailViews.count; ++i) {
@@ -111,14 +111,14 @@ Item {
     }
 
     QtObject {
-        id: wifiEntry
+        id: internetEntry
 
-        readonly property string key: "wifi"
-        readonly property string title: "Wi-Fi"
-        readonly property string icon: "\uf1eb"
-        readonly property bool active: MockState.wifiEnabled
-        readonly property string subtitle: MockState.wifiSummary
-        readonly property Component view: Component { PanelWifi {} }
+        readonly property string key: "internet"
+        readonly property string title: "Internet"
+        readonly property string icon: "\uf0ac"
+        readonly property bool active: MockState.wifiEnabled || MockState.ethernetConnected
+        readonly property string subtitle: MockState.internetSummary
+        readonly property Component view: Component { PanelInternet {} }
 
         function open() {
             UiState.openDetail(key);

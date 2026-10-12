@@ -36,8 +36,20 @@ ShellRoot {
             return state();
         }
 
+        function internet(): string {
+            UiState.open(UiState.defaultScreen(), "internet");
+            return state();
+        }
+
+        // Прежнее имя панели Wi-Fi, теперь это «Интернет».
         function wifi(): string {
-            UiState.open(UiState.defaultScreen(), "wifi");
+            return internet();
+        }
+
+        // Заново запустить поиск сетей и устройств.
+        function rescan(): string {
+            MockState.scanWifi();
+            MockState.scanBluetooth();
             return state();
         }
 
@@ -83,6 +95,8 @@ ShellRoot {
                 + " panel=" + (UiState.panel === "" ? "main" : UiState.panel)
                 + " palette=" + (Wal.walLoaded ? "wal" : "fallback")
                 + " bg=" + Wal.background + " accent=" + Wal.accent
+                + " ethernet=" + (MockState.ethernetConnected ? "on" : "off")
+                + " scanning=" + (MockState.wifiScanning || MockState.bluetoothScanning)
                 + " wifi=" + MockState.wifiNetworks.count
                 + " devices=" + MockState.bluetoothDevices.count;
         }

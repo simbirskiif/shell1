@@ -1,4 +1,5 @@
 import QtQuick
+import ".."
 import Quickshell
 import "../../singletons"
 
@@ -56,16 +57,17 @@ PopupWindow {
 
     implicitWidth: panelItem.implicitWidth + Theme.quickPadding * 2
     implicitHeight: panelItem.implicitHeight + Theme.quickPadding * 2
+    // m3 container transform: контейнер меняет размер на emphasized.
     Behavior on implicitWidth {
-        NumberAnimation {
-            duration: Theme.quickWindowDuration
-            easing.type: Theme.quickWindowEasing
+        MotionNumber {
+            duration: Theme.motionMedium2
+            curve: Theme.curveEmphasized
         }
     }
     Behavior on implicitHeight {
-        NumberAnimation {
-            duration: Theme.quickWindowDuration
-            easing.type: Theme.quickWindowEasing
+        MotionNumber {
+            duration: Theme.motionMedium2
+            curve: Theme.curveEmphasized
         }
     }
 
@@ -79,19 +81,20 @@ PopupWindow {
         border.color: Theme.quickBorder
 
         // Появление: лёгкий рост из угла кнопки.
+        // m3 enter: проявление с 92% и ростом из угла кнопки.
         opacity: root.visible ? 1 : 0
-        scale: root.visible ? 1 : Theme.quickIdleScale
+        scale: root.visible ? 1 : Theme.motionFadeThroughScale
         transformOrigin: Item.TopRight
         Behavior on opacity {
-            NumberAnimation {
-                duration: Theme.quickViewDuration
-                easing.type: Theme.quickViewEasing
+            MotionNumber {
+                duration: Theme.motionMedium1
+                curve: Theme.curveEmphasizedDecelerate
             }
         }
         Behavior on scale {
-            NumberAnimation {
-                duration: Theme.quickWindowDuration
-                easing.type: Theme.quickWindowEasing
+            MotionNumber {
+                duration: Theme.motionMedium1
+                curve: Theme.curveEmphasizedDecelerate
             }
         }
 

@@ -44,7 +44,7 @@ Item {
                 color: MockState.soundEnabled ? Theme.quickText : Theme.quickTextDim
                 font.family: Theme.iconFontFamily
                 font.pixelSize: 16
-                Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
+                Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
             }
 
             Text {

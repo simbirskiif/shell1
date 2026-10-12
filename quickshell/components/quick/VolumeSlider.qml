@@ -1,4 +1,5 @@
 import QtQuick
+import ".."
 import "../../singletons"
 
 // Громкость: дорожка, заливка и кружок. Компонент «глупый» —
@@ -29,9 +30,9 @@ Item {
         radius: track.radius
         color: Theme.accent
         Behavior on width {
-            NumberAnimation {
-                duration: Theme.quickHoverDuration
-                easing.type: Easing.OutCubic
+            MotionNumber {
+                duration: Theme.motionShort3
+                curve: Theme.curveStandard
             }
         }
     }
@@ -45,9 +46,9 @@ Item {
         radius: width / 2
         color: "#ffffff"
         Behavior on x {
-            NumberAnimation {
-                duration: Theme.quickHoverDuration
-                easing.type: Easing.OutCubic
+            MotionNumber {
+                duration: Theme.motionShort3
+                curve: Theme.curveStandard
             }
         }
     }

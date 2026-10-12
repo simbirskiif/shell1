@@ -20,7 +20,7 @@ Rectangle {
     radius: Theme.quickTileRadius
     color: root.active ? Theme.quickTileActive
                        : (hover.hovered ? Theme.quickTileHover : Theme.quickTile)
-    Behavior on color { ColorAnimation { duration: Theme.quickHoverDuration } }
+    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
     MouseArea {
         id: hover

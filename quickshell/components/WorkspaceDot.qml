@@ -16,21 +16,21 @@ Rectangle {
     color: active ? Theme.workspaceActiveColor : Theme.workspaceInactiveColor
 
     Behavior on width {
-        NumberAnimation {
-            duration: Theme.animationDuration
-            easing.type: Theme.animationEasing
+        MotionNumber {
+            duration: Theme.motionShort4
+            curve: Theme.curveStandard
         }
     }
 
     Behavior on color {
-        ColorAnimation { duration: Theme.animationDuration }
+        ColorAnimation { duration: Theme.motionShort3 }
     }
 
     // Соседние точки разъезжаются при смене активного стола.
     Behavior on x {
-        NumberAnimation {
-            duration: Theme.animationDuration
-            easing.type: Theme.animationEasing
+        MotionNumber {
+            duration: Theme.motionShort4
+            curve: Theme.curveStandard
         }
     }
 }

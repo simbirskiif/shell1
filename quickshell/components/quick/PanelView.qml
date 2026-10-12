@@ -1,9 +1,10 @@
 import QtQuick
+import ".."
 import "../../singletons"
 
-// Единая обёртка вида (основная панель и дочерние панели): неактивный
-// вид растворяется и уменьшается, активный проявляется и растёт.
-// Работает вместе с анимацией размера окна в QuickPopup.
+// Единая обёртка вида (основная сетка плиток и дочерние панели).
+// Переход — m3 fade through: уходящий вид гаснет за первые 30% времени,
+// приходящий проявляется и дорастает с 92% в оставшиеся 70%.
 Item {
     id: root
 
@@ -16,24 +17,50 @@ Item {
     implicitWidth: view ? view.implicitWidth : 0
     implicitHeight: view ? view.implicitHeight : 0
 
-    opacity: active ? 1 : 0
-    scale: active ? 1 : Theme.quickIdleScale
-    transformOrigin: Item.Top
     visible: opacity > 0
 
-    Behavior on opacity {
-        NumberAnimation {
-            duration: Theme.quickViewDuration
-            easing.type: Theme.quickViewEasing
+    states: [
+        State {
+            name: "shown"
+            when: root.active
+            PropertyChanges {
+                target: root
+                opacity: 1
+                scale: 1
+            }
+        },
+        State {
+            name: "hidden"
+            when: !root.active
+            PropertyChanges {
+                target: root
+                opacity: 0
+                scale: Theme.motionFadeThroughScale
+            }
         }
-    }
+    ]
 
-    Behavior on scale {
-        NumberAnimation {
-            duration: Theme.quickViewDuration
-            easing.type: Theme.quickViewEasing
+    transitions: [
+        Transition {
+            to: "shown"
+            SequentialAnimation {
+                PauseAnimation { duration: Theme.motionMedium2 * Theme.motionFadeOutShare }
+                MotionNumber {
+                    properties: "opacity,scale"
+                    duration: Theme.motionMedium2 * (1 - Theme.motionFadeOutShare)
+                    curve: Theme.curveEmphasizedDecelerate
+                }
+            }
+        },
+        Transition {
+            to: "hidden"
+            MotionNumber {
+                property: "opacity"
+                duration: Theme.motionMedium2 * Theme.motionFadeOutShare
+                curve: Theme.curveEmphasizedAccelerate
+            }
         }
-    }
+    ]
 
     Item {
         id: host

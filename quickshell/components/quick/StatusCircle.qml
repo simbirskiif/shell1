@@ -1,4 +1,5 @@
 import QtQuick
+import ".."
 import "../../singletons"
 
 // Кружок-переключатель слева в плитке: заливка и иконка зависят
@@ -19,7 +20,7 @@ Item {
         anchors.fill: parent
         radius: width / 2
         color: root.active ? Theme.accent : Theme.quickCircleOff
-        Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
+        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
 
         Text {
             anchors.centerIn: parent
@@ -27,7 +28,7 @@ Item {
             color: root.active ? Theme.quickIconOn : Theme.quickTextDim
             font.family: Theme.iconFontFamily
             font.pixelSize: 16
-            Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
+            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
     }
 
@@ -40,21 +41,22 @@ Item {
         }
     }
 
+    // m3: нажатие уходит вниз быстро, отпускание — мягко обратно.
     SequentialAnimation {
         id: pressAnim
-        NumberAnimation {
+        MotionNumber {
             target: circle
             property: "scale"
-            to: 0.85
-            duration: 70
-            easing.type: Easing.OutCubic
+            to: 0.9
+            duration: 100
+            curve: Theme.curveStandardAccelerate
         }
-        NumberAnimation {
+        MotionNumber {
             target: circle
             property: "scale"
             to: 1
-            duration: Theme.quickViewDuration
-            easing.type: Easing.OutBack
+            duration: Theme.motionMedium1
+            curve: Theme.curveEmphasizedDecelerate
         }
     }
 }
