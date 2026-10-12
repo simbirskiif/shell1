@@ -27,7 +27,7 @@ Rectangle {
         Text {
             text: "\uf293"
             color: root.bluetoothEnabled ? Theme.quickText : Theme.quickTextDim
-            font.family: Theme.fontFamily
+            font.family: Theme.iconFontFamily
             font.pixelSize: 14
             Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
         }
@@ -35,7 +35,7 @@ Rectangle {
         Text {
             text: "\uf1eb"
             color: root.wifiEnabled ? Theme.quickText : Theme.quickTextDim
-            font.family: Theme.fontFamily
+            font.family: Theme.iconFontFamily
             font.pixelSize: 14
             Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
         }
@@ -43,7 +43,7 @@ Rectangle {
         Text {
             text: root.soundEnabled ? "\uf028" : "\uf026"
             color: root.soundEnabled ? Theme.quickText : Theme.quickTextDim
-            font.family: Theme.fontFamily
+            font.family: Theme.iconFontFamily
             font.pixelSize: 14
             Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
         }

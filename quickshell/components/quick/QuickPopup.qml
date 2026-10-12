@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import "../../singletons"
 
 // Выпадающая панель быстрых настроек под кнопкой статуса в баре.
@@ -13,9 +12,11 @@ PopupWindow {
 
     readonly property string screenName: anchorWindow.screen ? anchorWindow.screen.name : ""
 
-    // Состояние живёт в UiState: так попапом можно управлять снаружи
-    // (qs ipc call bar toggle / wifi / sound / ...).
-    visible: UiState.openedScreen === root.screenName
+    // Источник правды — UiState. visible выставляем руками, а не биндингом:
+    // окно может погасить и сам композитор (grabFocus при клике мимо),
+    // тогда мы просто синхронизируем состояние обратно.
+    visible: false
+    grabFocus: true
 
     function toggle() {
         UiState.toggle(root.screenName);
@@ -24,6 +25,25 @@ PopupWindow {
     function close() {
         UiState.close();
     }
+
+    function syncVisibility() {
+        root.visible = UiState.openedScreen === root.screenName;
+    }
+
+    onVisibleChanged: {
+        if (!root.visible && UiState.openedScreen === root.screenName)
+            UiState.close();
+    }
+
+    Connections {
+        target: UiState
+
+        function onOpenedScreenChanged() {
+            root.syncVisibility();
+        }
+    }
+
+    Component.onCompleted: root.syncVisibility()
 
     // Правый верхний угол попапа — под кнопкой в баре, растёт вниз-влево.
     anchor.window: anchorWindow
@@ -47,13 +67,6 @@ PopupWindow {
             duration: Theme.quickWindowDuration
             easing.type: Theme.quickWindowEasing
         }
-    }
-
-    // Клик мимо попапа закрывает его.
-    HyprlandFocusGrab {
-        windows: [root.anchorWindow, root]
-        active: root.visible
-        onCleared: root.close()
     }
 
     Rectangle {
@@ -88,7 +101,6 @@ PopupWindow {
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.margins: Theme.quickPadding
-            panel: root.visible ? UiState.panel : ""
         }
     }
 }

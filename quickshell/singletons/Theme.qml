@@ -39,9 +39,9 @@ Singleton {
     readonly property int quickRowHeight: 44
 
     readonly property color accent: Wal.accent
-    // Фон попапа намеренно нейтральный: оттенок палитры сохраняем чуть-чуть,
-    // чтобы панель не спорила с обоями и оставалась читаемой.
-    readonly property color quickBackground: withAlpha(neutralize(Wal.background, 0.82), 0.94)
+    // Фон попапа заметно темнее и почти нейтральный: оттенок палитры
+    // сохраняем чуть-чуть, чтобы панель не спорила с обоями.
+    readonly property color quickBackground: withAlpha(darken(neutralize(Wal.background, 0.9), 0.6), 0.97)
     readonly property color quickBorder: withAlpha(Wal.foreground, 0.10)
     readonly property color quickTile: withAlpha(Wal.foreground, 0.06)
     readonly property color quickTileHover: withAlpha(Wal.foreground, 0.11)
@@ -63,8 +63,9 @@ Singleton {
     readonly property int quickHoverDuration: 110
     readonly property real quickIdleScale: 0.94
 
-    // Шрифт
-    readonly property string fontFamily: "JetBrainsMono Nerd Font"
+    // Шрифты: интерфейс — Google Sans, глифы-иконки — Nerd Font.
+    readonly property string fontFamily: "Google Sans"
+    readonly property string iconFontFamily: "JetBrainsMono Nerd Font"
 
     function withAlpha(color, alpha) {
         if (!color)
@@ -81,5 +82,11 @@ Singleton {
                        color.g + (luma - color.g) * amount,
                        color.b + (luma - color.b) * amount,
                        color.a);
+    }
+
+    function darken(color, factor) {
+        if (!color)
+            return Qt.rgba(0, 0, 0, 1);
+        return Qt.rgba(color.r * factor, color.g * factor, color.b * factor, color.a);
     }
 }

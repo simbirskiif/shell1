@@ -4,10 +4,12 @@ import "../../singletons"
 
 // Содержимое попапа. Один список описаний панелей создаёт и плитку
 // в сетке 2 столбца, и дочерний вид: добавить панель = добавить запись.
+// Открытая панель хранится в UiState, поэтому связь «плитка ↔ дочерний
+// вид» — это просто ключ дескриптора, без локальных копий состояния.
 Item {
     id: root
 
-    property string panel: ""
+    readonly property string panel: UiState.panel
 
     readonly property var panels: [bluetoothEntry, wifiEntry, soundEntry]
 
@@ -53,7 +55,7 @@ Item {
                     subtitle: modelData.subtitle
                     active: modelData.active
                     onToggled: modelData.toggle()
-                    onExpandRequested: root.panel = modelData.key
+                    onExpandRequested: modelData.open()
                 }
             }
         }
@@ -70,14 +72,25 @@ Item {
             active: root.panel === modelData.key
 
             Loader {
+                id: viewLoader
                 anchors.fill: parent
                 sourceComponent: modelData.view
+            }
+
+            // Кнопка «назад» внутри панели возвращает к сетке плиток.
+            Connections {
+                target: viewLoader.item
+
+                function onBackRequested() {
+                    UiState.closeDetail();
+                }
             }
         }
     }
 
-    // Единое описание панели: иконка, подписи, состояние, действие и
-    // дочерний вид. Одна запись создаёт и плитку, и окно управления.
+    // Единое описание панели: иконка, подписи, состояние, действия и
+    // дочерний вид. Одна запись создаёт и плитку, и окно управления;
+    // open() связывает плитку с её дочерним видом через ключ.
     QtObject {
         id: bluetoothEntry
 
@@ -87,6 +100,10 @@ Item {
         readonly property bool active: MockState.bluetoothEnabled
         readonly property string subtitle: MockState.bluetoothSummary
         readonly property Component view: Component { PanelBluetooth {} }
+
+        function open() {
+            UiState.openDetail(key);
+        }
 
         function toggle() {
             MockState.toggleBluetooth();
@@ -103,6 +120,10 @@ Item {
         readonly property string subtitle: MockState.wifiSummary
         readonly property Component view: Component { PanelWifi {} }
 
+        function open() {
+            UiState.openDetail(key);
+        }
+
         function toggle() {
             MockState.toggleWifi();
         }
@@ -117,6 +138,10 @@ Item {
         readonly property bool active: MockState.soundEnabled
         readonly property string subtitle: MockState.soundSummary
         readonly property Component view: Component { PanelSound {} }
+
+        function open() {
+            UiState.openDetail(key);
+        }
 
         function toggle() {
             MockState.toggleSound();

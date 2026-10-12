@@ -29,6 +29,16 @@ Singleton {
             open(screenName, "");
     }
 
+    // Открыть/закрыть дочернюю панель, не трогая сам попап.
+    // Через это связаны плитка в основной сетке и её дочерний вид.
+    function openDetail(panelName) {
+        panel = panelName;
+    }
+
+    function closeDetail() {
+        panel = "";
+    }
+
     // Экран по умолчанию для внешних команд — первый подключённый.
     function defaultScreen() {
         return Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "";

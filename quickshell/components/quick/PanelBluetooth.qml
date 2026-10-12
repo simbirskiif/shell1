@@ -1,8 +1,9 @@
 import QtQuick
 import "../../singletons"
 
-// Внутренняя панель Bluetooth в стиле macOS: список устройств,
-// клик по строке подключает/отключает устройство.
+// Внутренняя панель Bluetooth в стиле macOS: слева значок устройства
+// (наушники, телефон, геймпад, клавиатура...), подключённое обведено
+// кольцом, клик по строке подключает/отключает устройство.
 Item {
     id: root
 
@@ -56,25 +57,13 @@ Item {
                     onClicked: MockState.toggleDevice(rowItem.index)
                 }
 
-                Rectangle {
+                PanelIcon {
                     id: iconSlot
                     anchors.left: parent.left
-                    anchors.leftMargin: 14
+                    anchors.leftMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 26
-                    height: 26
-                    radius: width / 2
-                    color: rowItem.connected ? Theme.quickTileActive : Theme.quickCircleOff
-                    Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: rowItem.icon
-                        color: rowItem.connected ? Theme.accent : Theme.quickTextDim
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 13
-                        Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
-                    }
+                    icon: rowItem.icon
+                    connected: rowItem.connected
                 }
 
                 Text {
@@ -85,17 +74,6 @@ Item {
                     color: Theme.quickText
                     font.family: Theme.fontFamily
                     font.pixelSize: 13
-                }
-
-                Text {
-                    anchors.right: parent.right
-                    anchors.rightMargin: 14
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: rowItem.connected ? "Connected" : "Not Connected"
-                    color: rowItem.connected ? Theme.accent : Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 10
-                    Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
                 }
             }
         }

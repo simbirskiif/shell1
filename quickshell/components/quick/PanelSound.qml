@@ -42,7 +42,7 @@ Item {
                 anchors.topMargin: 22
                 text: MockState.soundEnabled ? "\uf028" : "\uf026"
                 color: MockState.soundEnabled ? Theme.quickText : Theme.quickTextDim
-                font.family: Theme.fontFamily
+                font.family: Theme.iconFontFamily
                 font.pixelSize: 16
                 Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
             }

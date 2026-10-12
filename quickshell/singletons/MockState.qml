@@ -22,8 +22,10 @@ Singleton {
     // Иконки — глифы JetBrainsMono Nerd Font.
     readonly property ListModel bluetoothDevices: ListModel {
         ListElement { name: "AirPods Pro"; icon: "\uf025"; connected: true }
+        ListElement { name: "Pixel 8"; icon: "\uf10b"; connected: false }
+        ListElement { name: "Xbox Controller"; icon: "\uf11b"; connected: true }
         ListElement { name: "Keychron K3"; icon: "\uf11c"; connected: false }
-        ListElement { name: "MX Master 3"; icon: "\uf245"; connected: true }
+        ListElement { name: "MX Master 3"; icon: "\uf245"; connected: false }
     }
 
     readonly property ListModel wifiNetworks: ListModel {

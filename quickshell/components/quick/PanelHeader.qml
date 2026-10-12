@@ -30,7 +30,7 @@ Item {
             anchors.centerIn: parent
             text: "\uf053"
             color: Theme.quickText
-            font.family: Theme.fontFamily
+            font.family: Theme.iconFontFamily
             font.pixelSize: 12
         }
 

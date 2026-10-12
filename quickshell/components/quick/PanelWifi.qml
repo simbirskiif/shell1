@@ -1,8 +1,8 @@
 import QtQuick
 import "../../singletons"
 
-// Внутренняя панель Wi-Fi в стиле macOS: список сетей с уровнем
-// сигнала, замком и отметкой подключённой сети.
+// Внутренняя панель Wi-Fi в стиле macOS: значок сети слева,
+// подключённая сеть обведена кольцом, справа — замок у закрытых.
 Item {
     id: root
 
@@ -57,27 +57,19 @@ Item {
                     onClicked: MockState.selectWifi(rowItem.index)
                 }
 
-                Item {
-                    id: checkSlot
+                PanelIcon {
+                    id: iconSlot
                     anchors.left: parent.left
-                    anchors.leftMargin: 14
+                    anchors.leftMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 14
-                    height: 14
-
-                    Text {
-                        anchors.centerIn: parent
-                        visible: rowItem.connected
-                        text: "\uf00c"
-                        color: Theme.accent
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 11
-                    }
+                    icon: "\uf1eb"
+                    connected: rowItem.connected
+                    strength: rowItem.strength
                 }
 
                 Text {
-                    anchors.left: checkSlot.right
-                    anchors.leftMargin: 10
+                    anchors.left: iconSlot.right
+                    anchors.leftMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
                     text: rowItem.name
                     color: Theme.quickText
@@ -85,34 +77,15 @@ Item {
                     font.pixelSize: 13
                 }
 
-                Row {
+                Text {
                     anchors.right: parent.right
-                    anchors.rightMargin: 14
+                    anchors.rightMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 8
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: rowItem.connected
-                        text: "Connected"
-                        color: Theme.quickTextDim
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 10
-                    }
-
-                    SignalBars {
-                        anchors.verticalCenter: parent.verticalCenter
-                        strength: rowItem.strength
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: rowItem.secured
-                        text: "\uf023"
-                        color: Theme.quickTextDim
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 11
-                    }
+                    visible: rowItem.secured
+                    text: "\uf023"
+                    color: Theme.quickTextDim
+                    font.family: Theme.iconFontFamily
+                    font.pixelSize: 12
                 }
             }
         }

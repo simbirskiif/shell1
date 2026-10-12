@@ -25,7 +25,7 @@ Item {
             anchors.centerIn: parent
             text: root.icon
             color: root.active ? Theme.quickIconOn : Theme.quickTextDim
-            font.family: Theme.fontFamily
+            font.family: Theme.iconFontFamily
             font.pixelSize: 16
             Behavior on color { ColorAnimation { duration: Theme.quickViewDuration } }
         }
