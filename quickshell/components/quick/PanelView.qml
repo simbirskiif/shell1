@@ -13,7 +13,10 @@ Item {
     // Жест возврата: gesture 0..1 (-1 — жест не идёт). Во время жеста вид
     // едет за пальцем: gestureShift -1 — уходит влево, +1 — приходит справа.
     property real gesture: -1
+    // -1 — уходящий вид, +1 — приходящий.
     property int gestureShift: -1
+    // +1 — жест вправо, -1 — влево.
+    property int gestureDirection: 1
 
     default property alias content: host.data
 
@@ -27,8 +30,9 @@ Item {
     readonly property real gestureX: {
         if (root.gesture < 0)
             return 0;
-        return root.gestureShift < 0 ? -root.gesture * root.width
-                                     : (1 - root.gesture) * root.width;
+        if (root.gestureShift < 0)
+            return root.gestureDirection * root.gesture * root.width;
+        return -root.gestureDirection * (1 - root.gesture) * root.width;
     }
 
     // Смещение задаём трансформацией: anchors и x конфликтуют,

@@ -162,8 +162,9 @@ Item {
         enabled: root.panel !== ""
 
         onWheel: event => {
-            const dx = event.pixelDelta.x !== 0 ? event.pixelDelta.x : event.angleDelta.x / 3;
-            const dy = event.pixelDelta.y !== 0 ? event.pixelDelta.y : event.angleDelta.y / 3;
+            // У тачпадов pixelDelta может быть нулевым — берём angleDelta как есть.
+            const dx = event.pixelDelta.x !== 0 ? event.pixelDelta.x : event.angleDelta.x;
+            const dy = event.pixelDelta.y !== 0 ? event.pixelDelta.y : event.angleDelta.y;
             if (Math.abs(dx) <= Math.abs(dy))
                 return;
             event.accepted = true;
@@ -215,6 +216,7 @@ Item {
         active: root.panel === "" || root.swipeActive
         gesture: root.swipeActive ? root.swipe : -1
         gestureShift: 1
+        gestureDirection: UiState.swipeDirection
 
         Column {
             id: mainColumn
@@ -487,6 +489,7 @@ Item {
             active: root.panel === modelData.key
             gesture: root.swipeActive ? root.swipe : -1
             gestureShift: -1
+            gestureDirection: UiState.swipeDirection
 
             Loader {
                 id: viewLoader

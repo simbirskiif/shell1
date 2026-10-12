@@ -26,21 +26,30 @@ Singleton {
     property real swipe: 0
     property bool swipeActive: false
     property int swipeCommand: 0
+    // Направление жеста: +1 — вправо, -1 — влево. Определяется по первому
+    // движению, поэтому знак прокрутки тачпада (natural scroll) не важен.
+    property int swipeDirection: 1
+
+    // Жест «назад»: прогресс растёт по 60% ширины панели — не нужно
+    // размахивать через весь экран.
+    readonly property real swipeReach: 0.6
 
     function swipeBy(delta, width) {
-        if (panel === "" || width <= 0)
+        if (panel === "" || width <= 0 || delta === 0)
             return;
         if (!swipeActive) {
             swipeActive = true;
             swipe = 0;
+            swipeDirection = delta > 0 ? 1 : -1;
         }
-        swipe = Math.max(0, Math.min(1, swipe + delta / width));
+        // В сторону первого движения — растим, обратно — уменьшаем.
+        swipe = Math.max(0, Math.min(1, swipe + delta * swipeDirection / (width * swipeReach)));
     }
 
     function endSwipe() {
         if (!swipeActive)
             return;
-        swipeCommand = swipe > 0.3 ? 1 : -1;
+        swipeCommand = swipe > 0.25 ? 1 : -1;
     }
 
     function clearSwipe() {
