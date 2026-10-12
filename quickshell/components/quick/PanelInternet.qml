@@ -2,8 +2,8 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Панель «Интернет»: подключённый Ethernet, поиск и список доступных
-// Wi-Fi сетей, ниже — сохранённые сети.
+// Панель «Интернет»: подключённый Ethernet, поиск и списки сетей.
+// Когда Wi-Fi выключен — единый экран-заглушка вместо списков.
 Item {
     id: root
 
@@ -32,11 +32,14 @@ Item {
         PanelHeader {
             title: "Internet"
             checked: MockState.wifiEnabled
+            refreshable: true
+            refreshing: MockState.wifiScanning
             onBackRequested: root.backRequested()
             onToggled: {
                 MockState.toggleWifi();
                 MockState.scanWifi();
             }
+            onRefreshRequested: MockState.scanWifi()
         }
 
         Rectangle {
@@ -45,19 +48,13 @@ Item {
             color: Theme.quickSeparator
         }
 
-        // Подключённый модем / проводное соединение — над списком Wi-Fi.
+        // Подключённый модем / проводное соединение — виден всегда.
         Item {
             id: ethernetRow
             width: parent.width
             height: MockState.ethernetConnected ? Theme.quickRowHeight : 0
             visible: height > 0
             clip: true
-            Behavior on height {
-                MotionNumber {
-                    duration: Theme.motionMedium1
-                    curve: Theme.curveEmphasized
-                }
-            }
 
             PanelIcon {
                 id: ethernetIcon
@@ -89,61 +86,79 @@ Item {
             }
         }
 
-        // Индикатор поиска сетей.
-        Item {
-            id: scanningRow
+        // Wi-Fi выключен — единый экран-заглушка.
+        PanelDisabled {
             width: parent.width
-            height: MockState.wifiScanning ? 56 : 0
-            visible: height > 0
-            clip: true
-            Behavior on height {
-                MotionNumber {
-                    duration: Theme.motionMedium1
-                    curve: Theme.curveEmphasized
-                }
-            }
-
-            Row {
-                anchors.left: parent.left
-                anchors.leftMargin: 16
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 12
-
-                LoadingIndicator {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 20
-                    height: 20
-                }
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "Searching for networks…"
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 12
-                }
+            visible: !MockState.wifiEnabled
+            height: visible ? implicitHeight : 0
+            icon: "\uf1eb"
+            title: "Wi-Fi is off"
+            description: "Turn Wi-Fi on to see available networks"
+            actionText: "Turn on"
+            onActionRequested: {
+                MockState.toggleWifi();
+                MockState.scanWifi();
             }
         }
 
-        PanelSection { text: "Available" }
-
-        PanelList {
+        // Wi-Fi включён: сначала сохранённые сети, затем доступные.
+        Column {
+            id: enabledContent
             width: parent.width
-            model: MockState.wifiNetworks
+            visible: MockState.wifiEnabled
+            height: visible ? implicitHeight : 0
+            spacing: 0
 
-            delegate: WifiRow {
-                onActivated: MockState.selectWifi(index)
+            // Индикатор поиска сетей.
+            Item {
+                id: scanningRow
+                width: parent.width
+                height: MockState.wifiScanning ? 56 : 0
+                visible: height > 0
+                clip: true
+
+                Row {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 16
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 12
+
+                    LoadingIndicator {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 20
+                        height: 20
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Searching for networks…"
+                        color: Theme.quickTextDim
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 12
+                    }
+                }
             }
-        }
 
-        PanelSection { text: "Saved" }
+            PanelSection { text: "Saved" }
 
-        PanelList {
-            width: parent.width
-            model: MockState.savedWifiNetworks
+            PanelList {
+                width: parent.width
+                model: MockState.savedWifiNetworks
 
-            delegate: WifiRow {
-                onActivated: MockState.selectSavedWifi(index)
+                delegate: WifiRow {
+                    onActivated: MockState.selectSavedWifi(index)
+                }
+            }
+
+            PanelSection { text: "Available" }
+
+            PanelList {
+                width: parent.width
+                model: MockState.wifiNetworks
+
+                delegate: WifiRow {
+                    onActivated: MockState.selectWifi(index)
+                }
             }
         }
     }

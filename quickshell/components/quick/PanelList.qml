@@ -2,26 +2,30 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Список строк внутренней панели. Заготовки анимаций появления,
-// удаления и сдвига элементов: высота списка следует за содержимым,
-// поэтому окно попапа подстраивается вместе с ними.
+// Список строк внутренней панели: заготовки анимаций появления, удаления
+// и сдвига элементов. Высота считается по числу строк, а не по contentHeight:
+// во время анимаций сдвига contentHeight меняется каждый кадр, и окно
+// получало бы новую цель размера на каждом кадре — отсюда лаги.
 ListView {
     id: root
 
-    // Высота списка меняется не мгновенно: место под новый элемент нужно
-    // сразу, а вот место удалённого отдаём только после его анимации —
-    // иначе окно сжимается быстрее и обрезает гаснущую строку.
+    property real rowHeight: Theme.quickRowHeight
+    // Высота, которую держим до конца анимации удаления, чтобы окно
+    // не срезало гаснущую строку.
     property real frameHeight: 0
 
-    implicitHeight: Math.max(frameHeight, contentHeight)
+    readonly property real rowsHeight: root.count * root.rowHeight
+
+    implicitHeight: Math.max(root.frameHeight, root.rowsHeight)
     height: implicitHeight
     interactive: false
     boundsBehavior: Flickable.StopAtBounds
     spacing: 0
 
-    onContentHeightChanged: {
-        if (contentHeight >= frameHeight)
-            frameHeight = contentHeight;
+
+    onRowsHeightChanged: {
+        if (root.rowsHeight >= root.frameHeight)
+            root.frameHeight = root.rowsHeight;
         else
             shrinkTimer.restart();
     }
@@ -29,7 +33,7 @@ ListView {
     Timer {
         id: shrinkTimer
         interval: Theme.motionShort4
-        onTriggered: root.frameHeight = root.contentHeight
+        onTriggered: root.frameHeight = root.rowsHeight
     }
 
     // m3 enter: элемент проявляется и дорастает с 80%.

@@ -46,6 +46,22 @@ ShellRoot {
             return internet();
         }
 
+        // Переключатели радио — удобно для проверки состояний.
+        function toggleWifi(): string {
+            MockState.toggleWifi();
+            return state();
+        }
+
+        function toggleBluetooth(): string {
+            MockState.toggleBluetooth();
+            return state();
+        }
+
+        function toggleEthernet(): string {
+            MockState.ethernetConnected = !MockState.ethernetConnected;
+            return state();
+        }
+
         // Заново запустить поиск сетей и устройств.
         function rescan(): string {
             MockState.scanWifi();
@@ -102,3 +118,4 @@ ShellRoot {
         }
     }
 }
+

@@ -2,8 +2,8 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Панель Bluetooth: поиск устройств, список сохранённых (спаренных)
-// устройств и список найденных. Подключённые обведены кольцом.
+// Панель Bluetooth: поиск, сохранённые (спаренные) устройства и найденные.
+// Когда Bluetooth выключен — единый экран-заглушка.
 Item {
     id: root
 
@@ -32,11 +32,14 @@ Item {
         PanelHeader {
             title: "Bluetooth"
             checked: MockState.bluetoothEnabled
+            refreshable: true
+            refreshing: MockState.bluetoothScanning
             onBackRequested: root.backRequested()
             onToggled: {
                 MockState.toggleBluetooth();
                 MockState.scanBluetooth();
             }
+            onRefreshRequested: MockState.scanBluetooth()
         }
 
         Rectangle {
@@ -45,61 +48,77 @@ Item {
             color: Theme.quickSeparator
         }
 
-        // Индикатор поиска устройств.
-        Item {
-            id: scanningRow
+        // Bluetooth выключен — единый экран-заглушка.
+        PanelDisabled {
             width: parent.width
-            height: MockState.bluetoothScanning ? 56 : 0
-            visible: height > 0
-            clip: true
-            Behavior on height {
-                MotionNumber {
-                    duration: Theme.motionMedium1
-                    curve: Theme.curveEmphasized
-                }
-            }
-
-            Row {
-                anchors.left: parent.left
-                anchors.leftMargin: 16
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 12
-
-                LoadingIndicator {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 20
-                    height: 20
-                }
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "Searching for devices…"
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 12
-                }
+            visible: !MockState.bluetoothEnabled
+            height: visible ? implicitHeight : 0
+            icon: "\uf293"
+            title: "Bluetooth is off"
+            description: "Turn Bluetooth on to find nearby devices"
+            actionText: "Turn on"
+            onActionRequested: {
+                MockState.toggleBluetooth();
+                MockState.scanBluetooth();
             }
         }
 
-        PanelSection { text: "My devices" }
-
-        PanelList {
+        Column {
+            id: enabledContent
             width: parent.width
-            model: MockState.savedBluetoothDevices
+            visible: MockState.bluetoothEnabled
+            height: visible ? implicitHeight : 0
+            spacing: 0
 
-            delegate: BluetoothRow {
-                onActivated: MockState.toggleSavedDevice(index)
+            Item {
+                id: scanningRow
+                width: parent.width
+                height: MockState.bluetoothScanning ? 56 : 0
+                visible: height > 0
+                clip: true
+
+                Row {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 16
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 12
+
+                    LoadingIndicator {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 20
+                        height: 20
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Searching for devices…"
+                        color: Theme.quickTextDim
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 12
+                    }
+                }
             }
-        }
 
-        PanelSection { text: "Available" }
+            PanelSection { text: "My devices" }
 
-        PanelList {
-            width: parent.width
-            model: MockState.bluetoothDevices
+            PanelList {
+                width: parent.width
+                model: MockState.savedBluetoothDevices
 
-            delegate: BluetoothRow {
-                onActivated: MockState.toggleDevice(index)
+                delegate: BluetoothRow {
+                    onActivated: MockState.toggleSavedDevice(index)
+                }
+            }
+
+            PanelSection { text: "Available" }
+
+            PanelList {
+                width: parent.width
+                model: MockState.bluetoothDevices
+
+                delegate: BluetoothRow {
+                    onActivated: MockState.toggleDevice(index)
+                }
             }
         }
     }
