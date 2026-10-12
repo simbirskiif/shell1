@@ -856,9 +856,25 @@ Singleton {
         onTriggered: root.readWifiList()
     }
 
+    // Автообновление видимого списка идёт через тот же индикатор: пока панель
+    // открыта, раз в 5 секунд пробегает лёгкая пульсация, и видно, что список
+    // живой. Свой таймер, чтобы не пересекаться с полноценным сканом.
+    readonly property int indicatorMinDuration: 700
+
+    Timer {
+        id: indicatorMin
+        interval: root.indicatorMinDuration
+        onTriggered: {
+            root.periodicMinElapsed = true;
+            root.tryFinishPeriodic();
+        }
+    }
+
     property bool scanPending: false
     property bool scanMinElapsed: false
     property bool scanReadDone: false
+    property bool periodicBusy: false
+    property bool periodicMinElapsed: false
     // Поколение сканов: ответы устаревших процессов игнорируются.
     property int scanGeneration: 0
 
@@ -879,6 +895,9 @@ Singleton {
         scanPending = false;
         scanMinElapsed = false;
         scanReadDone = false;
+        // Полный скан вытесняет автообновление: его результат свежее.
+        periodicBusy = false;
+        indicatorMin.stop();
         scanMin.restart();
         scanGuard.restart();
 
@@ -910,23 +929,63 @@ Singleton {
         run(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY,BSSID",
              "device", "wifi", "list", "ifname", device, "--rescan", "no"],
             (code, out, err) => {
-                if (generation !== root.scanGeneration)
-                    return;     // скан отменён или заменён новым
+                const periodic = root.periodicBusy;
+                if (generation !== root.scanGeneration) {
+                    // Пока читали кэш, стартовал полный скан: его результат
+                    // свежее, а индикатором управляет он.
+                    if (periodic) {
+                        root.periodicBusy = false;
+                        root.indicatorMin.stop();
+                    }
+                    return;
+                }
                 if (code !== 0)
                     root.log("wifi list: " + (err || "").trim());
                 applyWifiList(out);
+                scheduleRefresh();
+                if (periodic) {
+                    // Индикатор снимется, когда пройдёт минимальная пауза.
+                    root.tryFinishPeriodic();
+                    return;
+                }
                 scanGuard.stop();
                 scanReadDone = true;
                 tryFinishScan();
-                scheduleRefresh();
             });
     }
 
     // Индикатор снимается, когда список прочитан и прошла минимальная пауза.
     function tryFinishScan() {
+        if (periodicBusy)
+            return;             // автообновление снимет индикатор само
         if (!scanReadDone || !scanMinElapsed)
             return;
         scanReadDone = false;
+        wifiScanning = false;
+    }
+
+    // Автообновление: читаем кэш NM (без rescan) и показываем индикатор.
+    // Вызывается, пока панель открыта; при полном скане пропускается.
+    function refreshPeriodic() {
+        if (!panelOpen || !wifiEnabled || !backendAvailable || scanPending)
+            return;
+        if (periodicBusy || wifiScanning)
+            return;
+        if (wifiDev === "")
+            return;
+        periodicBusy = true;
+        periodicMinElapsed = false;
+        wifiScanning = true;
+        indicatorMin.restart();
+        readWifiList();
+    }
+
+    // Автообновление не должно трогать состояние полного скана: если он
+    // начался, пока читался кэш, его результат просто игнорируем.
+    function tryFinishPeriodic() {
+        if (!periodicBusy || !periodicMinElapsed)
+            return;
+        periodicBusy = false;
         wifiScanning = false;
     }
 
@@ -970,6 +1029,9 @@ Singleton {
             activeSsid = "";
             scanGeneration++;       // ответы текущего скана больше не нужны
             stopScanTimers();
+            indicatorMin.stop();
+            periodicBusy = false;
+            periodicMinElapsed = false;
             scanPending = false;
             scanReadDone = false;
             scanMinElapsed = false;
@@ -1536,14 +1598,7 @@ Singleton {
         interval: 5000
         repeat: true
         running: root.panelOpen && root.wifiEnabled && root.wifiDev !== ""
-        onTriggered: {
-            root.run(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY,BSSID",
-                      "device", "wifi", "list", "ifname", root.wifiDev, "--rescan", "no"],
-                (code, out) => {
-                    if (code === 0)
-                        root.applyWifiList(out);
-                });
-        }
+        onTriggered: root.refreshPeriodic()
     }
 
     onPanelOpenChanged: {
