@@ -34,8 +34,10 @@ Item {
         anchors.centerIn: parent
         spacing: 8
 
-        // Батарейка: два скруглённых прямоугольника друг на друге —
-        // нижний корпус, верхний заливка уровня слева-направо, плюс носик.
+        // Батарейка: скруглённая колодка, поверх неё — полноразмерная
+        // заливка того же радиуса, которую слева-направо «проявляет»
+        // прямоугольная маска. Поэтому правый край заливки всегда прямой,
+        // а форму держит сама фигура батареи, а не ширина заливки.
         Item {
             id: cell
             anchors.verticalCenter: parent.verticalCenter
@@ -53,20 +55,29 @@ Item {
                 Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
             }
 
-            Rectangle {
-                id: levelFill
+            Item {
+                id: reveal
                 anchors.left: track.left
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.max(0, track.width * root.level / 100)
+                width: track.width * Math.max(0, Math.min(1, root.level / 100))
                 height: track.height
-                radius: track.radius
-                color: root.stateColor
-                Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+                clip: true
+
                 Behavior on width {
                     MotionNumber {
                         duration: Theme.motionMedium1
                         curve: Theme.curveEmphasized
                     }
+                }
+
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: track.width
+                    height: track.height
+                    radius: track.radius
+                    color: root.stateColor
+                    Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
                 }
             }
 
