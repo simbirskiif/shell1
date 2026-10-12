@@ -8,6 +8,8 @@ Item {
     id: root
 
     required property string icon
+    // Своя иконка вместо глифа (например индикатор Wi-Fi с делениями).
+    property bool wifiIcon: false
     required property string title
     required property string description
     required property string actionText
@@ -27,10 +29,21 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
+            visible: !root.wifiIcon
             text: root.icon
             color: Theme.quickTextDim
             font.family: Theme.iconFontFamily
             font.pixelSize: 34
+        }
+
+        WifiStatusIcon {
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: root.wifiIcon
+            width: 40
+            height: 40
+            wifiEnabled: NetworkService.wifiEnabled
+            connected: NetworkService.wifiConnected
+            signal: NetworkService.connectedSignal
         }
 
         Text {

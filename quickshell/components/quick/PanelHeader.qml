@@ -73,8 +73,8 @@ Item {
         anchors.left: titleText.right
         anchors.leftMargin: 8
         anchors.verticalCenter: parent.verticalCenter
-        width: 18
-        height: 18
+        width: 20
+        height: 20
         visible: root.wifiStatus
         wifiEnabled: NetworkService.wifiEnabled
         connected: NetworkService.wifiConnected

@@ -56,24 +56,28 @@ Item {
             const w = width;
             const h = height;
             const cx = w / 2;
-            const stroke = Math.max(1.4, w * 0.10);
+            const stroke = Math.max(1.8, w * 0.115);
 
             // Геометрия в долях размера (проверена для 18 px):
-            //   top = 0.62h    — центр дуг
+            //   top = 0.66h    — центр дуг
             //   r1..r3         — радиусы внутренней, средней и внешней дуг
             //   dotY = 0.82h   — точка-основание
             // Верх внешней дуги получается на 0.08h от края: сглаживание не
             // упирается в границу холста, поэтому верх не срезается.
-            const top = h * 0.62;
-            const r1 = w * 0.15;
-            const r2 = w * 0.32;
-            const r3 = w * 0.49;
-            const dotRadius = Math.max(1.1, stroke * 0.7);
+            const top = h * 0.66;
+            const r1 = w * 0.14;
+            const r2 = w * 0.28;
+            const r3 = w * 0.42;
+            const dotRadius = Math.max(1.3, stroke * 0.7);
             const dotY = h * 0.82;
 
+            // На кружке плитки фон — accent (оранжевый), поэтому:
+            //   * активные дуги — цветом фона (тёмные, читаются на оранжевом);
+            //   * неактивные — светлые, иначе они сливались бы с кружком.
             const mainColor = root.onAccent ? String(Theme.quickIconOn)
                                             : String(Theme.quickText);
-            const dimColor = String(Theme.quickTextDim);
+            const dimColor = root.onAccent ? String(Theme.menuSurface)
+                                           : String(Theme.quickTextDim);
             const onColor = root.connected ? mainColor : dimColor;
 
             // Три дуги: у каждой свой цвет и прозрачность — так состояние

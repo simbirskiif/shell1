@@ -41,8 +41,8 @@ Item {
         WifiStatusIcon {
             anchors.centerIn: parent
             visible: root.wifiStatus
-            width: 18
-            height: 18
+            width: 20
+            height: 20
             onAccent: root.active
             wifiEnabled: NetworkService.wifiEnabled
             connected: NetworkService.wifiConnected

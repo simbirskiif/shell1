@@ -115,6 +115,7 @@ Item {
                 width: parent.width
                 visible: NetworkService.backendAvailable && !NetworkService.wifiEnabled
                 height: visible ? implicitHeight : 0
+                wifiIcon: true
                 icon: "\uf1eb"
                 title: NetworkService.wifiHardBlocked ? "Wi-Fi is blocked" : "Wi-Fi is off"
                 description: NetworkService.wifiHardBlocked

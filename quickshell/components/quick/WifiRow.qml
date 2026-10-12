@@ -55,8 +55,8 @@ Rectangle {
         anchors.left: parent.left
         anchors.leftMargin: 21
         anchors.verticalCenter: parent.verticalCenter
-        width: 18
-        height: 18
+        width: 20
+        height: 20
         wifiEnabled: NetworkService.wifiEnabled
         connected: root.connected
         signal: root.strength

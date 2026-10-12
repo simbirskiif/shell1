@@ -40,8 +40,8 @@ Rectangle {
 
         WifiStatusIcon {
             anchors.verticalCenter: parent.verticalCenter
-            width: 18
-            height: 18
+            width: 19
+            height: 19
             wifiEnabled: root.wifiEnabled
             connected: root.wifiConnected
             signal: root.wifiSignal
