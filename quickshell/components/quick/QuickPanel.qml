@@ -11,7 +11,10 @@ Item {
 
     readonly property string panel: UiState.panel
 
-    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry]
+    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, batteryEntry]
+
+    // В сетке плиток показываем не все панели: батарея живёт в шапке.
+    readonly property var gridPanels: root.panels.filter(entry => entry.inGrid)
 
     readonly property Item activeDetail: {
         for (let i = 0; i < detailViews.count; ++i) {
@@ -34,28 +37,81 @@ Item {
         anchors.fill: parent
         active: root.panel === ""
 
-        GridLayout {
+        Column {
+            id: mainColumn
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            columns: 2
-            columnSpacing: Theme.quickTileSpacing
-            rowSpacing: Theme.quickTileSpacing
+            spacing: Theme.quickTileSpacing
 
-            Repeater {
-                model: root.panels
+            // Шапка основной панели: справа — батарея.
+            Item {
+                width: parent.width
+                height: 28
 
-                delegate: QuickTile {
-                    required property var modelData
+                BatteryButton {
+                    anchors.right: parent.right
+                    anchors.rightMargin: 4
+                    anchors.verticalCenter: parent.verticalCenter
+                    level: MockState.batteryLevel
+                    charging: MockState.batteryCharging
+                    onClicked: batteryEntry.open()
+                }
+            }
 
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: Theme.quickTileHeight
-                    icon: modelData.icon
-                    title: modelData.title
-                    subtitle: modelData.subtitle
-                    active: modelData.active
-                    onToggled: modelData.toggle()
-                    onExpandRequested: modelData.open()
+            // Яркость — во всю ширину, как в Android 12+.
+            Rectangle {
+                width: parent.width
+                height: 48
+                radius: Theme.quickTileRadius
+                color: Theme.quickTile
+
+                Text {
+                    id: brightnessIcon
+                    anchors.left: parent.left
+                    anchors.leftMargin: 14
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "\uf185"
+                    color: Theme.quickTextDim
+                    font.family: Theme.iconFontFamily
+                    font.pixelSize: 15
+                }
+
+                PanelSlider {
+                    anchors.left: brightnessIcon.right
+                    anchors.leftMargin: 12
+                    anchors.right: parent.right
+                    anchors.rightMargin: 14
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 22
+                    value: MockState.brightness
+                    onMoved: v => {
+                        MockState.brightness = v;
+                    }
+                }
+            }
+
+            GridLayout {
+                width: parent.width
+                columns: 2
+                columnSpacing: Theme.quickTileSpacing
+                rowSpacing: Theme.quickTileSpacing
+
+                Repeater {
+                    model: root.gridPanels
+
+                    delegate: QuickTile {
+                        required property var modelData
+
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Theme.quickTileHeight
+                        icon: modelData.icon
+                        title: modelData.title
+                        subtitle: modelData.subtitle
+                        active: modelData.active
+                        onToggled: modelData.toggle()
+                        onExpandRequested: modelData.open()
+                    }
                 }
             }
         }
@@ -94,6 +150,7 @@ Item {
     QtObject {
         id: bluetoothEntry
 
+        readonly property bool inGrid: true
         readonly property string key: "bluetooth"
         readonly property string title: "Bluetooth"
         readonly property string icon: "\uf293"
@@ -113,6 +170,7 @@ Item {
     QtObject {
         id: internetEntry
 
+        readonly property bool inGrid: true
         readonly property string key: "internet"
         readonly property string title: "Internet"
         readonly property string icon: "\uf0ac"
@@ -132,6 +190,7 @@ Item {
     QtObject {
         id: soundEntry
 
+        readonly property bool inGrid: true
         readonly property string key: "sound"
         readonly property string title: "Sound"
         readonly property string icon: MockState.soundEnabled ? "\uf028" : "\uf026"
@@ -145,6 +204,28 @@ Item {
 
         function toggle() {
             MockState.toggleSound();
+        }
+    }
+
+    // Батарея: не плитка, а кнопка в шапке основной панели,
+    // но дочерний вид создаётся тем же механизмом.
+    QtObject {
+        id: batteryEntry
+
+        readonly property bool inGrid: false
+        readonly property string key: "battery"
+        readonly property string title: "Battery"
+        readonly property string icon: "\uf240"
+        readonly property bool active: MockState.batteryCharging
+        readonly property string subtitle: MockState.batteryLevel + "%"
+        readonly property Component view: Component { PanelBattery {} }
+
+        function open() {
+            UiState.openDetail(key);
+        }
+
+        function toggle() {
+            MockState.toggleCharging();
         }
     }
 }

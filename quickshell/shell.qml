@@ -46,6 +46,12 @@ ShellRoot {
             return internet();
         }
 
+        // Состояние питания (тестовое): зарядка вкл/выкл.
+        function toggleCharging(): string {
+            MockState.toggleCharging();
+            return state();
+        }
+
         // Переключатели радио — удобно для проверки состояний.
         function toggleWifi(): string {
             MockState.toggleWifi();
@@ -66,6 +72,11 @@ ShellRoot {
         function rescan(): string {
             MockState.scanWifi();
             MockState.scanBluetooth();
+            return state();
+        }
+
+        function battery(): string {
+            UiState.open(UiState.defaultScreen(), "battery");
             return state();
         }
 
@@ -111,6 +122,8 @@ ShellRoot {
                 + " panel=" + (UiState.panel === "" ? "main" : UiState.panel)
                 + " palette=" + (Wal.walLoaded ? "wal" : "fallback")
                 + " bg=" + Wal.background + " accent=" + Wal.accent
+                + " battery=" + MockState.batteryLevel + "%" + (MockState.batteryCharging ? "+" : "")
+                + " mode=" + MockState.powerMode
                 + " ethernet=" + (MockState.ethernetConnected ? "on" : "off")
                 + " scanning=" + (MockState.wifiScanning || MockState.bluetoothScanning)
                 + " wifi=" + MockState.wifiNetworks.count
@@ -118,4 +131,6 @@ ShellRoot {
         }
     }
 }
+
+
 

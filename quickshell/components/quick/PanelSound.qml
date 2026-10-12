@@ -58,7 +58,7 @@ Item {
                 font.pixelSize: 12
             }
 
-            VolumeSlider {
+            PanelSlider {
                 anchors.left: volumeIcon.right
                 anchors.leftMargin: 16
                 anchors.right: percent.left

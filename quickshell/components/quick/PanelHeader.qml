@@ -11,6 +11,8 @@ Item {
     required property bool checked
     property bool refreshable: false
     property bool refreshing: false
+    // У некоторых панелей (например «Питание») тумблера нет.
+    property bool switchable: true
 
     signal backRequested()
     signal toggled()
@@ -61,6 +63,7 @@ Item {
 
     ToggleSwitch {
         id: toggle
+        visible: root.switchable
         anchors.right: parent.right
         anchors.rightMargin: 12
         anchors.verticalCenter: parent.verticalCenter
@@ -71,7 +74,7 @@ Item {
     // Обновление списка: пока идёт поиск, значок вращается.
     Item {
         id: refreshButton
-        anchors.right: toggle.left
+        anchors.right: root.switchable ? toggle.left : parent.right
         anchors.rightMargin: 4
         anchors.verticalCenter: parent.verticalCenter
         width: 30

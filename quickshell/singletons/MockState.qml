@@ -15,6 +15,34 @@ Singleton {
     property real volume: 0.65
     property string outputName: "Built-in Speakers"
 
+    // Яркость экрана (пока заглушка).
+    property real brightness: 0.7
+
+    // Батарея и питание.
+    property int batteryLevel: 82
+    property bool batteryCharging: false
+    property int batteryMinutes: 252
+    property string powerMode: "Balanced"
+
+    readonly property var powerModes: ["Saver", "Balanced", "Performance"]
+
+    readonly property string batteryState: batteryCharging ? "Charging" : "Discharging"
+
+    readonly property string batteryTime: {
+        const hours = Math.floor(batteryMinutes / 60);
+        const minutes = batteryMinutes % 60;
+        const suffix = batteryCharging ? "until full" : "remaining";
+        if (hours > 0)
+            return hours + " h " + minutes + " min " + suffix;
+        return minutes + " min " + suffix;
+    }
+
+    // Демо: переключить «зарядку», чтобы посмотреть второе состояние.
+    function toggleCharging() {
+        batteryCharging = !batteryCharging;
+        batteryMinutes = batteryCharging ? 74 : 252;
+    }
+
     // Ethernet: если подключён, в панели «Интернет» над списком Wi-Fi
     // показывается подключённый модем / проводное соединение.
     property bool ethernetConnected: true
