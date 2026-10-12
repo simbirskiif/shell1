@@ -16,6 +16,8 @@ Rectangle {
     required property bool active
 
     property bool editable: false
+    // Показывать ли плитку: скрытая гаснет на месте, а не улетает в угол.
+    property bool shown: true
     // Позиция в сетке (её задаёт панель) — нужна для перетаскивания.
     property int order: -1
     property int columns: 2
@@ -35,7 +37,8 @@ Rectangle {
     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
     // В редакторе плитка выглядит меньше, но место занимает то же.
-    scale: root.editable ? 0.92 : 1
+    // Скрытая плитка уходит по m3 exit: растворяется и сжимается.
+    scale: (root.editable ? 0.92 : 1) * (root.shown ? 1 : Theme.motionElementScale)
     Behavior on scale {
         MotionNumber {
             duration: Theme.motionMedium1
@@ -60,7 +63,7 @@ Rectangle {
     Behavior on opacity {
         MotionNumber {
             duration: Theme.motionShort4
-            curve: Theme.curveStandard
+            curve: Theme.curveEmphasized
         }
     }
 
@@ -150,9 +153,10 @@ Rectangle {
         visible: root.editable
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.margins: 2
-        width: 22
-        height: 22
+        anchors.rightMargin: -6
+        anchors.topMargin: -6
+        width: 26
+        height: 26
         radius: width / 2
         color: removeHover.hovered ? Theme.lowColor : Theme.withAlpha(Theme.quickText, 0.18)
         z: 3

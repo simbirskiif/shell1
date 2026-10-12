@@ -71,6 +71,36 @@ Item {
         return root.shownKeys.indexOf(key);
     }
 
+    function isShown(key) {
+        return root.shownKeys.indexOf(key) >= 0;
+    }
+
+    // Последняя позиция плитки в сетке: убранная плитка гаснет на месте,
+    // а не улетает в угол.
+    property var tileSlots: ({})
+
+    function slotOf(key) {
+        const slot = root.tileSlots[key];
+        return slot === undefined ? -1 : slot;
+    }
+
+    function refreshTileSlots() {
+        const map = {};
+        for (const key in root.tileSlots)
+            map[key] = root.tileSlots[key];
+        for (let i = 0; i < root.shownKeys.length; ++i)
+            map[root.shownKeys[i]] = i;
+        root.tileSlots = map;
+    }
+
+    onShownKeysChanged: root.refreshTileSlots()
+    Component.onCompleted: root.refreshTileSlots()
+
+    // Индекс плитки в пуле доступных.
+    function poolIndex(key) {
+        return root.poolKeys.indexOf(key);
+    }
+
     // Редактор живёт в UiState — так им можно управлять и снаружи.
     function beginEdit() {
         UiState.beginEdit();
@@ -175,14 +205,15 @@ Item {
 
                         width: grid.cellWidth
                         height: grid.cellHeight
-                        order: root.indexOfShown(modelData.key)
+                        order: root.slotOf(modelData.key)
+                        shown: root.isShown(modelData.key)
                         columns: grid.columns
                         stepX: grid.stepX
                         stepY: grid.stepY
                         x: order >= 0 ? (order % grid.columns) * grid.stepX : 0
                         y: order >= 0 ? Math.floor(order / grid.columns) * grid.stepY : 0
                         visible: opacity > 0
-                        opacity: order >= 0 ? 1 : 0
+                        opacity: shown ? 1 : 0
 
                         icon: modelData.icon
                         title: modelData.title
@@ -316,85 +347,40 @@ Item {
                     font.pixelSize: 12
                 }
 
-                Repeater {
-                    model: root.poolEntries
+                Item {
+                    id: poolGrid
+                    width: mainColumn.width
 
-                    delegate: Item {
-                        id: poolRow
-                        required property var modelData
+                    readonly property int columns: 2
+                    readonly property real spacing: Theme.quickTileSpacing
+                    readonly property real cellWidth: (width - spacing) / columns
+                    readonly property real cellHeight: Theme.quickTileHeight
+                    readonly property real stepX: cellWidth + spacing
+                    readonly property real stepY: cellHeight + spacing
+                    readonly property int rows: Math.ceil(root.poolKeys.length / columns)
 
-                        width: mainColumn.width
-                        height: Theme.quickRowHeight
+                    implicitHeight: rows > 0 ? rows * stepY - spacing : 0
 
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: Theme.quickTileRadius
-                            color: poolHover.hovered ? Theme.quickTileHover : "transparent"
-                            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
-                        }
+                    Repeater {
+                        model: root.tileEntries
 
-                        Rectangle {
-                            id: poolIcon
-                            anchors.left: parent.left
-                            anchors.leftMargin: 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 28
-                            height: 28
-                            radius: width / 2
-                            color: Theme.quickCircleOff
+                        delegate: PoolTile {
+                            required property var modelData
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: poolRow.modelData.icon
-                                color: Theme.quickText
-                                font.family: Theme.iconFontFamily
-                                font.pixelSize: 13
-                            }
-                        }
+                            readonly property int poolOrder: root.poolIndex(modelData.key)
 
-                        Text {
-                            anchors.left: poolIcon.right
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: poolRow.modelData.title
-                            color: Theme.quickText
-                            font.family: Theme.fontFamily
-                            font.pixelSize: 13
-                        }
+                            width: poolGrid.cellWidth
+                            height: poolGrid.cellHeight
+                            x: poolOrder >= 0 ? (poolOrder % poolGrid.columns) * poolGrid.stepX : x
+                            y: poolOrder >= 0 ? Math.floor(poolOrder / poolGrid.columns) * poolGrid.stepY : y
+                            visible: opacity > 0
+                            opacity: poolOrder >= 0 ? 1 : 0
+                            scale: poolOrder >= 0 ? 0.92 : Theme.motionElementScale * 0.92
+                            shown: poolOrder >= 0
 
-                        Rectangle {
-                            id: addButton
-                            anchors.right: parent.right
-                            anchors.rightMargin: 8
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 26
-                            height: 26
-                            radius: width / 2
-                            color: addHover.hovered ? Theme.quickTileActive : Theme.quickCircleOff
-                            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "\uf067"
-                                color: Theme.quickText
-                                font.family: Theme.iconFontFamily
-                                font.pixelSize: 10
-                            }
-
-                            MouseArea {
-                                id: addHover
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.showTile(poolRow.modelData.key)
-                            }
-                        }
-
-                        MouseArea {
-                            id: poolHover
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: root.showTile(poolRow.modelData.key)
+                            icon: modelData.icon
+                            title: modelData.title
+                            onAddRequested: root.showTile(modelData.key)
                         }
                     }
                 }
