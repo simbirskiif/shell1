@@ -134,27 +134,23 @@ Item {
 
     implicitWidth: Theme.quickWidth
     implicitHeight: {
+        const mainHeight = mainView.implicitHeight;
         // Высота следует за открытой панелью: во время жеста она не должна
         // прыгать на высоту сетки.
         if (root.panel === "")
-            return mainView.implicitHeight;
-        return root.activeDetail ? root.activeDetail.implicitHeight : mainView.implicitHeight;
+            return mainHeight;
+        const detailHeight = root.activeDetail ? root.activeDetail.implicitHeight : mainHeight;
+        // Во время жеста окно едет вместе с пальцем: высота плавно переходит
+        // от дочерней панели к сетке и обратно.
+        if (root.swipeActive)
+            return detailHeight + (mainHeight - detailHeight) * root.swipe;
+        return detailHeight;
     }
 
-    // Состояние жеста живёт в UiState — им можно управлять и снаружи.
+    // Состояние жеста живёт в UiState — им можно управлять и снаружи,
+    // и оно общее с зоной жеста в баре.
     readonly property real swipe: UiState.swipe
     readonly property bool swipeActive: UiState.swipeActive
-
-    Connections {
-        target: UiState
-
-        function onSwipeCommandChanged() {
-            if (UiState.swipeCommand === 1)
-                swipeCommit.start();
-            else if (UiState.swipeCommand === -1)
-                swipeCancel.start();
-        }
-    }
 
     // Двумя пальцами по панели — назад, за пальцем.
     // MouseArea, а не WheelHandler: клики в панели работают, значит этот путь
@@ -175,46 +171,7 @@ Item {
                 return;
             wheel.accepted = true;
             UiState.swipeBy(dx, root.width);
-            swipeEndTimer.restart();
         }
-    }
-
-    // Жест закончился (у скролла нет события «конец») — доводим или откатываем.
-    Timer {
-        id: swipeEndTimer
-        // У скролла нет события «конец жеста»: считаем его завершённым
-        // по паузе между событиями. 140 мс обрывали медленный свайп.
-        interval: 250
-        onTriggered: UiState.endSwipe()
-    }
-
-    Timer {
-        id: swipeResetTimer
-        interval: Theme.motionShort4 + 80
-        onTriggered: UiState.clearSwipe()
-    }
-
-    MotionNumber {
-        id: swipeCommit
-        target: UiState
-        property: "swipe"
-        to: 1
-        duration: Theme.motionMedium1
-        curve: Theme.curveEmphasizedDecelerate
-        onFinished: {
-            UiState.closeDetail();
-            swipeResetTimer.restart();
-        }
-    }
-
-    MotionNumber {
-        id: swipeCancel
-        target: UiState
-        property: "swipe"
-        to: 0
-        duration: Theme.motionShort4
-        curve: Theme.curveEmphasized
-        onFinished: UiState.clearSwipe()
     }
 
     PanelView {

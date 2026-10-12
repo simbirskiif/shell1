@@ -85,6 +85,11 @@ Singleton {
     readonly property real motionFadeThroughScale: 0.92
     readonly property real motionElementScale: 0.8
 
+    // Жест «назад»: за пальцем вид едет лишь на четверть ширины, остальное
+    // делают прозрачность и масштаб — иначе в середине жеста оба вида
+    // оказываются за краями панели и смотреть не на что.
+    readonly property real gestureParallax: 0.25
+
     // Шрифты: интерфейс — Google Sans, глифы-иконки — Nerd Font.
     readonly property string fontFamily: "Google Sans"
     readonly property string iconFontFamily: "JetBrainsMono Nerd Font"

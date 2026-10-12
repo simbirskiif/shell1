@@ -68,13 +68,16 @@ PopupWindow {
     implicitWidth: panelItem.implicitWidth + Theme.quickPadding * 2
     implicitHeight: Math.min(panelItem.implicitHeight + Theme.quickPadding * 2, root.maxHeight)
     // m3 container transform: контейнер меняет размер на emphasized.
+    // Во время жеста высоту ведёт палец — анимация только отставала бы.
     Behavior on implicitWidth {
+        enabled: !UiState.swipeActive
         MotionNumber {
             duration: Theme.motionMedium2
             curve: Theme.curveEmphasized
         }
     }
     Behavior on implicitHeight {
+        enabled: !UiState.swipeActive
         MotionNumber {
             duration: Theme.motionMedium2
             curve: Theme.curveEmphasized
