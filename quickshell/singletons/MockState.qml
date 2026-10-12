@@ -73,8 +73,13 @@ Singleton {
     // Ethernet: если подключён, в панели «Интернет» над списком Wi-Fi
     // показывается подключённый модем / проводное соединение.
     property bool ethernetConnected: true
+    // Модем может быть подключён, но не быть активным подключением.
+    property bool ethernetActive: true
     property string ethernetName: "Ethernet"
     property string ethernetSpeed: "1 Gbit/s"
+
+    // Активный интернет идёт через ethernet только если он подключён И активен.
+    readonly property bool internetViaEthernet: ethernetConnected && ethernetActive
 
     // Поиск сетей и устройств: пока идёт — в панели виден индикатор.
     property bool wifiScanning: false
@@ -85,8 +90,9 @@ Singleton {
     property string wifiSummary: ""
 
     readonly property string internetSummary: {
-        if (ethernetConnected)
+        if (internetViaEthernet)
             return ethernetName;
+        // Модема нет или он не активен — показываем состояние Wi-Fi.
         if (!wifiEnabled)
             return "Off";
         return wifiSummary !== "" ? wifiSummary : "Not connected";
@@ -136,28 +142,39 @@ Singleton {
         soundEnabled = !soundEnabled;
     }
 
-    function toggleDevice(index) {
-        bluetoothDevices.setProperty(index, "connected", !bluetoothDevices.get(index).connected);
+    // Ищем по имени: index в делегатах-компонентах не приходит из модели.
+    function toggleDevice(name) {
+        for (let i = 0; i < bluetoothDevices.count; ++i) {
+            if (bluetoothDevices.get(i).name === name) {
+                bluetoothDevices.setProperty(i, "connected", !bluetoothDevices.get(i).connected);
+                break;
+            }
+        }
         refresh();
     }
 
-    function toggleSavedDevice(index) {
-        savedBluetoothDevices.setProperty(index, "connected", !savedBluetoothDevices.get(index).connected);
+    function toggleSavedDevice(name) {
+        for (let i = 0; i < savedBluetoothDevices.count; ++i) {
+            if (savedBluetoothDevices.get(i).name === name) {
+                savedBluetoothDevices.setProperty(i, "connected", !savedBluetoothDevices.get(i).connected);
+                break;
+            }
+        }
         refresh();
     }
 
-    function selectWifi(index) {
+    function selectWifi(name) {
         for (let i = 0; i < wifiNetworks.count; ++i)
-            wifiNetworks.setProperty(i, "connected", i === index);
+            wifiNetworks.setProperty(i, "connected", wifiNetworks.get(i).name === name);
         for (let i = 0; i < savedWifiNetworks.count; ++i)
             savedWifiNetworks.setProperty(i, "connected", false);
         wifiEnabled = true;
         refresh();
     }
 
-    function selectSavedWifi(index) {
+    function selectSavedWifi(name) {
         for (let i = 0; i < savedWifiNetworks.count; ++i)
-            savedWifiNetworks.setProperty(i, "connected", i === index);
+            savedWifiNetworks.setProperty(i, "connected", savedWifiNetworks.get(i).name === name);
         for (let i = 0; i < wifiNetworks.count; ++i)
             wifiNetworks.setProperty(i, "connected", false);
         wifiEnabled = true;

@@ -69,8 +69,16 @@ ShellRoot {
             return state();
         }
 
+        // Цикл: активен -> подключён, но не активен -> отключён -> активен.
         function toggleEthernet(): string {
-            MockState.ethernetConnected = !MockState.ethernetConnected;
+            if (!MockState.ethernetConnected) {
+                MockState.ethernetConnected = true;
+                MockState.ethernetActive = true;
+            } else if (MockState.ethernetActive) {
+                MockState.ethernetActive = false;
+            } else {
+                MockState.ethernetConnected = false;
+            }
             return state();
         }
 
@@ -159,7 +167,7 @@ ShellRoot {
                 + " barPercent=" + (MockState.showBatteryPercent ? "on" : "off")
                 + " battery=" + MockState.batteryLevel + "%" + (MockState.batteryCharging ? "+" : "")
                 + " mode=" + MockState.powerMode
-                + " ethernet=" + (MockState.ethernetConnected ? "on" : "off")
+                + " ethernet=" + (MockState.ethernetConnected ? (MockState.ethernetActive ? "active" : "idle") : "off")
                 + " scanning=" + (MockState.wifiScanning || MockState.bluetoothScanning)
                 + " wifi=" + MockState.wifiNetworks.count
                 + " devices=" + MockState.bluetoothDevices.count;

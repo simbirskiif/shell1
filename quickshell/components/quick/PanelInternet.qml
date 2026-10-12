@@ -62,7 +62,7 @@ Item {
                 anchors.leftMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
                 icon: "\uf1e6"
-                connected: true
+                connected: MockState.internetViaEthernet
             }
 
             Text {
@@ -79,7 +79,7 @@ Item {
                 anchors.right: parent.right
                 anchors.rightMargin: 16
                 anchors.verticalCenter: parent.verticalCenter
-                text: MockState.ethernetSpeed
+                text: MockState.internetViaEthernet ? MockState.ethernetSpeed : "Not active"
                 color: Theme.quickTextDim
                 font.family: Theme.fontFamily
                 font.pixelSize: 11
@@ -146,7 +146,7 @@ Item {
                 model: MockState.savedWifiNetworks
 
                 delegate: WifiRow {
-                    onActivated: MockState.selectSavedWifi(index)
+                    onActivated: MockState.selectSavedWifi(name)
                 }
             }
 
@@ -157,7 +157,7 @@ Item {
                 model: MockState.wifiNetworks
 
                 delegate: WifiRow {
-                    onActivated: MockState.selectWifi(index)
+                    onActivated: MockState.selectWifi(name)
                 }
             }
         }

@@ -88,14 +88,22 @@ Item {
             Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
         }
 
+        // Пока идёт поиск — вместо значка обновления крутится индикатор.
         Text {
             id: refreshIcon
             anchors.centerIn: parent
+            visible: !root.refreshing
             text: "\uf021"
-            color: root.refreshing ? Theme.accent : Theme.quickText
+            color: Theme.quickText
             font.family: Theme.iconFontFamily
             font.pixelSize: 13
-            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+        }
+
+        LoadingIndicator {
+            anchors.centerIn: parent
+            width: 18
+            height: 18
+            visible: root.refreshing
         }
 
         MouseArea {
@@ -107,21 +115,5 @@ Item {
             onClicked: root.refreshRequested()
         }
 
-        RotationAnimation on rotation {
-            running: root.refreshing
-            from: 0
-            to: 360
-            duration: 900
-            loops: Animation.Infinite
-        }
-
-        Connections {
-            target: root
-
-            function onRefreshingChanged() {
-                if (!root.refreshing)
-                    refreshButton.rotation = 0;
-            }
-        }
     }
 }

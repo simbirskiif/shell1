@@ -106,7 +106,7 @@ Item {
                 model: MockState.savedBluetoothDevices
 
                 delegate: BluetoothRow {
-                    onActivated: MockState.toggleSavedDevice(index)
+                    onActivated: MockState.toggleSavedDevice(name)
                 }
             }
 
@@ -117,7 +117,7 @@ Item {
                 model: MockState.bluetoothDevices
 
                 delegate: BluetoothRow {
-                    onActivated: MockState.toggleDevice(index)
+                    onActivated: MockState.toggleDevice(name)
                 }
             }
         }

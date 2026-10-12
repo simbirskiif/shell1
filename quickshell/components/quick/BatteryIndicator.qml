@@ -1,28 +1,33 @@
 import QtQuick
+import QtQuick.Shapes
 import ".."
 import "../../singletons"
 
-// Батарейка: скруглённая колодка, поверх неё — полноразмерная заливка
-// того же радиуса, которую слева-направо проявляет прямоугольная маска,
-// поэтому правый край заливки всегда прямой: форму держит фигура,
-// а не ширина заливки. Справа — носик батареи.
-// Размер задаётся через bodyWidth/bodyHeight, цвет — по состоянию.
+// Батарейка в стиле Android 17, без процента внутри.
+// Полупрозрачная колодка + заливка состояния, которую слева-направо
+// проявляет маска (правый край заливки всегда прямой). Носик справа
+// окрашен как колодка. При зарядке справа от батарейки появляется молния.
 Item {
     id: root
 
     required property int level
     required property bool charging
 
-    property real bodyWidth: 27
-    property real bodyHeight: 14
-    property real bodyRadius: root.bodyHeight * 0.32
-    property real nubWidth: 2.5
-    property real nubHeight: root.bodyHeight * 0.42
+    property real bodyWidth: 28
+    property real bodyHeight: 12
+    property real bodyRadius: root.bodyHeight * 0.42
+    property real nubWidth: 2
+    property real nubHeight: root.bodyHeight * 0.4
+    property real nubGap: 1.5
+    property real boltGap: 3
+    property real boltHeight: root.bodyHeight * 1.05
+    property real boltWidth: root.boltHeight * 0.6
 
     readonly property bool low: root.level <= 15
     readonly property bool medium: !root.low && root.level <= 30
 
-    readonly property color stateColor: {
+    // Цвет заливки: зарядка > низкий > средний > обычный
+    readonly property color fillColor: {
         if (root.charging)
             return Theme.chargeColor;
         if (root.low)
@@ -32,8 +37,21 @@ Item {
         return Theme.quickText;
     }
 
-    implicitWidth: root.bodyWidth + 1.5 + root.nubWidth
-    implicitHeight: root.bodyHeight
+    // Колодка и носик всегда нейтральные, как в Android 17
+    readonly property color trackColor: Theme.withAlpha(Theme.quickText, 0.35)
+
+    // Не readonly: ширину слота под молнию анимирует Behavior ниже.
+    property real boltSlot: root.charging ? root.boltGap + root.boltWidth : 0
+
+    implicitWidth: root.bodyWidth + root.nubGap + root.nubWidth + root.boltSlot
+    implicitHeight: Math.max(root.bodyHeight, root.boltHeight)
+
+    Behavior on boltSlot {
+        MotionNumber {
+            duration: Theme.motionShort4
+            curve: Theme.curveEmphasized
+        }
+    }
 
     Rectangle {
         id: track
@@ -42,8 +60,7 @@ Item {
         width: root.bodyWidth
         height: root.bodyHeight
         radius: root.bodyRadius
-        color: Theme.withAlpha(root.stateColor, 0.25)
-        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        color: root.trackColor
     }
 
     Item {
@@ -67,7 +84,7 @@ Item {
             width: track.width
             height: track.height
             radius: track.radius
-            color: root.stateColor
+            color: root.fillColor
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
     }
@@ -75,12 +92,38 @@ Item {
     Rectangle {
         id: nub
         anchors.left: track.right
-        anchors.leftMargin: 1.5
+        anchors.leftMargin: root.nubGap
         anchors.verticalCenter: parent.verticalCenter
         width: root.nubWidth
         height: root.nubHeight
         radius: root.nubWidth / 2
-        color: root.stateColor
-        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        color: root.trackColor
+    }
+
+    // Молния справа от батарейки (только при зарядке)
+    Shape {
+        id: bolt
+        anchors.left: nub.right
+        anchors.leftMargin: root.boltGap
+        anchors.verticalCenter: parent.verticalCenter
+        width: root.boltWidth
+        height: root.boltHeight
+        opacity: root.charging ? 1 : 0
+        visible: opacity > 0
+        preferredRendererType: Shape.CurveRenderer
+
+        Behavior on opacity { NumberAnimation { duration: Theme.motionShort4 } }
+
+        ShapePath {
+            fillColor: Theme.quickText
+            strokeColor: "transparent"
+            startX: bolt.width * 0.62; startY: 0
+            PathLine { x: 0;                    y: bolt.height * 0.58 }
+            PathLine { x: bolt.width * 0.45;    y: bolt.height * 0.58 }
+            PathLine { x: bolt.width * 0.34;    y: bolt.height }
+            PathLine { x: bolt.width;           y: bolt.height * 0.38 }
+            PathLine { x: bolt.width * 0.54;    y: bolt.height * 0.38 }
+            PathLine { x: bolt.width * 0.62;    y: 0 }
+        }
     }
 }

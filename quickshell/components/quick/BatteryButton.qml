@@ -41,15 +41,6 @@ Item {
             font.weight: Font.Medium
         }
 
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.verticalCenterOffset: 1
-            visible: root.charging
-            text: "\uf0e7"
-            color: Theme.chargeColor
-            font.family: Theme.iconFontFamily
-            font.pixelSize: 11
-        }
     }
 
     Rectangle {

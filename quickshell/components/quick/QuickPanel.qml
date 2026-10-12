@@ -171,7 +171,7 @@ Item {
         readonly property string key: "internet"
         readonly property string title: "Internet"
         readonly property string icon: "\uf0ac"
-        readonly property bool active: MockState.wifiEnabled || MockState.ethernetConnected
+        readonly property bool active: MockState.wifiEnabled || MockState.internetViaEthernet
         readonly property string subtitle: MockState.internetSummary
         readonly property Component view: Component { PanelInternet {} }
 
