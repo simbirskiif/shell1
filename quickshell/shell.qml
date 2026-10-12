@@ -6,6 +6,8 @@ import "components"
 import "singletons"
 
 ShellRoot {
+    id: shellRoot
+
     Variants {
         model: Quickshell.screens
 
@@ -122,6 +124,47 @@ ShellRoot {
         function openPortal(): string {
             NetworkService.openPortal();
             return state();
+        }
+
+        // Контекстное меню сохранённой сети (проверка без мыши):
+        // открыть по имени, сменить пароль, забыть.
+        function menu(name: string): string {
+            // Панель не трогаем: открываем её только если она закрыта.
+            if (UiState.openedScreen === "")
+                UiState.open(UiState.defaultScreen(), "internet");
+            UiState.panel = "internet";
+            UiState.dialogScreen = UiState.openedScreen;
+            UiState.openNetworkMenu(name, 2100, 200);
+            return menuState();
+        }
+
+        function changePassword(name: string): string {
+            NetworkService.changePassword(name);
+            return state();
+        }
+
+
+        function forget(): string {
+            NetworkService.beginForget(UiState.menuNetwork);
+            return menuState();
+        }
+
+        function confirmForget(): string {
+            NetworkService.confirmForget();
+            return menuState();
+        }
+
+        function cancelForget(): string {
+            NetworkService.cancelForget();
+            return menuState();
+        }
+
+        function menuState(): string {
+            return "menu=" + (UiState.menuNetwork === "" ? "no" : UiState.menuNetwork)
+                + " forget=" + (NetworkService.forgetPending === "" ? "no" : NetworkService.forgetPending)
+                + " passwordChange=" + (NetworkService.passwordChange ? "yes" : "no")
+                + " pending=" + (NetworkService.pendingNetwork === "" ? "no" : NetworkService.pendingNetwork)
+                + " err=" + (NetworkService.connectError || "-");
         }
 
         // Список сетей и профилей — для проверки без мыши и скриншотов.

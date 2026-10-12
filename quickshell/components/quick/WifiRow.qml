@@ -16,6 +16,10 @@ Rectangle {
     required property bool connecting
 
     signal activated()
+    // Правый клик: контекстное меню (сменить пароль / забыть). Только для
+    // сохранённых сетей — у остальных менять нечего. Координаты — в системе
+    // окна панели, в котором лежит строка.
+    signal contextRequested(real x, real y)
 
     readonly property bool needsExtra: root.security === "enterprise"
     readonly property bool needsPassword: root.security === "psk"
@@ -30,8 +34,18 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         enabled: !root.connecting
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
-        onClicked: root.activated()
+        onClicked: mouse => {
+            if (mouse.button === Qt.RightButton) {
+                if (!root.saved)
+                    return;
+                const point = rowHover.mapToGlobal(mouse.x, mouse.y);
+                root.contextRequested(point.x, point.y);
+                return;
+            }
+            root.activated();
+        }
     }
 
     PanelIcon {

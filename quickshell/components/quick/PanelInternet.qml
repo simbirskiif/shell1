@@ -145,6 +145,10 @@ Item {
                             if (NetworkService.pendingNetwork !== "")
                                 UiState.close();
                         }
+                        onContextRequested: (x, y) => {
+                            UiState.dialogScreen = UiState.openedScreen;
+                            UiState.openNetworkMenu(name, x, y);
+                        }
                     }
                 }
 
@@ -160,6 +164,10 @@ Item {
                             NetworkService.requestWifi(name);
                             if (NetworkService.pendingNetwork !== "")
                                 UiState.close();
+                        }
+                        onContextRequested: (x, y) => {
+                            UiState.dialogScreen = UiState.openedScreen;
+                            UiState.openNetworkMenu(name, x, y);
                         }
                     }
                 }

@@ -22,6 +22,22 @@ Singleton {
     // Экран, на котором открыт запрос пароля.
     property string dialogScreen: ""
 
+    // Контекстное меню сохранённой сети: какая сеть и где его показать.
+    // Координаты — глобальные, в системе экрана.
+    property string menuNetwork: ""
+    property real menuX: 0
+    property real menuY: 0
+
+    function openNetworkMenu(name, x, y) {
+        menuNetwork = name;
+        menuX = x;
+        menuY = y;
+    }
+
+    function closeNetworkMenu() {
+        menuNetwork = "";
+    }
+
     // --- жест «назад» двумя пальцами -----------------------------------
     // swipe: 0..1 — насколько вернулись назад (1 — снова сетка плиток).
     // Палец не двигает прогресс напрямую: за ним тянется пружина, поэтому

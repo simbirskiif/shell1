@@ -20,6 +20,7 @@ PanelWindow {
     exclusiveZone: Theme.barHeight
     WlrLayershell.namespace: "quickshell-bar"
 
+
     Workspaces {
         anchors.left: parent.left
         anchors.leftMargin: Theme.barPadding
@@ -80,6 +81,11 @@ PanelWindow {
     // Запрос пароля — отдельным модальным окном (у попапа нет клавиатуры).
     PasswordDialog {
         dialogScreen: root.screen
+    }
+
+    // Контекстное меню сохранённой сети (правый клик в списке сетей).
+    NetworkContextMenu {
+        screen: root.screen
     }
 
     Component {

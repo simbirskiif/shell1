@@ -21,6 +21,13 @@ PanelWindow {
                                         && NetworkService.connectingName === NetworkService.pendingNetwork
     readonly property bool failed: NetworkService.connectError === "auth"
     readonly property bool readyToSubmit: !connecting && passwordInput.text !== ""
+    // Окно открыто из меню «Сменить пароль», а не для подключения к новой сети.
+    readonly property bool changing: NetworkService.passwordChange
+    // По умолчанию пароль скрыт; глазок справа включает просмотр.
+    property bool revealed: false
+    // Пароль уже пробовали отправить — если он не подошёл, оставляем его в
+    // поле, чтобы можно было поправить опечатку, а не набирать заново.
+    property string lastAttempt: ""
 
     screen: dialogScreen
     visible: NetworkService.pendingNetwork !== ""
@@ -42,10 +49,22 @@ PanelWindow {
     // Пароль не должен переживать закрытие окна.
     onVisibleChanged: {
         if (visible) {
-            passwordInput.text = "";
+            passwordInput.text = lastAttempt;
+            root.revealed = false;
             passwordInput.forceActiveFocus();
+            passwordInput.cursorPosition = passwordInput.text.length;
         } else {
+            lastAttempt = "";
             NetworkService.pendingPassword = "";
+        }
+    }
+
+    // При неудаче возвращаем в поле то, что вводили: чаще всего это опечатка.
+    onFailedChanged: {
+        if (failed && lastAttempt !== "" && passwordInput.text === "") {
+            passwordInput.text = lastAttempt;
+            passwordInput.forceActiveFocus();
+            passwordInput.cursorPosition = passwordInput.text.length;
         }
     }
 
@@ -64,6 +83,16 @@ PanelWindow {
             anchors.fill: parent
             onClicked: NetworkService.cancelPending()
         }
+    }
+
+    function submit(value) {
+        if (value === "")
+            return;
+        lastAttempt = value;
+        NetworkService.submitPassword(value);
+        // Пароль уже ушёл в NM: в поле он нужен только для просмотра, а в
+        // сервисе не хранится.
+        NetworkService.pendingPassword = "";
     }
 
     Rectangle {
@@ -104,7 +133,7 @@ PanelWindow {
             spacing: 6
 
             Text {
-                text: "Enter password"
+                text: root.changing ? "New password" : "Enter password"
                 color: Theme.quickText
                 font.family: Theme.fontFamily
                 font.pixelSize: 15
@@ -122,7 +151,8 @@ PanelWindow {
                 width: parent.width
                 visible: root.failed
                 wrapMode: Text.WordWrap
-                text: "Wrong password, try again"
+                text: root.changing ? "Password was not accepted, try another one"
+                                    : "Wrong password, try again"
                 color: Theme.lowColor
                 font.family: Theme.fontFamily
                 font.pixelSize: 12
@@ -142,10 +172,11 @@ PanelWindow {
                     id: passwordInput
                     anchors.fill: parent
                     anchors.leftMargin: 14
-                    anchors.rightMargin: 14
+                    anchors.rightMargin: 44
                     verticalAlignment: TextInput.AlignVCenter
-                    echoMode: TextInput.Password
+                    echoMode: root.revealed ? TextInput.Normal : TextInput.Password
                     passwordCharacter: "•"
+                    inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhSensitiveData
                     color: Theme.quickText
                     selectionColor: Theme.accent
                     selectedTextColor: Theme.quickIconOn
@@ -154,17 +185,58 @@ PanelWindow {
                     enabled: !root.connecting
                     // Текст поля — источник истины для окна; сервис получает
                     // пароль только в submitPassword.
-                    onTextChanged: NetworkService.pendingPassword = text
-                    onAccepted: if (text !== "") NetworkService.submitPassword(text)
+                    onTextChanged: {
+                        if (NetworkService.connectError !== "")
+                            NetworkService.connectError = "";
+                        NetworkService.pendingPassword = text;
+                    }
+                    onAccepted: root.submit(passwordInput.text)
 
                     Text {
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: passwordInput.text === ""
+                        visible: passwordInput.text === "" && !root.revealed
                         text: "Network password"
                         color: Theme.quickTextDim
                         font.family: Theme.fontFamily
                         font.pixelSize: 13
+                    }
+                }
+
+                // Показать/скрыть пароль.
+                Item {
+                    id: revealButton
+                    anchors.right: parent.right
+                    anchors.rightMargin: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 32
+                    height: 32
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: width / 2
+                        color: revealHover.hovered ? Theme.quickTileHover : "transparent"
+                        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.revealed ? "\uf070" : "\uf06e"
+                        color: root.revealed ? Theme.accent : Theme.quickTextDim
+                        font.family: Theme.iconFontFamily
+                        font.pixelSize: 13
+                    }
+
+                    MouseArea {
+                        id: revealHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.revealed = !root.revealed;
+                            passwordInput.forceActiveFocus();
+                            passwordInput.cursorPosition = passwordInput.text.length;
+                        }
                     }
                 }
             }
@@ -241,7 +313,7 @@ PanelWindow {
                         hoverEnabled: true
                         enabled: root.readyToSubmit
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: NetworkService.submitPassword(passwordInput.text)
+                        onClicked: root.submit(passwordInput.text)
                     }
                 }
             }

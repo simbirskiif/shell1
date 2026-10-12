@@ -3,7 +3,6 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Networking
 
 // Реальный backend панели «Интернет» поверх NetworkManager.
 //
@@ -11,13 +10,12 @@ import Quickshell.Networking
 // маршруты остаются за NM. Здесь только чтение состояния, аккуратный разбор
 // terse-вывода nmcli и перевод действий пользователя в команды.
 //
-// Почему не только `nmcli`: в nmcli 1.58 пароль нельзя передать ни через
-// stdin (`--ask` без TTY зацикливается на повторных запросах), ни позиционным
-// аргументом (`password <psk>` больше не принимается — нужен `passwd-file`
-// или `connection up`, а это лишний профиль-черновик на диске). Поэтому
-// единственный путь с паролем — нативный модуль `Quickshell.Networking`:
-// `WifiNetwork.connectWithPsk()` отдаёт секрет в NM через D-Bus, минуя argv,
-// TTY и временные файлы (см. раздел 11.2 руководства).
+// Как передаётся пароль: `nmcli --ask` без TTY в 1.58 зацикливается на
+// повторных запросах, позиционный `password <psk>` не принимается. Поэтому
+// профиль создаём сами, а пароль отдаём NM файлом секретов
+// (`connection up ... passwd-file`): секрет не попадает в argv, TTY не нужен,
+// и путь не зависит от нативного модуля Quickshell.Networking, у которого
+// собственный список сетей (из-за него и прилетало «сеть вне зоны»).
 //
 // Слои:
 //   * публичный API — там же, где был MockState (имена совместимы);
@@ -68,6 +66,11 @@ Singleton {
     // Пароль живёт здесь только между вводом и вызовом submitPassword.
     // Свойство нужно фронту (поле ввода), после запуска подключения обнуляется.
     property string pendingPassword: ""
+    // Окно пароля открыто для смены пароля сохранённой сети (из меню по ПКМ),
+    // а не для подключения к новой.
+    property bool passwordChange: false
+    // Сеть, которую в этот момент забывают: диалог показывает подтверждение.
+    property string forgetPending: ""
 
     // Скелет enterprise-профиля открыт в редакторе NM.
     readonly property bool editorRunning: editorProc.running
@@ -134,6 +137,9 @@ Singleton {
     property bool connectCancelled: false
     // Поколение попытки: ответы устаревших процессов игнорируются.
     property int connectGeneration: 0
+    // uuid профиля, который активируется: нужен, чтобы «Отмена» в диалоге
+    // действительно прервала уже начавшуюся активацию.
+    property string pendingUuid: ""
 
     // Сколько профилей SSID уже прочитано в этом refresh.
     property var ssidQueue: []
@@ -1018,8 +1024,8 @@ Singleton {
 
         if (!target) {
             cancelActiveConnect();
-            pskTimeout.stop();
-            pskRetry.stop();
+            passwordChange = false;
+            forgetPending = "";
             pendingPasswordCache = "";
             pendingNetwork = "";
             pendingPassword = "";
@@ -1054,6 +1060,57 @@ Singleton {
             scanGuard.restart();
         }
         enqueue(["nmcli", "radio", "wifi", target ? "on" : "off"], () => scheduleRefresh());
+    }
+
+    // Смена пароля сохранённой сети: профиль удаляем, подключение пойдёт с
+    // новым паролем (см. submitPassword). Так же выглядит и случай, когда
+    // пароль на роутере сменили: старый сохранённый ключ не подойдёт.
+    function changePassword(name) {
+        const profile = profileForSsid(name);
+        if (profile === null || profile.uuid === "")
+            return;
+        connectGeneration++;
+        connectCancelled = true;
+        cancelActiveConnect();
+        cleanupSsid = "";
+        connectingName = "";
+        connectError = "";
+        connectErrorText = "";
+        passwordChange = true;
+        pendingPassword = "";
+        pendingNetwork = name;
+    }
+
+    // «Забыть сеть»: удаляем профиль вместе с сохранённым паролем.
+    // Подтверждение спрашивает фронт (forgetPending), потому что удаляются и
+    // пользовательские настройки профиля — например, статический IP.
+    function beginForget(name) {
+        forgetPending = name;
+    }
+
+    function cancelForget() {
+        forgetPending = "";
+    }
+
+    function confirmForget() {
+        const name = forgetPending;
+        forgetPending = "";
+        forgetNetwork(name);
+    }
+
+    function forgetNetwork(name) {
+        const profile = profileForSsid(name);
+        if (profile === null || profile.uuid === "")
+            return;
+        if (name === connectedSsid)
+            expectedDisconnect = true;
+        enqueue(["nmcli", "connection", "delete", "uuid", profile.uuid], (code, out, err) => {
+            if (code !== 0) {
+                log("forget " + name + ": " + (err || "").trim());
+                notifyError("Could not forget " + name);
+            }
+            scheduleRefresh();
+        });
     }
 
     // ───────────── клик по сети ─────────────
@@ -1116,6 +1173,10 @@ Singleton {
     // снова подставит старый сохранённый ключ. Минус — теряются нестандартные
     // настройки профиля (раздел 11.3 руководства).
     function submitPassword(password) {
+        if (passwordChange) {
+            changePasswordWith(pendingNetwork, password);
+            return;
+        }
         const name = pendingNetwork;
         const network = findNetwork(name);
         if (network === null || password === "")
@@ -1143,11 +1204,7 @@ Singleton {
                 pendingPasswordCache = "";
                 return;
             }
-            // Нативный модуль держит собственный список сетей и сканирует
-            // сам: сразу после открытия панели сети в нём может ещё не быть
-            // (NM к тому же троттлит сканы). Поэтому несколько секунд
-            // повторяем попытку, а не отвечаем «сеть недоступна».
-            tryConnectPsk(network, 0);
+            connectViaProfile(network, false);
         };
 
         if (network.saved && network.uuid !== "") {
@@ -1161,196 +1218,106 @@ Singleton {
         }
     }
 
-    // ───────────── подключение с паролем (нативный модуль) ─────────────
+    // ───────────── подключение с паролем ─────────────
+    //
+    // Пароль передаём NM через файл секретов (`connection up ... passwd-file`):
+    // в argv его нет, TTY не нужен, и путь не зависит от того, видит ли сеть
+    // нативный модуль Quickshell.Networking (у него свой список и свой скан —
+    // именно из-за этого раньше прилетало «сеть вне зоны»).
 
-    // WPA-PSK — 8–63 символа либо ровно 64 hex-символа.
+    // WPA-PSK — 8–63 символа либо ровно 64 hex-символа. Проверяем на клиенте:
+    // иначе NM ответит невнятной ошибкой (раздел 11.1 руководства).
     function validPsk(password) {
         if (password.length >= 8 && password.length <= 63)
             return true;
         return password.length === 64 && /^[0-9a-fA-F]+$/.test(password);
     }
 
-    property WifiNetwork pskTarget: null
+    // Смена пароля у сохранённого профиля: удаляем старый профиль (в нём
+    // лежит прежний ключ) и подключаемся заново с новым паролем.
+    function changePasswordWith(name, password) {
+        const profile = profileForSsid(name);
+        if (profile !== null && profile.uuid !== "")
+            forgetNetwork(name);
 
-    function wifiDevice() {
-        // Первое Wi-Fi устройство: у нас оно же и единственное (раздел 4.5).
-        for (let i = 0; i < Networking.devices.values.length; ++i) {
-            const device = Networking.devices.values[i];
-            if (device.type === DeviceType.Wifi)
-                return device;
-        }
-        return null;
+        const generation = ++connectGeneration;
+        connectCancelled = false;
+        connectError = "";
+        connectErrorText = "";
+        connectingName = name;
+        cleanupSsid = name;
+        pendingPassword = "";
+        passwordChange = false;
+        pendingNetwork = "";
+        pendingPasswordCache = password;
+        connectViaProfile(findNetwork(name), true);
     }
 
-    function pskNetwork(name) {
-        const device = wifiDevice();
-        if (device === null)
-            return null;
-        for (let i = 0; i < device.networks.values.length; ++i) {
-            const network = device.networks.values[i];
-            if (network.name === name)
-                return network;
-        }
-        return null;
-    }
+    // Запасной путь: профиль создаём сами, пароль отдаём NM файлом секретов
+    // (`connection up ... passwd-file`). Нужен, когда нативный модуль не
+    // видит сеть в своём списке: список у него свой, и ждать его бесконечно
+    // нельзя. Пароль в argv при этом не попадает.
+    readonly property string secretsPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp")
+                                           + "/qs-nm-psk-secrets"
 
-    function isPskSecurity(security) {
-        return security === WifiSecurityType.WpaPsk
-                || security === WifiSecurityType.Wpa2Psk
-                || security === WifiSecurityType.Sae;
-    }
-
-    // Сколько раз повторяем ожидание сети в нативном списке и с какой паузой.
-    readonly property int pskRetries: 10
-    readonly property int pskRetryInterval: 400
-
-    function tryConnectPsk(network, attempt) {
-        if (connectCancelled)
+    // force: не пробовать нативный путь (смена пароля — профиль уже удалён).
+    function connectViaProfile(network, force) {
+        if (network === null || wifiDev === "")
             return;
-        pskRetryAttempt = attempt;
-        const target = pskNetwork(network.name);
-        if (target === null) {
-            if (attempt >= pskRetries) {
-                log("psk target did not appear in the native list: " + network.name);
-                connectErrorText = "Wi-Fi network is not available";
-                finishFailed(network, "notfound");
+        cleanupSsid = network.name;
+        rememberProfiles();
+        const name = network.name;
+        const password = pendingPasswordCache;
+        const profile = profileForSsid(name);
+        const removeFirst = force || (profile !== null && profile.uuid !== "");
+        const uuid = profile !== null ? profile.uuid : "";
+
+        const create = () => {
+            if (connectCancelled)
                 return;
-            }
-            if (!nativeScannerEnabled)
-                syncNativeScanner();
-            pskRetry.restart();
-            return;
-        }
-        if (!isPskSecurity(target.security)) {
-            log("psk is not applicable, security=" + WifiSecurityType.toString(target.security)
-                + " for " + network.name);
-            connectErrorText = "This network needs a different authentication method";
-            finishFailed(network, "other");
-            return;
-        }
-        pskTarget = target;
-        target.connectWithPsk(pendingPasswordCache);
-        pskTimeout.restart();
-    }
+            enqueue(["nmcli", "connection", "add", "type", "wifi", "ifname", wifiDev,
+                     "con-name", name, "ssid", name,
+                     "wifi-sec.key-mgmt", "wpa-psk", "connection.autoconnect", "yes"],
+                (code, out, err) => {
+                    if (code !== 0) {
+                        log("profile add " + name + ": " + (err || "").trim());
+                        connectErrorText = err;
+                        finishFailed(network, classifyError(err, "psk"));
+                        return;
+                    }
+                    const newUuid = extractUuid(out);
+                    pendingUuid = newUuid;
+                    writeSecretsAndUp(newUuid, name, password, network);
+                });
+        };
 
-    Timer {
-        id: pskRetry
-        interval: root.pskRetryInterval
-        onTriggered: {
-            const network = findNetwork(connectingName);
-            if (network === null)
-                return;
-            tryConnectPsk(network, pskRetryAttempt + 1);
+        if (removeFirst && uuid !== "") {
+            enqueue(["nmcli", "connection", "delete", "uuid", uuid], (code, out, err) => {
+                if (code !== 0)
+                    log("delete stale profile: " + (err || "").trim());
+                create();
+            });
+        } else {
+            create();
         }
     }
 
-    property int pskRetryAttempt: 0
-
-    // Нативный модуль видит только те сети, которые нашёл его собственный
-    // сканер, а состояние берём то, где есть причина сбоя. Держим оба
-    // источника согласованными: нативный сканер включаем, пока открыта
-    // панель и включено radio.
-    readonly property bool nativeScannerEnabled: {
-        const device = wifiDevice();
-        return device !== null && device.scannerEnabled;
+    function writeSecretsAndUp(uuid, name, password, network) {
+        // Файл секретов живёт доли секунды и лежит в приватном каталоге
+        // пользователя; пароль при этом не попадает в командную строку.
+        const args = ["sh", "-c",
+                      'umask 077; f="$1.secrets"; printf "%s\n" "$2" > "$f" && '
+                      + 'nmcli -w 30 connection up uuid "$3" ifname "$4" passwd-file "$f"; '
+                      + 'c=$?; rm -f "$f"; exit $c',
+                      "sh", secretsPath, "802-11-wireless-security.psk:" + password, uuid, wifiDev];
+        activeConnectProc = run(args, (code, out, err) => {
+            onConnectDone(connectGeneration, network, code, err, false);
+        });
     }
-
-    function syncNativeScanner() {
-        const device = wifiDevice();
-        if (device !== null)
-            device.scannerEnabled = panelOpen && wifiEnabled;
-    }
-
-    onWifiEnabledChanged: syncNativeScanner()
 
     // Пароль для нативного вызова: submitPassword() кладёт его сюда и сразу
     // забывает входное значение, чтобы оно не жило в свойствах дольше нужного.
     property string pendingPasswordCache: ""
-
-    // Реакция NM на попытку с паролем. Модуль отдаёт причину обобщённо
-    // (NoSecrets — и для неверного пароля, и для отклонённого секрета),
-    // поэтому «неверный пароль» — эвристика из раздела 12.1.
-    Connections {
-        target: root.pskTarget
-
-        function onConnectionFailed(reason) {
-            root.onPskFailed(reason);
-        }
-
-        function onConnectedChanged() {
-            if (root.pskTarget !== null && root.pskTarget.connected)
-                root.onPskSucceeded();
-        }
-
-        function onStateChanged() {
-            if (root.pskTarget === null)
-                return;
-            if (root.pskTarget.state === ConnectionState.Connected)
-                root.onPskSucceeded();
-            else if (root.pskTarget.state === ConnectionState.Disconnected
-                     && root.connectingName !== "")
-                root.onPskFailed(ConnectionFailReason.Unknown);
-        }
-    }
-
-    // Ответ на попытку приходит либо из NM (сигнал connectionFailed /
-    // смена состояния), либо по таймауту.
-    function onPskFailed(reason) {
-        pskTimeout.stop();
-        if (connectCancelled)
-            return;
-        const network = findNetwork(connectingName);
-        const security = network === null ? "psk" : network.security;
-        const kind = mapFailReason(reason, security);
-        connectErrorText = "NM: " + ConnectionFailReason.toString(reason);
-        log("psk connect failed: " + connectErrorText);
-        finishFailed(network, kind);
-    }
-
-    function onPskSucceeded() {
-        pskTimeout.stop();
-        if (connectCancelled)
-            return;
-        const network = findNetwork(connectingName);
-        // Запоминаем профиль, который NM создал/использовал для этой сети:
-        // по нему можно деактивировать подключение при отмене.
-        if (network !== null) {
-            const profile = profileForSsid(network.name);
-            pendingUuid = profile !== null ? profile.uuid : "";
-        }
-        onConnectDone(connectGeneration, network, 0, "", false);
-    }
-
-    // uuid активирующегося профиля: нужен, чтобы «отмена» действительно
-    // прервала уже начавшуюся в NM активацию.
-    property string pendingUuid: ""
-
-    function mapFailReason(reason, security) {
-        if (reason === ConnectionFailReason.NoSecrets)
-            return security === "psk" ? "auth" : "other";
-        if (reason === ConnectionFailReason.WifiAuthTimeout)
-            return "timeout";
-        if (reason === ConnectionFailReason.WifiNetworkLost)
-            return "notfound";
-        if (reason === ConnectionFailReason.WifiClientFailed
-                || reason === ConnectionFailReason.WifiClientDisconnected)
-            return security === "psk" ? "auth" : "other";
-        return "other";
-    }
-
-    Timer {
-        id: pskTimeout
-        interval: 40000
-        onTriggered: root.onPskTimeout()
-    }
-
-    function onPskTimeout() {
-        if (connectingName === "")
-            return;
-        const network = findNetwork(connectingName);
-        connectErrorText = "NM: connection attempt timed out";
-        finishFailed(network, "timeout");
-    }
 
     // Общая обработка неудачи: снять connecting, решить судьбу диалога
     // и уведомить пользователя.
@@ -1359,7 +1326,6 @@ Singleton {
         // и смена состояния): второй раз ничего не делаем.
         if (connectingName === "")
             return;
-        pskRetry.stop();
         const name = network !== null ? network.name : connectingName;
         const security = network !== null ? network.security : "psk";
         connectingName = "";
@@ -1382,8 +1348,7 @@ Singleton {
         connectGeneration++;
         connectCancelled = true;
         cancelActiveConnect();
-        pskTimeout.stop();
-        pskRetry.stop();
+        passwordChange = false;
         // Уже начавшуюся активацию в NM тоже надо прервать: у нативной
         // попытки нет процесса, который можно убить.
         if (pendingUuid !== "")
@@ -1400,10 +1365,12 @@ Singleton {
 
     function onConnectDone(generation, network, code, err, createdProfile) {
         activeConnectProc = null;
+        pendingUuid = "";
         if (generation !== connectGeneration || connectCancelled)
             return;             // попытку отменили или заменили новой
 
         connectingName = "";
+        passwordChange = false;
         if (code === 0) {
             pendingNetwork = "";
             pendingPassword = "";
@@ -1642,7 +1609,6 @@ Singleton {
     }
 
     onPanelOpenChanged: {
-        syncNativeScanner();
         if (panelOpen) {
             scheduleRefresh();
             scanWifi();
@@ -1958,8 +1924,7 @@ Singleton {
     Component.onCompleted: {
         refresh();
         monitor.running = true;
-        if (wifiDevice() !== null)
-            deviceMonitor.running = true;
+        deviceMonitor.running = true;
         // Индикатор при первом открытии панели: скан стартует, когда станет
         // известно устройство.
         if (panelOpen)
