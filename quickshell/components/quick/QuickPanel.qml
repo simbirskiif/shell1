@@ -535,7 +535,9 @@ Item {
 
         readonly property bool inGrid: true
         readonly property string key: "internet"
-        readonly property string title: "Internet"
+        // Проводного соединения нет — плитка про Wi-Fi, и называться должна
+        // так же; с подключённым проводом это уже «Internet».
+        readonly property string title: NetworkService.internetViaEthernet ? "Internet" : "Wi-Fi"
         readonly property string icon: "\uf0ac"
         readonly property bool active: NetworkService.wifiEnabled || NetworkService.internetViaEthernet
         readonly property string subtitle: NetworkService.internetSummary

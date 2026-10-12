@@ -290,6 +290,7 @@ ShellRoot {
                 + " brightness=" + Math.round(MockState.brightness * 100) + "%"
                 + " h=" + Math.round(UiState.popupHeight)
                 + " tiles=" + tiles + (UiState.editing ? " [edit]" : "")
+                + " netTile=" + (NetworkService.internetViaEthernet ? "Internet" : "Wi-Fi")
                 + " order=" + order.join(",")
                 + " barPercent=" + (MockState.showBatteryPercent ? "on" : "off")
                 + " battery=" + MockState.batteryLevel + "%" + (MockState.batteryCharging ? "+" : "")

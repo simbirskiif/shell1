@@ -113,6 +113,9 @@ Singleton {
     // Интерфейс Wi-Fi уже был найден: пока radio выключено, NM не отдаёт
     // устройство, и это не значит, что адаптер пропал.
     property bool wifiDevKnown: false
+    // Устройство Wi-Fi есть в текущем списке устройств NM: пока radio
+    // выключено, его там нет.
+    property bool wifiDevPresent: false
     property string wifiDevState: ""
     property string wifiDevConnection: ""
 
@@ -375,8 +378,15 @@ Singleton {
         }
         if (root.wifiDev !== "" && root.wifiEnabled && !root.wifiScanning) {
             bag.parts++;
-            ask("wifi", ["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY,BSSID",
-                         "device", "wifi", "list", "ifname", root.wifiDev, "--rescan", "no"], bag.cb);
+            const device = root.wifiDev;
+            run(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY,BSSID",
+                 "device", "wifi", "list", "ifname", device, "--rescan", "no"],
+                (code, out, err) => {
+                    bag.cb("wifi", code, out, err);
+                    // Устройство уже было известно — отложенный скан можно
+                    // запускать, не дожидаясь следующего refresh.
+                    root.onWifiReady();
+                });
         }
     }
 
@@ -446,6 +456,7 @@ Singleton {
         } else if (!wifiDevKnown) {
             wifiDev = "";
         }
+        wifiDevPresent = wifi !== "";
         checkPhysical(physical);
     }
 
@@ -648,6 +659,7 @@ Singleton {
         }
         connectedSsid = ssid;
         updateModels();
+        onWifiReady();
     }
 
     // ───────────── разбор и раскладка списка сетей ─────────────
@@ -739,46 +751,127 @@ Singleton {
     }
 
     // ───────────── поиск сетей ─────────────
+    //
+    // Порядок: rescan (быстрый, не ждём) → пауза, чтобы NM собрал точки →
+    // чтение кэша `--rescan no` (мгновенное). Индикатор держится всё время
+    // скана и минимум ~700 мс, иначе он мигал бы на быстрых ответах.
+    //
+    // Если устройство Wi-Fi ещё не готово (сразу после `radio wifi on` NM
+    // на несколько секунд отдаёт его как unavailable), скан откладывается в
+    // scanPending, а индикатор включается сразу: экран не должен выглядеть
+    // пустым и «мёртвым».
 
     Timer {
         id: scanGuard
         interval: 15000
         onTriggered: {
+            // Устройство так и не появилось: снимаем индикатор, но запрос
+            // скана не теряем — он выполнится при появлении устройства.
+            root.stopScanTimers();
             root.wifiScanning = false;
-            if (root.scanProc)
-                root.scanProc.running = false;
         }
     }
 
+    // Минимальная длительность индикатора.
     Timer {
         id: scanMin
-        onTriggered: root.wifiScanning = false
+        interval: 700
+        onTriggered: {
+            root.scanMinElapsed = true;
+            root.tryFinishScan();
+        }
     }
 
-    property var scanProc: null
+    // Пауза между rescan и чтением списка: даём NM собрать точки доступа.
+    Timer {
+        id: scanRead
+        interval: 2200
+        onTriggered: root.readWifiList()
+    }
+
+    property bool scanPending: false
+    property bool scanMinElapsed: false
+    property bool scanReadDone: false
+    // Поколение сканов: ответы устаревших процессов игнорируются.
+    property int scanGeneration: 0
+
+    function stopScanTimers() {
+        scanGuard.stop();
+        scanMin.stop();
+        scanRead.stop();
+    }
 
     function scanWifi() {
-        if (!wifiEnabled || wifiScanning || wifiDev === "" || !backendAvailable)
+        if (!wifiEnabled || !backendAvailable)
             return;
+        if (wifiScanning)
+            return;
+
+        // Индикатор включаем сразу, ещё до готовности устройства.
         wifiScanning = true;
+        scanPending = false;
+        scanMinElapsed = false;
+        scanReadDone = false;
+        scanMin.restart();
         scanGuard.restart();
-        const started = Date.now();
-        scanProc = run(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY,BSSID",
-                        "device", "wifi", "list", "ifname", wifiDev, "--rescan", "yes"],
+
+        if (wifiDev === "" || !wifiDevPresent || wifiDevState === "unavailable"
+                || wifiDevState === "unmanaged") {
+            scanPending = true;
+            return;
+        }
+        beginScan(wifiDev);
+    }
+
+    function beginScan(device) {
+        // Свежий rescan запускаем и не ждём его: nmcli при этом ещё и
+        // троттлится, а список всё равно читаем из кэша NM.
+        ++scanGeneration;
+        run(["nmcli", "device", "wifi", "rescan", "ifname", device], (code, out, err) => {
+            if (code !== 0 && (err || "").indexOf("not allowed") < 0)
+                root.log("rescan: " + (err || "").trim());
+        });
+        scanReadDone = false;
+        scanRead.restart();
+    }
+
+    function readWifiList() {
+        const device = wifiDev;
+        if (device === "")
+            return;
+        const generation = scanGeneration;
+        run(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY,BSSID",
+             "device", "wifi", "list", "ifname", device, "--rescan", "no"],
             (code, out, err) => {
-                scanProc = null;
-                // NM ограничивает частоту сканов: "Scanning not allowed
-                // immediately following previous scan" — это не ошибка
-                // пользователя, просто показываем свежие данные.
+                if (generation !== root.scanGeneration)
+                    return;     // скан отменён или заменён новым
                 if (code !== 0)
-                    root.log("scan: " + (err || "").trim());
+                    root.log("wifi list: " + (err || "").trim());
                 applyWifiList(out);
-                const left = Math.max(0, 700 - (Date.now() - started));
-                scanMin.interval = left > 0 ? left : 1;
-                scanMin.restart();
                 scanGuard.stop();
+                scanReadDone = true;
+                tryFinishScan();
                 scheduleRefresh();
             });
+    }
+
+    // Индикатор снимается, когда список прочитан и прошла минимальная пауза.
+    function tryFinishScan() {
+        if (!scanReadDone || !scanMinElapsed)
+            return;
+        scanReadDone = false;
+        wifiScanning = false;
+    }
+
+    // Устройство Wi-Fi появилось в списке NM и готово: доводим отложенный скан.
+    function onWifiReady() {
+        if (!scanPending || wifiDev === "")
+            return;
+        if (!wifiDevPresent || wifiDevState === "" || wifiDevState === "unavailable"
+                || wifiDevState === "unmanaged")
+            return;
+        scanPending = false;
+        beginScan(wifiDev);
     }
 
     // ───────────── включатель Wi-Fi ─────────────
@@ -807,11 +900,23 @@ Singleton {
             connectErrorText = "";
             connectingName = "";
             expectedDisconnect = true;
+            scanGeneration++;       // ответы текущего скана больше не нужны
+            stopScanTimers();
+            scanPending = false;
+            scanReadDone = false;
+            scanMinElapsed = false;
             wifiScanning = false;
-            scanGuard.stop();
+            wifiDevPresent = false;
             scanned = [];
             savedModel.clear();
             availableModel.clear();
+        } else {
+            // Скан запустится сам, как только refresh подтвердит radio и
+            // устройство: очередь гарантирует порядок radio on → скан.
+            // Индикатор появится в тот же момент — пустого экрана без
+            // признаков жизни не будет.
+            if (!wifiScanning)
+                scanPending = true;
         }
         enqueue(["nmcli", "radio", "wifi", target ? "on" : "off"], () => scheduleRefresh());
     }
