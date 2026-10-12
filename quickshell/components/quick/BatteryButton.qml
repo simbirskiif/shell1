@@ -34,33 +34,32 @@ Item {
         anchors.centerIn: parent
         spacing: 8
 
+        // Батарейка: два скруглённых прямоугольника друг на друге —
+        // нижний корпус, верхний заливка уровня слева-направо, плюс носик.
         Item {
             id: cell
             anchors.verticalCenter: parent.verticalCenter
-            width: 29
-            height: 13
+            width: 30
+            height: 14
 
             Rectangle {
-                id: shell
+                id: track
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                width: 26
-                height: 13
-                radius: 4
-                color: "transparent"
-                border.width: 2
-                border.color: root.stateColor
-                Behavior on border.color { ColorAnimation { duration: Theme.motionShort4 } }
+                width: 27
+                height: 14
+                radius: 4.5
+                color: Theme.withAlpha(root.stateColor, 0.25)
+                Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
             }
 
             Rectangle {
                 id: levelFill
-                anchors.left: shell.left
-                anchors.leftMargin: 4
+                anchors.left: track.left
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.max(0, (shell.width - 8) * root.level / 100)
-                height: shell.height - 8
-                radius: 1.5
+                width: Math.max(0, track.width * root.level / 100)
+                height: track.height
+                radius: track.radius
                 color: root.stateColor
                 Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
                 Behavior on width {
@@ -73,7 +72,7 @@ Item {
 
             Rectangle {
                 id: nub
-                anchors.left: shell.right
+                anchors.left: track.right
                 anchors.leftMargin: 1.5
                 anchors.verticalCenter: parent.verticalCenter
                 width: 2.5
