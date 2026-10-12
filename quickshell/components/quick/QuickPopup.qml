@@ -74,15 +74,26 @@ PopupWindow {
     readonly property real maxHeight: anchorWindow.screen ? anchorWindow.screen.height - anchorWindow.height - 16 : 10000
 
     implicitWidth: panelItem.implicitWidth + Theme.quickPadding * 2
-    // Без жеста окно ровно по карточке, во время жеста — с запасом по высоте
-    // (максимум из двух панелей). Так размер поверхности меняется один раз
-    // за жест, а не каждый кадр: иначе композитор каждый кадр пересоздаёт
-    // буфер, и анимация лагает.
-    implicitHeight: panelItem.gestureSizing
-        ? Math.min(panelItem.gestureRoom + Theme.quickPadding * 2, root.maxHeight)
-        : card.height
+    // Во время жеста окно держит запас по высоте (зафиксированный на старте)
+    // и не меняет размер ни на одном кадре — видимую высоту внутри ведёт
+    // карточка. В остальное время окно едет за той же целью, что и карточка,
+    // своей m3-анимацией: поэтому запас снимается плавно, а не одним
+    // прыжком, и контент в конце жеста никуда не дёргается.
+    implicitHeight: Math.min((panelItem.gestureSizing
+        ? panelItem.gestureRoom
+        : panelItem.contentHeight) + Theme.quickPadding * 2, root.maxHeight)
     // m3 container transform: контейнер меняет размер на emphasized.
     Behavior on implicitWidth {
+        MotionNumber {
+            duration: Theme.motionMedium2
+            curve: Theme.curveEmphasized
+        }
+    }
+    Behavior on implicitHeight {
+        // Анимация всегда включена, а цель во время жеста постоянна, поэтому
+        // внутри жеста поверхность не меняется. Выключать её нельзя: запись
+        // проскакивает мимо ещё выключенного Behavior, и запас снимается
+        // одним прыжком — контент от этого и дёргался.
         MotionNumber {
             duration: Theme.motionMedium2
             curve: Theme.curveEmphasized

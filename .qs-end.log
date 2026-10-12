@@ -1,0 +1,44 @@
+  INFO: Launching config: "/home/adm_a/shell/quickshell/shell.qml"
+  INFO: Shell ID: "c0c4b2a82b06d0aa1b1b5044c15fa1f5" Path ID "c0c4b2a82b06d0aa1b1b5044c15fa1f5"
+  INFO: Saving logs to "/home/adm_a/shell/rt/quickshell/by-id/9t7nsmt/log.qslog"
+ DEBUG qml: SURFACE h=24 card=0 sizing=false active=false swipe=0.00
+  INFO: Configuration Loaded
+  WARN scene: QML FileView at @singletons/Wal.qml[105:5]: Read of /home/adm_a/.config/wal/colors.json failed: File does not exist.
+ DEBUG qml: SURFACE h=48 card=24 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=74 card=48 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=97 card=74 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=121 card=97 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=145 card=121 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=170 card=145 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=194 card=170 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=218 card=194 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=242 card=218 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=267 card=242 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=291 card=267 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=315 card=291 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=339 card=315 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=364 card=339 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=390 card=364 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=417 card=390 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=437 card=417 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=465 card=437 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=479 card=465 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=466 card=311 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=455 card=307 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=441 card=303 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=430 card=300 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=417 card=296 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=405 card=292 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=392 card=288 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=380 card=285 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=367 card=281 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=354 card=277 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=342 card=273 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=329 card=270 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=317 card=266 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=304 card=262 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=292 card=258 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=279 card=255 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=267 card=251 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=254 card=247 sizing=false active=false swipe=0.00
+ DEBUG qml: SURFACE h=244 card=244 sizing=false active=false swipe=0.00
