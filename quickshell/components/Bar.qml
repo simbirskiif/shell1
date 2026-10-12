@@ -83,8 +83,6 @@ PanelWindow {
         dialogScreen: root.screen
     }
 
-    // Контекстное меню сохранённой сети (правый клик в списке сетей).
-    NetworkContextMenu {}
 
     Component {
         id: batteryItem

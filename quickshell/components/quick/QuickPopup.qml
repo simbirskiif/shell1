@@ -79,9 +79,13 @@ PopupWindow {
     // карточка. В остальное время окно едет за той же целью, что и карточка,
     // своей m3-анимацией: поэтому запас снимается плавно, а не одним
     // прыжком, и контент в конце жеста никуда не дёргается.
+    // Окно растёт ещё и под контекстное меню сети: оно живёт в этом же окне
+    // (попап рисуется поверх layer-shell поверхностей) и должно помещаться
+    // целиком, иначе карточка обрежется.
     implicitHeight: Math.min((panelItem.gestureSizing
         ? panelItem.gestureRoom
         : panelItem.contentHeight) + Theme.quickPadding * 2, root.maxHeight)
+        + contextMenu.cardHeight
     // m3 container transform: контейнер меняет размер на emphasized.
     Behavior on implicitWidth {
         MotionNumber {
@@ -154,5 +158,14 @@ PopupWindow {
                 width: scroller.width
             }
         }
+    }
+
+    // Контекстное меню сети (правый клик по сохранённой сети). Лежит поверх
+    // карточки, потому что объявлено после неё.
+    NetworkContextMenu {
+        id: contextMenu
+        width: parent.width
+        height: root.implicitHeight
+        y: card.height + 4
     }
 }

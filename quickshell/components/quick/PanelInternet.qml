@@ -145,9 +145,8 @@ Item {
                             if (NetworkService.pendingNetwork !== "")
                                 UiState.close();
                         }
-                        onContextRequested: (menuWindow, x, y) => {
-                            UiState.dialogScreen = UiState.openedScreen;
-                            UiState.openNetworkMenu(name, menuWindow, x, y);
+                        onContextRequested: (x, y) => {
+                            UiState.openNetworkMenu(name, x, y);
                         }
                     }
                 }
@@ -165,9 +164,8 @@ Item {
                             if (NetworkService.pendingNetwork !== "")
                                 UiState.close();
                         }
-                        onContextRequested: (menuWindow, x, y) => {
-                            UiState.dialogScreen = UiState.openedScreen;
-                            UiState.openNetworkMenu(name, menuWindow, x, y);
+                        onContextRequested: (x, y) => {
+                            UiState.openNetworkMenu(name, x, y);
                         }
                     }
                 }

@@ -1,94 +1,56 @@
 import QtQuick
 import Quickshell
-import Quickshell.Wayland
-import "quick"
-import "../singletons"
+import ".."
+import "../../singletons"
 
 // Контекстное меню сохранённой Wi-Fi сети (правый клик по строке в списке):
 // «сменить пароль» и «забыть сеть». Удаление спрашивает подтверждение прямо
 // здесь: у сохранённой сети уходят и пароль, и настройки профиля — например,
 // статический IP.
 //
-// Это не попап: попап привязывается к окну панели, а окно бара — тонкая
-// полоска сверху, и позиционирование от него ненадёжно. Вместо этого —
-// прозрачная поверхность на весь экран: координаты клика глобальные,
-// карточка кладётся прямо по ним, клик мимо закрывает меню.
-PanelWindow {
+// Меню живёт внутри того же окна, что и панель быстрых настроек: это
+// PopupWindow, и он рисуется поверх любых layer-shell поверхностей. Отдельная
+// поверхность оказывалась под панелью и была не видна. Поэтому координаты
+// клика — локальные для окна панели, а карточка кладётся прямо по ним.
+Item {
     id: root
 
-    // Экран берём у окна панели, из которого открыли меню: если окна нет
-    // (диагностический вызов), падаем на первый экран.
-    readonly property ShellScreen menuScreen: {
-        const window = UiState.menuWindow;
-        if (window !== null && window.screen !== undefined && window.screen !== null)
-            return window.screen;
-        return Quickshell.screens.length > 0 ? Quickshell.screens[0] : null;
-    }
+    // Клик мимо карточки закрывает меню.
+    anchors.fill: parent
 
     readonly property var network: NetworkService.findNetwork(UiState.menuNetwork)
     readonly property bool confirming: NetworkService.forgetPending !== ""
+    readonly property bool open: UiState.menuNetwork !== ""
+
     // Высота карточки: пункты меню или подтверждение удаления.
     readonly property real cardHeight: (confirming ? confirmItem.implicitHeight
                                                    : column.implicitHeight) + 8
-    // Не выпускаем карточку за нижний край экрана.
-    readonly property real cardY: {
-        const screenHeight = menuScreen ? menuScreen.height : 1800;
-        return Math.max(4, Math.min(UiState.menuY, screenHeight - cardHeight - 8));
-    }
 
-    screen: menuScreen
-    visible: UiState.menuNetwork !== "" && root.menuScreen !== null
-    color: "transparent"
-    anchors {
-        top: true
-        left: true
-        right: true
-        bottom: true
-    }
-    exclusiveZone: 0
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "quickshell-network-menu"
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    visible: open
 
     onVisibleChanged: if (!visible)
         NetworkService.cancelForget()
-
-    // Клик мимо карточки закрывает меню.
-    MouseArea {
-        anchors.fill: parent
-        onClicked: root.close()
-    }
 
     function close() {
         UiState.closeNetworkMenu();
     }
 
-
-    // Мягкая тень: меню висит поверх произвольного окна, и без неё карточка
-    // сливается с тёмным фоном под ней.
-    Rectangle {
-        x: card.x + 2
-        y: card.y + 6
-        width: card.width
-        height: card.height
-        radius: card.radius
-        color: Qt.rgba(0, 0, 0, 0.35)
+    MouseArea {
+        anchors.fill: parent
+        enabled: root.open
+        onClicked: root.close()
     }
 
     Rectangle {
         id: card
-        x: Math.max(4, Math.min(UiState.menuX,
-                                (root.menuScreen ? root.menuScreen.width : 1000) - width - 8))
-        y: root.cardY
+        x: Math.max(4, Math.min(UiState.menuX, root.width - width - 8))
+        y: Math.max(4, Math.min(UiState.menuY, root.height - height - 8))
         width: 236
         height: root.cardHeight
         radius: 14
-        // Фон светлее обычной поверхности и полностью непрозрачный: меню
-        // висит поверх произвольного приложения, и на его фоне карточка
-        // должна читаться как отдельная плоскость, а не как «текст без фона».
-        color: "transparent"
+        color: Theme.quickBackground
         border.width: 1
-        border.color: Theme.menuBorder
+        border.color: Theme.quickBorder
 
         // Клики по карточке не должны её закрывать.
         MouseArea {

@@ -129,12 +129,12 @@ ShellRoot {
         // Контекстное меню сохранённой сети (проверка без мыши):
         // открыть по имени, сменить пароль, забыть.
         function menu(name: string): string {
-            // Панель не трогаем: открываем её только если она закрыта.
             if (UiState.openedScreen === "")
                 UiState.open(UiState.defaultScreen(), "internet");
             UiState.panel = "internet";
-            UiState.dialogScreen = UiState.openedScreen;
-            UiState.openNetworkMenu(name, null, 1400, 300);
+            // Позиция как у настоящего правого клика по строке Saved:
+            // координаты внутри окна панели.
+            UiState.openNetworkMenu(name, Math.round(UiState.popupHeight * 0.35), 60);
             return menuState();
         }
 
