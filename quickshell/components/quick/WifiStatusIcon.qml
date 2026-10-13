@@ -98,21 +98,12 @@ Item {
     // диаметра (как глифы в PanelIcon), без кружка — почти всю рамку.
     readonly property int glyphSize: Math.max(9, Math.round(root.height * 0.85 * root.sizeScale))
 
-    // Метрики глифа приходят в физических пикселях, а размеры элементов — в
-    // логических: приводим к логическим, иначе сдвиг выходит за границы.
-    readonly property real dpr: (Screen.devicePixelRatio > 0 ? Screen.devicePixelRatio : 1)
-
-    // Границы самого рисунка глифа: MDI-значки сидят в em не по центру,
-    // поэтому центрируем по видимым границам, а не по рамке текста.
-    TextMetrics {
-        id: metrics
-        font.family: Theme.iconFontFamily
-        font.pixelSize: root.glyphSize
-        text: root.glyph
-    }
-
     Text {
         id: glyphText
+        anchors.centerIn: parent
+        // MDI-глифы сидят в строке выше её середины (нижний вынос пустой),
+        // поэтому опускаем рисунок на долю кегля.
+        anchors.verticalCenterOffset: Math.round(root.glyphSize * 0.12)
         text: root.glyph
         color: {
             if (root.dim)
@@ -125,16 +116,5 @@ Item {
         }
         font.family: Theme.iconFontFamily
         font.pixelSize: root.glyphSize
-
-        // Рисунок внутри рамки текста: сдвигаем рамку так, чтобы центр
-        // рисунка совпал с центром контейнера.
-        readonly property rect rawInk: metrics.tightBoundingRect
-        readonly property real inkX: rawInk.x / root.dpr
-        readonly property real inkY: rawInk.y / root.dpr
-        readonly property real inkW: rawInk.width / root.dpr
-        readonly property real inkH: rawInk.height / root.dpr
-
-        x: Math.round((root.width - width) / 2 - (inkX + inkW / 2))
-        y: Math.round((root.height - height) / 2 - (inkY + inkH / 2))
     }
 }
