@@ -2,29 +2,45 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Индикатор Wi-Fi: глифы Material Design Icons из Nerd Font
-// (nf-md-wifi_strength_*). Состояния:
-//   * включён и подключён — деления по уровню сигнала (strength_1..4);
-//   * включён, но не подключён — wifi_strength_outline (пустые деления);
-//   * выключен — wifi_off (перечёркнутый значок).
+// Индикатор Wi-Fi: деления сигнала глифами Material Design Icons из Nerd Font
+// (nf-md-wifi_strength_*). Как у иконок строки Bluetooth, у подключённой сети
+// есть круглая подложка и кольцо (showRing).
+//
+//   level 0 — пустой контур (уровень неизвестен),
+//   level 1..3 — деления по силе сигнала.
+//
+// Режим offMode рисует значок выключенного radio (nf-md-wifi_off).
 Item {
     id: root
 
-    property bool wifiEnabled: true
-    property bool connected: false
-    // Уровень сигнала 0–4 (как у wifiIconStrength: 0 — нет данных, 4 — максимум).
-    // Показываем три градации: минимальную, среднюю и максимальную.
+    // Уровень сигнала 0–4, как отдаёт сервис (0 — нет данных, 4 — максимум).
     property int signal: 0
 
-    // Иконка в кружке плитки: заливка кружка — accent, поэтому цвета
-    // подбираем под него.
+    // Подложка и кольцо подключения — как у PanelIcon в списках.
+    property bool showRing: false
+    property bool connected: false
+
+    // Значок в кружке плитки: заливка — accent, поэтому цвета подбираем под неё.
     property bool onAccent: false
 
-    implicitWidth: 18
-    implicitHeight: 18
+    // Значок выключенного Wi-Fi вместо делений.
+    property bool offMode: false
 
+    // Приглушённый значок (выключенное radio в баре и шапке панели).
+    property bool dim: false
+
+    // Оптическая поправка по вертикали: у MDI-глифов рисунок смещён вниз
+    // относительно центра em.
+    property real opticalOffset: -1
+
+    implicitWidth: 34
+    implicitHeight: 34
+
+    // Показываем три градации: минимальную, среднюю и максимальную.
     readonly property int level: {
         const value = Math.max(0, Math.min(4, signal));
+        if (value <= 0)
+            return 0;
         if (value <= 1)
             return 1;
         if (value === 2)
@@ -32,51 +48,71 @@ Item {
         return 3;
     }
 
-    // MDI-кодпоинты лежат выше BMP (U+F091E..), а в QML "\uf0920" — это две
-    // UTF-16 единицы, а не кодпоинт: строку собираем через String.fromCodePoint.
-    // Набор проверен отрисовкой сетки с подписями: на каждый уровень сигнала
-    // идёт тройка «чистый / с „!“ / с замком», порядок такой:
-    //   F091E..F0921 — strength_1..4  (деления заполняются),
-    //   F0922..F0925 — варианты без заливки/предупреждения,
-    //   F0929..F092D — контур, «!», замок, off...; F092D — перечёркнутый.
-    // Берём чистые деления 1/2/3, пустой контур и перечёркнутый.
-    readonly property string glyphS1: String.fromCodePoint(0xF091E)
-    readonly property string glyphS2: String.fromCodePoint(0xF091F)
-    readonly property string glyphS3: String.fromCodePoint(0xF0920)
-    readonly property string glyphEmpty: String.fromCodePoint(0xF0921)
-    readonly property string glyphOff: String.fromCodePoint(0xF092D)
+    // Кодпоинты MDI лежат выше BMP, а в QML "\uf0922" — это две UTF-16
+    // единицы, а не кодпоинт: строку собираем через String.fromCodePoint.
+    // Карта nf-md-wifi_strength_* (по шпаргалке Nerd Font):
+    //   F0922 strength_2, F0925 strength_3, F0928 strength_4,
+    //   F092F strength_outline, F05AA wifi_off.
+    readonly property string glyphS1: String.fromCodePoint(0xF0922)
+    readonly property string glyphS2: String.fromCodePoint(0xF0925)
+    readonly property string glyphS3: String.fromCodePoint(0xF0928)
+    readonly property string glyphEmpty: String.fromCodePoint(0xF092F)
+    readonly property string glyphOff: String.fromCodePoint(0xF05AA)
 
-    // Уровень 0–4, как отдаёт сервис: 0 — нет данных, 4 — максимум.
     readonly property string glyph: {
-        if (!wifiEnabled)
+        if (offMode)
             return glyphOff;
-        // Не подключён — пустые деления.
-        if (!connected)
-            return glyphEmpty;
         if (level >= 3)
             return glyphS3;
         if (level === 2)
             return glyphS2;
-        return glyphS1;
+        if (level === 1)
+            return glyphS1;
+        return glyphEmpty;
+    }
+
+    Rectangle {
+        visible: root.showRing
+        anchors.fill: parent
+        radius: width / 2
+        color: root.connected ? Theme.quickTileActive : Theme.quickCircleOff
+        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+    }
+
+    Rectangle {
+        visible: root.showRing
+        anchors.fill: parent
+        radius: width / 2
+        color: "transparent"
+        border.width: 2
+        border.color: Theme.accent
+        opacity: root.connected ? 1 : 0
+        Behavior on opacity {
+            MotionNumber {
+                duration: Theme.motionShort3
+                curve: Theme.curveStandard
+            }
+        }
     }
 
     Text {
-        anchors.fill: parent
+        anchors.centerIn: parent
         text: root.glyph
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
+        transform: Translate { y: root.showRing ? 0 : root.opticalOffset }
         color: {
-            if (!root.wifiEnabled)
-                return String(Theme.quickTextDim);
-            if (!root.connected)
-                return root.onAccent ? String(Theme.menuSurface)
-                                     : String(Theme.quickTextDim);
-            return root.onAccent ? String(Theme.quickIconOn)
-                                 : String(Theme.quickText);
+            if (root.dim)
+                return Theme.quickTextDim;
+            if (root.onAccent)
+                return Theme.quickIconOn;
+            if (root.showRing)
+                return root.connected ? Theme.accent : Theme.quickText;
+            return Theme.quickText;
         }
         font.family: Theme.iconFontFamily
-        // Кегль меньше рамки: MDI-глифы занимают почти весь em, без запаса
-        // они упирались бы в края и выглядели обрезанными.
-        font.pixelSize: Math.max(10, Math.round(root.height * 0.78))
+        // Без кольца кегль меньше: MDI-глифы занимают почти весь em. В кружке
+        // строки места больше, поэтому значок крупнее.
+        font.pixelSize: Math.max(10, Math.round(root.height * (root.showRing ? 0.62 : 0.78)))
     }
 }

@@ -44,8 +44,7 @@ Item {
             width: 20
             height: 20
             onAccent: root.active
-            wifiEnabled: NetworkService.wifiEnabled
-            connected: NetworkService.wifiConnected
+            offMode: !NetworkService.wifiEnabled
             signal: NetworkService.connectedSignal
         }
     }

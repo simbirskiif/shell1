@@ -38,13 +38,15 @@ Rectangle {
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
 
+        // Выключенное radio — перечёркнутый значок, включённое — деления
+        // доступности.
         WifiStatusIcon {
             anchors.verticalCenter: parent.verticalCenter
             width: 19
             height: 19
-            wifiEnabled: root.wifiEnabled
-            connected: root.wifiConnected
+            offMode: !root.wifiEnabled
             signal: root.wifiSignal
+            dim: !root.wifiEnabled
         }
 
         Text {

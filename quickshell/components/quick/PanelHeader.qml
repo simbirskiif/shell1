@@ -76,9 +76,9 @@ Item {
         width: 20
         height: 20
         visible: root.wifiStatus
-        wifiEnabled: NetworkService.wifiEnabled
-        connected: NetworkService.wifiConnected
+        offMode: !NetworkService.wifiEnabled
         signal: NetworkService.connectedSignal
+        dim: !NetworkService.wifiEnabled
     }
 
     // Правая группа: действие, обновление, переключатель.

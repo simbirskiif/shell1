@@ -41,9 +41,8 @@ Item {
             visible: root.wifiIcon
             width: 40
             height: 40
-            wifiEnabled: NetworkService.wifiEnabled
-            connected: NetworkService.wifiConnected
-            signal: NetworkService.connectedSignal
+            offMode: true
+            dim: true
         }
 
         Text {

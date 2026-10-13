@@ -48,16 +48,15 @@ Rectangle {
         }
     }
 
-    // Сигнал рисуем делениями: подключён — горят по уровню, не подключён —
-    // все серые (у выключенного radio строки просто нет, их скрывает заглушка).
+    // Круглая иконка как у строк Bluetooth: слева — доступность сети
+    // (деления по сигналу), у подключённой — подложка и кольцо. Замок для
+    // сети с паролем показывается справа.
     WifiStatusIcon {
         id: iconSlot
         anchors.left: parent.left
-        anchors.leftMargin: 21
+        anchors.leftMargin: 12
         anchors.verticalCenter: parent.verticalCenter
-        width: 20
-        height: 20
-        wifiEnabled: NetworkService.wifiEnabled
+        showRing: true
         connected: root.connected
         signal: root.strength
     }
