@@ -29,9 +29,8 @@ Item {
     // Приглушённый значок (выключенное radio в баре и шапке панели).
     property bool dim: false
 
-    // Оптическая поправка по вертикали: у MDI-глифов рисунок смещён вниз
-    // относительно центра em.
-    property real opticalOffset: -1
+    // Доля высоты, которую занимает глиф (1 — как в баре и шапке).
+    property real sizeScale: 1
 
     implicitWidth: 34
     implicitHeight: 34
@@ -95,12 +94,26 @@ Item {
         }
     }
 
-    Text {
-        anchors.centerIn: parent
+    // Кегль и рамка текста. В кружке строки значок занимает примерно половину
+    // диаметра (как глифы в PanelIcon), без кружка — почти всю рамку.
+    readonly property int glyphSize: Math.max(9, Math.round(root.height * 0.85 * root.sizeScale))
+
+    // Метрики глифа приходят в физических пикселях, а размеры элементов — в
+    // логических: приводим к логическим, иначе сдвиг выходит за границы.
+    readonly property real dpr: (Screen.devicePixelRatio > 0 ? Screen.devicePixelRatio : 1)
+
+    // Границы самого рисунка глифа: MDI-значки сидят в em не по центру,
+    // поэтому центрируем по видимым границам, а не по рамке текста.
+    TextMetrics {
+        id: metrics
+        font.family: Theme.iconFontFamily
+        font.pixelSize: root.glyphSize
         text: root.glyph
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
-        transform: Translate { y: root.showRing ? 0 : root.opticalOffset }
+    }
+
+    Text {
+        id: glyphText
+        text: root.glyph
         color: {
             if (root.dim)
                 return Theme.quickTextDim;
@@ -111,8 +124,17 @@ Item {
             return Theme.quickText;
         }
         font.family: Theme.iconFontFamily
-        // Без кольца кегль меньше: MDI-глифы занимают почти весь em. В кружке
-        // строки места больше, поэтому значок крупнее.
-        font.pixelSize: Math.max(10, Math.round(root.height * (root.showRing ? 0.62 : 0.78)))
+        font.pixelSize: root.glyphSize
+
+        // Рисунок внутри рамки текста: сдвигаем рамку так, чтобы центр
+        // рисунка совпал с центром контейнера.
+        readonly property rect rawInk: metrics.tightBoundingRect
+        readonly property real inkX: rawInk.x / root.dpr
+        readonly property real inkY: rawInk.y / root.dpr
+        readonly property real inkW: rawInk.width / root.dpr
+        readonly property real inkH: rawInk.height / root.dpr
+
+        x: Math.round((root.width - width) / 2 - (inkX + inkW / 2))
+        y: Math.round((root.height - height) / 2 - (inkY + inkH / 2))
     }
 }

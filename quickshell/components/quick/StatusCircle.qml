@@ -43,6 +43,8 @@ Item {
             visible: root.wifiStatus
             width: 20
             height: 20
+            // В кружке значок поменьше: рамка тут только для центровки.
+            sizeScale: 0.62
             onAccent: root.active
             offMode: !NetworkService.wifiEnabled
             signal: NetworkService.connectedSignal

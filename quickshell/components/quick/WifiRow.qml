@@ -59,6 +59,7 @@ Rectangle {
         showRing: true
         connected: root.connected
         signal: root.strength
+        sizeScale: 0.6
     }
 
     Text {
