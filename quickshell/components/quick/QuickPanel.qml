@@ -12,7 +12,7 @@ Item {
     readonly property string panel: UiState.panel
     readonly property bool editing: UiState.editing
 
-    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, batteryEntry, settingsEntry]
+    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, batteryEntry, settingsEntry, soundOutputEntry, soundInputEntry]
 
     // Плитки, которыми управляет редактор.
     readonly property var tileEntries: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry]
@@ -509,12 +509,17 @@ Item {
                 sourceComponent: modelData.view
             }
 
-            // Кнопка «назад» внутри панели возвращает к сетке плиток.
+            // Кнопка «назад» внутри панели возвращает к сетке плиток, а если
+            // у панели задан backTo — к той панели, из которой её открыли
+            // (например, из списка устройств обратно в «Звук»).
             Connections {
                 target: viewLoader.item
 
                 function onBackRequested() {
-                    UiState.closeDetail();
+                    if (modelData.backTo !== undefined && modelData.backTo !== "")
+                        UiState.openDetail(modelData.backTo);
+                    else
+                        UiState.closeDetail();
                 }
             }
         }
@@ -573,9 +578,9 @@ Item {
         readonly property bool inGrid: true
         readonly property string key: "sound"
         readonly property string title: "Sound"
-        readonly property string icon: MockState.soundEnabled ? "\uf028" : "\uf026"
-        readonly property bool active: MockState.soundEnabled
-        readonly property string subtitle: MockState.soundSummary
+        readonly property string icon: AudioService.outputMuted ? "\uf026" : "\uf028"
+        readonly property bool active: AudioService.available && !AudioService.outputMuted
+        readonly property string subtitle: AudioService.outputSummary
         readonly property Component view: Component { PanelSound {} }
 
         function open() {
@@ -583,7 +588,52 @@ Item {
         }
 
         function toggle() {
-            MockState.toggleSound();
+            AudioService.toggleOutputMute();
+        }
+    }
+
+    // Выбор устройства вывода: не плитка, а отдельная панель, которую
+    // открывает строка текущего устройства в панели «Звук». Кнопка «назад»
+    // возвращает не в сетку, а обратно в «Звук» (backTo).
+    QtObject {
+        id: soundOutputEntry
+
+        readonly property bool inGrid: false
+        readonly property string key: "sound-output"
+        readonly property string title: "Output device"
+        readonly property string icon: "\uf028"
+        readonly property bool active: false
+        readonly property string subtitle: ""
+        readonly property string backTo: "sound"
+        readonly property Component view: Component { PanelAudioDevices { kind: "output" } }
+
+        function open() {
+            UiState.openDetail(key);
+        }
+
+        function toggle() {
+            // У списка устройств кружок ничего не переключает.
+        }
+    }
+
+    QtObject {
+        id: soundInputEntry
+
+        readonly property bool inGrid: false
+        readonly property string key: "sound-input"
+        readonly property string title: "Input device"
+        readonly property string icon: "\uf130"
+        readonly property bool active: false
+        readonly property string subtitle: ""
+        readonly property string backTo: "sound"
+        readonly property Component view: Component { PanelAudioDevices { kind: "input" } }
+
+        function open() {
+            UiState.openDetail(key);
+        }
+
+        function toggle() {
+            // У списка устройств кружок ничего не переключает.
         }
     }
 

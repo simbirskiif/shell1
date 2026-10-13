@@ -4,16 +4,14 @@ import QtQuick
 import Quickshell
 
 // Тестовые данные для панелей, у которых бэкенда ещё нет: Bluetooth,
-// звук, яркость. Сеть (Wi-Fi и Ethernet) переехала в NetworkService —
+// яркость. Сеть (Wi-Fi и Ethernet) переехала в NetworkService —
 // реальный backend поверх NetworkManager, батарея и режимы питания — в
-// PowerService (UPower и power-profiles-daemon).
+// PowerService (UPower и power-profiles-daemon), звук — в AudioService
+// (PipeWire).
 Singleton {
     id: root
 
     property bool bluetoothEnabled: true
-    property bool soundEnabled: true
-    property real volume: 0.65
-    property string outputName: "Built-in Speakers"
 
     // Настройки оболочки.
     property bool showBatteryPercent: true
@@ -67,8 +65,6 @@ Singleton {
         ListElement { name: "Sony WH-1000XM4"; icon: "\uf025"; connected: false; connecting: false }
     }
 
-    readonly property string soundSummary: soundEnabled ? Math.round(volume * 100) + "%" : "Muted"
-
     // Поиск устройств: пока идёт — в панели виден индикатор.
     property bool bluetoothScanning: false
 
@@ -78,10 +74,6 @@ Singleton {
     function toggleBluetooth() {
         bluetoothEnabled = !bluetoothEnabled;
         refresh();
-    }
-
-    function toggleSound() {
-        soundEnabled = !soundEnabled;
     }
 
     property string connectingDevice: ""

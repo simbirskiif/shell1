@@ -106,7 +106,7 @@ PanelWindow {
             wifiEnabled: NetworkService.wifiEnabled
             wifiConnected: NetworkService.wifiConnected
             wifiSignal: NetworkService.connectedSignal
-            soundEnabled: MockState.soundEnabled
+            soundEnabled: !AudioService.outputMuted
             opened: quickPopup.visible
             onClicked: quickPopup.toggle()
         }

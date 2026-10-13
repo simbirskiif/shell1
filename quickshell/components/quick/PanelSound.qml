@@ -1,7 +1,10 @@
 import QtQuick
+import ".."
 import "../../singletons"
 
-// Внутренняя панель звука: переключатель-мьют и слайдер громкости.
+// Панель «Звук»: громкость и mute вывода и входа, выбор устройства и
+// громкость каждого приложения. Данные и действия — в AudioService;
+// здесь только отображение.
 Item {
     id: root
 
@@ -19,9 +22,12 @@ Item {
 
         PanelHeader {
             title: "Sound"
-            checked: MockState.soundEnabled
+            // Тумблер в шапке — mute вывода: отдельного «выключить звук
+            // целиком» у PipeWire нет. Без backend переключать нечего.
+            checked: !AudioService.outputMuted
+            switchable: AudioService.available
             onBackRequested: root.backRequested()
-            onToggled: MockState.toggleSound()
+            onToggled: AudioService.toggleOutputMute()
         }
 
         Rectangle {
@@ -30,56 +36,93 @@ Item {
             color: Theme.quickSeparator
         }
 
-        Item {
+        PanelDisabled {
             width: parent.width
-            height: 96
+            readonly property bool shown: !AudioService.available
+            visible: shown
+            height: shown ? implicitHeight : 0
+            icon: "\uf028"
+            title: "Audio unavailable"
+            description: "PipeWire is not running"
+            actionText: ""
+            // Действия, которое можно предложить, нет — кнопку не рисуем.
+            showAction: false
+        }
 
-            Text {
-                id: volumeIcon
-                anchors.left: parent.left
-                anchors.leftMargin: 18
-                anchors.top: parent.top
-                anchors.topMargin: 22
-                text: MockState.soundEnabled ? "\uf028" : "\uf026"
-                color: MockState.soundEnabled ? Theme.quickText : Theme.quickTextDim
-                font.family: Theme.iconFontFamily
-                font.pixelSize: 16
-                Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        Column {
+            id: content
+            width: parent.width
+            spacing: 0
+            readonly property bool shown: AudioService.available
+            visible: shown
+            height: shown ? implicitHeight : 0
+
+            // --- вывод -------------------------------------------------
+            PanelSection { text: "Output" }
+
+            AudioLevelRow {
+                width: parent.width
+                icon: "\uf028"
+                muted: AudioService.outputMuted
+                value: AudioService.outputVolume
+                onMoved: v => AudioService.setOutputVolume(v)
+                onMuteToggled: AudioService.toggleOutputMute()
             }
 
+            AudioDeviceButton {
+                width: parent.width
+                icon: "\uf028"
+                text: AudioService.outputName
+                onClicked: UiState.openDetail("sound-output")
+            }
+
+            // --- вход --------------------------------------------------
+            PanelSection { text: "Input" }
+
+            AudioLevelRow {
+                width: parent.width
+                icon: "\uf130"
+                muted: AudioService.inputMuted
+                value: AudioService.inputVolume
+                onMoved: v => AudioService.setInputVolume(v)
+                onMuteToggled: AudioService.toggleInputMute()
+            }
+
+            AudioDeviceButton {
+                width: parent.width
+                icon: "\uf130"
+                text: AudioService.inputName
+                onClicked: UiState.openDetail("sound-input")
+            }
+
+            // --- приложения -------------------------------------------
+            PanelSection { text: "Applications" }
+
             Text {
-                id: percent
-                anchors.right: parent.right
-                anchors.rightMargin: 18
-                anchors.verticalCenter: volumeIcon.verticalCenter
-                text: Math.round(MockState.volume * 100) + "%"
+                width: parent.width
+                // Высоту считаем от своего условия, а не от visible: visible
+                // гаснет и вместе со скрытым предком (вид уезжает в жесте),
+                // и высота панели схлопнулась бы прямо посреди движения.
+                readonly property bool shown: AudioService.streams.length === 0
+                visible: shown
+                height: shown ? 44 : 0
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                text: "No applications are playing audio"
                 color: Theme.quickTextDim
                 font.family: Theme.fontFamily
                 font.pixelSize: 12
             }
 
-            PanelSlider {
-                anchors.left: volumeIcon.right
-                anchors.leftMargin: 16
-                anchors.right: percent.left
-                anchors.rightMargin: 16
-                anchors.verticalCenter: volumeIcon.verticalCenter
-                height: 22
-                value: MockState.volume
-                onMoved: v => {
-                    MockState.volume = v;
-                }
-            }
+            Repeater {
+                model: AudioService.streams
 
-            Text {
-                anchors.left: volumeIcon.right
-                anchors.leftMargin: 16
-                anchors.top: volumeIcon.bottom
-                anchors.topMargin: 18
-                text: MockState.outputName
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
+                delegate: AudioStreamRow {
+                    required property var modelData
+
+                    width: content.width
+                    node: modelData
+                }
             }
         }
     }

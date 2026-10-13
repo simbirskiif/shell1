@@ -315,6 +315,88 @@ ShellRoot {
             return state();
         }
 
+        // Панель выбора устройств: kind "output" или "input".
+        function soundDevices(kind: string): string {
+            UiState.open(UiState.defaultScreen(),
+                         kind === "input" ? "sound-input" : "sound-output");
+            return state();
+        }
+
+        // Состояние звука: устройства по умолчанию, их громкость и mute,
+        // списки устройств и потоки приложений.
+        function audio(): string {
+            const out = [];
+            out.push("ready=" + AudioService.available
+                + " out=" + (AudioService.outputName || "-")
+                + " outVol=" + Math.round(AudioService.outputVolume * 100)
+                + " outMuted=" + (AudioService.outputMuted ? "yes" : "no")
+                + " in=" + (AudioService.inputName || "-")
+                + " inVol=" + Math.round(AudioService.inputVolume * 100)
+                + " inMuted=" + (AudioService.inputMuted ? "yes" : "no"));
+            for (let i = 0; i < AudioService.outputDevices.length; ++i) {
+                const device = AudioService.outputDevices[i];
+                out.push("out[" + i + "]=" + AudioService.deviceLabel(device)
+                    + (AudioService.isDefaultSink(device) ? "/on" : ""));
+            }
+            for (let i = 0; i < AudioService.inputDevices.length; ++i) {
+                const device = AudioService.inputDevices[i];
+                out.push("in[" + i + "]=" + AudioService.deviceLabel(device)
+                    + (AudioService.isDefaultSource(device) ? "/on" : ""));
+            }
+            for (let i = 0; i < AudioService.streams.length; ++i) {
+                const stream = AudioService.streams[i];
+                out.push("stream[" + i + "]=" + AudioService.streamLabel(stream)
+                    + "/vol" + Math.round(stream.audio.volume * 100)
+                    + (stream.audio.muted ? "/muted" : ""));
+            }
+            return out.join(" ");
+        }
+
+        // Проверка без мыши: громкость и mute вывода и входа.
+        function volume(value: real): string {
+            AudioService.setOutputVolume(value);
+            return audio();
+        }
+
+        function inputVolume(value: real): string {
+            AudioService.setInputVolume(value);
+            return audio();
+        }
+
+        function muteOutput(): string {
+            AudioService.toggleOutputMute();
+            return audio();
+        }
+
+        function muteInput(): string {
+            AudioService.toggleInputMute();
+            return audio();
+        }
+
+        // Выбор устройства по индексу в списке устройств.
+        function selectOutput(index: int): string {
+            AudioService.setDefaultSink(AudioService.outputDevices[index]);
+            return audio();
+        }
+
+        function selectInput(index: int): string {
+            AudioService.setDefaultSource(AudioService.inputDevices[index]);
+            return audio();
+        }
+
+        // Громкость и mute потока приложения по индексу в списке потоков.
+        function streamVolume(index: int, value: real): string {
+            AudioService.setNodeVolume(AudioService.streams[index], value);
+            return audio();
+        }
+
+        function streamMute(index: int): string {
+            const stream = AudioService.streams[index];
+            if (stream)
+                AudioService.setNodeMuted(stream, !stream.audio.muted);
+            return audio();
+        }
+
         function close(): string {
             UiState.close();
             return state();
@@ -363,6 +445,11 @@ ShellRoot {
                 + " order=" + order.join(",")
                 + " barPercent=" + (MockState.showBatteryPercent ? "on" : "off")
                 + " battery=" + PowerService.level + "%" + (PowerService.charging ? "+" : "")
+                + " out=" + Math.round(AudioService.outputVolume * 100) + "%"
+                             + (AudioService.outputMuted ? "m" : "")
+                + " in=" + Math.round(AudioService.inputVolume * 100) + "%"
+                            + (AudioService.inputMuted ? "m" : "")
+                + " streams=" + AudioService.streams.length
                 + " mode=" + PowerService.profileName
                 + " profiles=" + (PowerService.profilesAvailable ? "ok" : "down")
                 + " eth=" + (NetworkService.ethernetConnected
