@@ -75,6 +75,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: 20
         height: 20
+        glyphSize: 15
         visible: root.wifiStatus
         offMode: !NetworkService.wifiEnabled
         signal: NetworkService.connectedSignal

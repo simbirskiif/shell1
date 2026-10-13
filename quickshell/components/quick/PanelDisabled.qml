@@ -41,6 +41,7 @@ Item {
             visible: root.wifiIcon
             width: 40
             height: 40
+            glyphSize: 34
             offMode: true
             dim: true
         }

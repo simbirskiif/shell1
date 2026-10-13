@@ -44,6 +44,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: 19
             height: 19
+            glyphSize: 14
             offMode: !root.wifiEnabled
             signal: root.wifiSignal
             dim: !root.wifiEnabled

@@ -29,9 +29,6 @@ Item {
     // Приглушённый значок (выключенное radio в баре и шапке панели).
     property bool dim: false
 
-    // Доля высоты, которую занимает глиф (1 — как в баре и шапке).
-    property real sizeScale: 1
-
     implicitWidth: 34
     implicitHeight: 34
 
@@ -94,16 +91,13 @@ Item {
         }
     }
 
-    // Кегль и рамка текста. В кружке строки значок занимает примерно половину
-    // диаметра (как глифы в PanelIcon), без кружка — почти всю рамку.
-    readonly property int glyphSize: Math.max(9, Math.round(root.height * 0.85 * root.sizeScale))
+    // Кегль значка — как у глифов в остальных виджетах: 15 в кружке строки
+    // (PanelIcon), 16 в кружке плитки (StatusCircle), 14 в баре, 34 на
+    // заглушке. Контексты передают своё значение.
+    property int glyphSize: 15
 
     Text {
-        id: glyphText
         anchors.centerIn: parent
-        // MDI-глифы сидят в строке выше её середины (нижний вынос пустой),
-        // поэтому опускаем рисунок на долю кегля.
-        anchors.verticalCenterOffset: Math.round(root.glyphSize * 0.12)
         text: root.glyph
         color: {
             if (root.dim)
