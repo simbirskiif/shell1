@@ -12,6 +12,16 @@ Singleton {
     property string openedScreen: ""
     property string panel: ""
 
+    // Вкладка панели «Звук»: "output" (динамики) или "input" (микрофон).
+    // Живёт здесь, а не в самой панели: так её можно переключить снаружи
+    // (проверка без мыши) и выбор переживает закрытие попапа.
+    property string soundTab: "output"
+
+    function setSoundTab(key) {
+        if (key === "output" || key === "input")
+            soundTab = key;
+    }
+
     // Режим редактирования плиток основной панели: правки идут в черновик
     // и применяются только по saveEdit().
     property bool editing: false

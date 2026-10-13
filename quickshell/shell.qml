@@ -322,6 +322,12 @@ ShellRoot {
             return state();
         }
 
+        // Вкладка панели «Звук»: "output" (динамики) или "input" (микрофон).
+        function soundTab(key: string): string {
+            UiState.setSoundTab(key);
+            return state();
+        }
+
         // Состояние звука: устройства по умолчанию, их громкость и mute,
         // списки устройств и потоки приложений.
         function audio(): string {
@@ -450,6 +456,7 @@ ShellRoot {
                 + " in=" + Math.round(AudioService.inputVolume * 100) + "%"
                             + (AudioService.inputMuted ? "m" : "")
                 + " streams=" + AudioService.streams.length
+                + " soundTab=" + UiState.soundTab
                 + " mode=" + PowerService.profileName
                 + " profiles=" + (PowerService.profilesAvailable ? "ok" : "down")
                 + " eth=" + (NetworkService.ethernetConnected
