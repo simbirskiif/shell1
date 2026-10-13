@@ -101,8 +101,12 @@ Item {
         // него — плашка с причиной и кнопкой повторной проверки.
         PanelWarning {
             width: parent.width
-            visible: !PowerService.profilesAvailable
-            height: visible ? implicitHeight : 0
+            // Высоту считаем от своего условия, а не от visible: visible
+            // гаснет и вместе со скрытым предком, и тогда высота панели
+            // схлопывалась прямо посреди жеста.
+            readonly property bool shown: !PowerService.profilesAvailable
+            visible: shown
+            height: shown ? implicitHeight : 0
             title: "Power modes unavailable"
             description: "power-profiles-daemon is not running"
             actionText: "Retry"
@@ -167,8 +171,9 @@ Item {
         // «height: visible ? implicitHeight : 0» даёт Binding loop.
         Item {
             width: parent.width
-            visible: PowerService.profilesAvailable && noteText.text !== ""
-            height: visible ? noteText.implicitHeight : 0
+            readonly property bool shown: PowerService.profilesAvailable && noteText.text !== ""
+            visible: shown
+            height: shown ? noteText.implicitHeight : 0
 
             Text {
                 id: noteText
@@ -202,8 +207,9 @@ Item {
         // заголовок секции выглядел бы недоделкой.
         Column {
             width: parent.width
-            visible: root.hasDetails
-            height: visible ? implicitHeight : 0
+            readonly property bool shown: root.hasDetails
+            visible: shown
+            height: shown ? implicitHeight : 0
             spacing: 0
 
             PanelSection { text: "Details" }

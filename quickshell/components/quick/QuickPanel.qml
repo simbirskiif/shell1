@@ -204,7 +204,14 @@ Item {
 
     PanelView {
         id: mainView
-        anchors.fill: parent
+        // Вид держит свою высоту, а не высоту контейнера: она во время жеста
+        // едет за пальцем, а масштаб считается от центра вида. На «плывущей»
+        // высоте центр уезжал, и контент при сжатии сползал по вертикали —
+        // при увеличении почти незаметно, при сжатии бросалось в глаза.
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: implicitHeight
         // Во время жеста сетка уже видна и приезжает справа. active от жеста
         // не зависит: раскрытие ведёт палец, а не переход между состояниями.
         active: root.panel === ""
@@ -484,7 +491,10 @@ Item {
         delegate: PanelView {
             required property var modelData
 
-            anchors.fill: parent
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: implicitHeight
             active: root.panel === modelData.key
             // Жест ведёт только та панель, которую уводим: у остальных
             // gesture остаётся -1, поэтому они не всплывают.

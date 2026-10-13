@@ -48,8 +48,12 @@ Item {
             // хуже, чем объяснить причину.
             PanelDisabled {
                 width: parent.width
-                visible: !NetworkService.backendAvailable
-                height: visible ? implicitHeight : 0
+                // Высоту считаем от своего условия, а не от visible: visible
+                // гаснет и вместе со скрытым предком (вид уезжает в жесте),
+                // и тогда высота панели схлопывалась прямо посреди движения.
+                readonly property bool shown: !NetworkService.backendAvailable
+                visible: shown
+                height: shown ? implicitHeight : 0
                 icon: "\uf1eb"
                 title: "No network backend"
                 description: "NetworkManager is not available"
@@ -105,16 +109,18 @@ Item {
             // после входа на странице.
             PortalBanner {
                 width: parent.width
-                visible: NetworkService.connectivity === "portal"
-                height: visible ? implicitHeight : 0
+                readonly property bool shown: NetworkService.connectivity === "portal"
+                visible: shown
+                height: shown ? implicitHeight : 0
                 onSignInRequested: NetworkService.openPortal()
             }
 
             // Wi-Fi выключен — единый экран-заглушка.
             PanelDisabled {
                 width: parent.width
-                visible: NetworkService.backendAvailable && !NetworkService.wifiEnabled
-                height: visible ? implicitHeight : 0
+                readonly property bool shown: NetworkService.backendAvailable && !NetworkService.wifiEnabled
+                visible: shown
+                height: shown ? implicitHeight : 0
                 wifiIcon: true
                 icon: "\uf1eb"
                 title: NetworkService.wifiHardBlocked ? "Wi-Fi is blocked" : "Wi-Fi is off"
@@ -130,8 +136,9 @@ Item {
             Column {
                 id: enabledContent
                 width: parent.width
-                visible: NetworkService.backendAvailable && NetworkService.wifiEnabled
-                height: visible ? implicitHeight : 0
+                readonly property bool shown: NetworkService.backendAvailable && NetworkService.wifiEnabled
+                visible: shown
+                height: shown ? implicitHeight : 0
                 spacing: 0
 
                 PanelSection { text: "Saved" }

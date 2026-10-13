@@ -81,11 +81,16 @@ PopupWindow {
     // прыжком, и контент в конце жеста никуда не дёргается.
     // Окно растёт ещё и под контекстное меню сети: оно живёт в этом же окне
     // (попап рисуется поверх layer-shell поверхностей) и должно помещаться
-    // целиком, иначе карточка обрежется.
+    // целиком, иначе карточка обрежется. Запас нужен только пока меню
+    // открыто: у закрытого меню высота всё равно посчитана, и окно было бы
+    // всегда выше карточки на эту величину — в полосе под ней клик мимо не
+    // закрывал бы попап.
+    readonly property real menuRoom: contextMenu.open ? contextMenu.cardHeight : 0
+
     implicitHeight: Math.min((panelItem.gestureSizing
         ? panelItem.gestureRoom
         : panelItem.contentHeight) + Theme.quickPadding * 2, root.maxHeight)
-        + contextMenu.cardHeight
+        + root.menuRoom
     // m3 container transform: контейнер меняет размер на emphasized.
     Behavior on implicitWidth {
         MotionNumber {
@@ -114,6 +119,10 @@ PopupWindow {
         height: Math.min(panelItem.contentHeight + Theme.quickPadding * 2, root.maxHeight)
         // Высота едет за сменой панели, а во время жеста — за пальцем.
         Behavior on height {
+            // Во время жеста высоту ведёт палец — без сглаживания, иначе
+            // карточка отстаёт от контента. В остальное время это m3-анимация
+            // раскрытия панели.
+            enabled: !UiState.swipeActive
             MotionNumber {
                 duration: Theme.motionMedium2
                 curve: Theme.curveEmphasized
