@@ -225,13 +225,13 @@ PanelWindow {
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
 
-                // Высота едет вместе с карточками: иначе при убирании
-                // панель сжимается раньше, чем карточки успевают подняться.
+                // Высота едет вместе с карточками и тем же таймингом, что у
+                // остальных панелей: панель меняет размер с анимацией, а не
+                // рывком, и карточки при этом не обрезаются.
                 Behavior on height {
-                    NumberAnimation {
-                        duration: Theme.motionShort4
-                        easing.type: Easing.Bezier
-                        easing.bezierCurve: Theme.curveEmphasizedDecelerate
+                    MotionNumber {
+                        duration: Theme.motionMedium2
+                        curve: Theme.curveEmphasized
                     }
                 }
 

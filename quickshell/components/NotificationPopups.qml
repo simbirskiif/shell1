@@ -6,8 +6,11 @@ import "../singletons"
 
 // Всплывающие уведомления-тосты: правый верхний угол, под баром.
 //
-// Окно на каждый экран, но показывается только на экране с фокусом.
-// Клавиатуру не забираем: тост не должен мешать печатать.
+// Поверхность держим постоянного размера и НЕ анимируем её высоту: на
+// layer-shell анимация размера заставляет композитор тянуть старый буфер —
+// это и есть «уменьшающийся прямоугольник», который дёргается при убирании
+// тоста. Карточки прекрасно едут внутри поверхности сами, а клики мимо
+// стопки пропускает маска (она режет только ввод, не отрисовку).
 PanelWindow {
     id: root
 
@@ -17,6 +20,10 @@ PanelWindow {
     readonly property string focusedScreenName: Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
     readonly property bool onFocusedScreen: root.focusedScreenName === ""
                                              || root.focusedScreenName === root.screenName
+    // Запас на всю высоту экрана: стопка может быть любой, а поверхность
+    // от этого не меняется.
+    readonly property real stackLimit: root.popupScreen
+                                       ? root.popupScreen.height - Theme.barHeight - 16 : 600
 
     screen: popupScreen
     visible: NotificationService.popups.count > 0 && root.onFocusedScreen
@@ -32,28 +39,23 @@ PanelWindow {
     }
 
     implicitWidth: Theme.notificationWidth
-    // Высота едет вместе с карточками: тот же тайминг, что у их съезда,
-    // поэтому рамка не «раскрывается» отдельно от содержимого и нижнюю
-    // карточку не обрезает при убирании.
-    implicitHeight: column.implicitHeight
-
-    Behavior on implicitHeight {
-        NumberAnimation {
-            duration: Theme.motionShort4
-            easing.type: Easing.Bezier
-            easing.bezierCurve: Theme.curveEmphasizedDecelerate
-        }
-    }
-
+    implicitHeight: root.stackLimit
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-notifications"
 
+    // Ввод ловим ровно в области стопки, остальное пропускаем вниз.
+    mask: Region {
+        item: column
+    }
+
     Column {
         id: column
 
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
         spacing: Theme.notificationSpacing
 
         Repeater {
