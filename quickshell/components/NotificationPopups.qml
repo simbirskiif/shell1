@@ -19,7 +19,7 @@ PanelWindow {
                                              || root.focusedScreenName === root.screenName
 
     screen: popupScreen
-    visible: NotificationService.popups.length > 0 && root.onFocusedScreen
+    visible: NotificationService.popups.count > 0 && root.onFocusedScreen
 
     anchors {
         top: true
@@ -32,19 +32,32 @@ PanelWindow {
     }
 
     implicitWidth: Theme.notificationWidth
-    implicitHeight: column.implicitHeight
+    // Окно не анимируем: «растущая рамка» выглядит как артефакт. Карточки
+    // съезжают сами (Behavior on y), а высота растёт сразу и лишь сжимается
+    // с задержкой — иначе нижнюю карточку обрежет во время съезда.
+    readonly property real contentHeight: column.implicitHeight
+    property real heldHeight: 0
+    implicitHeight: Math.max(root.contentHeight, root.heldHeight)
+
+    onContentHeightChanged: {
+        if (root.contentHeight >= root.heldHeight)
+            root.heldHeight = root.contentHeight;
+        else
+            holdTimer.restart();
+    }
+
+    Timer {
+        id: holdTimer
+
+        interval: Theme.motionShort4
+        repeat: false
+        onTriggered: root.heldHeight = root.contentHeight
+    }
+
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-notifications"
-
-    // Стопка растёт и сжимается мягко, а не рывком.
-    Behavior on implicitHeight {
-        MotionNumber {
-            duration: Theme.motionMedium2
-            curve: Theme.curveEmphasized
-        }
-    }
 
     Column {
         id: column
@@ -56,9 +69,9 @@ PanelWindow {
             model: NotificationService.popups
 
             delegate: NotificationCard {
-                required property var modelData
+                required property var entry
 
-                notification: modelData
+                notification: entry
                 context: "popup"
                 width: column.width
             }

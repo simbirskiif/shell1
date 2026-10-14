@@ -84,7 +84,7 @@ ShellRoot {
         }
 
         function open(): string {
-            NotificationService.centerOpen = true;
+            NotificationService.openCenter();
             return state();
         }
 

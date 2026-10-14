@@ -21,7 +21,36 @@ PanelWindow {
                                              || root.focusedScreenName === root.screenName
 
     screen: centerScreen
-    visible: NotificationService.centerOpen && root.onFocusedScreen
+    // Видимость ведём сами: окно должно успеть выехать, прежде чем исчезнуть.
+    property bool shown: false
+    visible: root.shown && root.onFocusedScreen
+
+    Connections {
+        target: NotificationService
+
+        function onCenterOpenChanged() {
+            if (NotificationService.centerOpen)
+                root.appear();
+            else
+                root.disappear();
+        }
+    }
+
+    Component.onCompleted: if (NotificationService.centerOpen) root.appear()
+
+    function appear() {
+        root.shown = true;
+        panelShift.x = panel.width;
+        panelIn.restart();
+        backdropIn.restart();
+    }
+
+    function disappear() {
+        if (!root.shown)
+            return;
+        panelOut.restart();
+        backdropOut.restart();
+    }
 
     anchors {
         top: true
@@ -44,13 +73,40 @@ PanelWindow {
 
     // Клик мимо панели закрывает Центр.
     Rectangle {
+        id: backdrop
+
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.35)
+        opacity: 0
 
         MouseArea {
             anchors.fill: parent
             onClicked: NotificationService.closeCenter()
         }
+    }
+
+    NumberAnimation {
+        id: backdropIn
+
+        target: backdrop
+        property: "opacity"
+        from: 0
+        to: 1
+        duration: Theme.motionShort4
+        easing.type: Easing.Bezier
+        easing.bezierCurve: Theme.curveStandardDecelerate
+    }
+
+    NumberAnimation {
+        id: backdropOut
+
+        target: backdrop
+        property: "opacity"
+        from: 1
+        to: 0
+        duration: Theme.motionShort3
+        easing.type: Easing.Bezier
+        easing.bezierCurve: Theme.curveStandardAccelerate
     }
 
     Rectangle {
@@ -64,7 +120,7 @@ PanelWindow {
         border.width: 1
         border.color: Theme.quickBorder
 
-        // Въезд панели справа.
+        // Въезд и выезд панели справа.
         transform: Translate { id: panelShift; x: 0 }
 
         NumberAnimation {
@@ -74,12 +130,27 @@ PanelWindow {
             property: "x"
             from: panel.width
             to: 0
-            duration: Theme.motionMedium1
+            duration: Theme.motionShort4
             easing.type: Easing.Bezier
             easing.bezierCurve: Theme.curveEmphasizedDecelerate
         }
 
-        onVisibleChanged: if (visible) panelIn.restart()
+        NumberAnimation {
+            id: panelOut
+
+            target: panelShift
+            property: "x"
+            from: 0
+            to: panel.width
+            duration: Theme.motionShort3
+            easing.type: Easing.Bezier
+            easing.bezierCurve: Theme.curveEmphasizedAccelerate
+            // Прячем окно только после того, как панель уехала.
+            onStopped: {
+                if (!NotificationService.centerOpen)
+                    root.shown = false;
+            }
+        }
 
         // Клики по панели не должны закрывать её через подложку.
         MouseArea {
@@ -114,9 +185,17 @@ PanelWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 6
 
+                    // Режим «не беспокоить» прямо в окне: та же плитка, что и
+                    // в быстрых настройках, только компактно.
+                    DialogButton {
+                        icon: NotificationService.doNotDisturb ? "\uf1f6" : "\uf0f3"
+                        active: NotificationService.doNotDisturb
+                        onTriggered: NotificationService.doNotDisturb = !NotificationService.doNotDisturb
+                    }
+
                     DialogButton {
                         text: "Очистить"
-                        enabled: NotificationService.history.length > 0
+                        enabled: NotificationService.history.count > 0
                         onTriggered: NotificationService.clearHistory()
                     }
 
@@ -148,9 +227,9 @@ PanelWindow {
                         model: NotificationService.history
 
                         delegate: NotificationCard {
-                            required property var modelData
+                            required property var entry
 
-                            notification: modelData
+                            notification: entry
                             context: "center"
                             width: listColumn.width
                         }
@@ -162,7 +241,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     width: parent.width
                     spacing: 8
-                    visible: NotificationService.history.length === 0
+                    visible: NotificationService.history.count === 0
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -189,37 +268,48 @@ PanelWindow {
         id: button
 
         property string text: ""
+        property string icon: ""
         property bool primary: false
+        // Включённое состояние (например, «не беспокоить»).
+        property bool active: false
 
         signal triggered()
 
-        width: (button.primary ? primaryLabel.implicitWidth : label.implicitWidth) + 24
+        width: content.implicitWidth + 24
         height: 28
         radius: height / 2
-        color: button.primary ? Theme.accent : Theme.quickTile
+        color: button.primary ? Theme.accent
+                              : (button.active ? Theme.quickTileActive : Theme.quickTile)
+        border.width: button.active && !button.primary ? 1 : 0
+        border.color: Theme.accent
         opacity: button.enabled ? 1 : 0.45
 
-        Text {
-            id: label
+        Row {
+            id: content
 
             anchors.centerIn: parent
-            visible: !button.primary
-            text: button.text
-            color: Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 12
-        }
+            spacing: 6
 
-        Text {
-            id: primaryLabel
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: button.icon !== ""
+                text: button.icon
+                color: button.primary ? Theme.quickIconOn
+                                      : (button.active ? Theme.accent : Theme.quickText)
+                font.family: Theme.iconFontFamily
+                font.pixelSize: 12
+            }
 
-            anchors.centerIn: parent
-            visible: button.primary
-            text: button.text
-            color: Theme.quickIconOn
-            font.family: Theme.fontFamily
-            font.pixelSize: 12
-            font.weight: Font.Medium
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: button.text !== ""
+                text: button.text
+                color: button.primary ? Theme.quickIconOn
+                                      : (button.active ? Theme.accent : Theme.quickText)
+                font.family: Theme.fontFamily
+                font.pixelSize: 12
+                font.weight: button.primary ? Font.Medium : Font.Normal
+            }
         }
 
         MouseArea {

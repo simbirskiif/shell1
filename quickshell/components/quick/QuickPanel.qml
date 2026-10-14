@@ -12,10 +12,10 @@ Item {
     readonly property string panel: UiState.panel
     readonly property bool editing: UiState.editing
 
-    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, batteryEntry, settingsEntry, soundOutputEntry, soundInputEntry]
+    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, dndEntry, batteryEntry, settingsEntry, soundOutputEntry, soundInputEntry]
 
     // Плитки, которыми управляет редактор.
-    readonly property var tileEntries: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry]
+    readonly property var tileEntries: [bluetoothEntry, internetEntry, soundEntry, dndEntry, brightnessEntry]
 
     readonly property var shownKeys: root.editing ? UiState.draftVisible : MockState.visibleTiles
     readonly property var poolKeys: root.editing ? UiState.draftAvailable : MockState.availableTiles
@@ -634,6 +634,28 @@ Item {
 
         function toggle() {
             // У списка устройств кружок ничего не переключает.
+        }
+    }
+
+    // «Не беспокоить»: история пишется, тосты не показываются. Отдельного
+    // вида у плитки нет, поэтому и кружок, и вся площадь переключают режим.
+    QtObject {
+        id: dndEntry
+
+        readonly property bool inGrid: true
+        readonly property string key: "dnd"
+        readonly property string title: "Не беспокоить"
+        readonly property string icon: NotificationService.doNotDisturb ? "\uf1f6" : "\uf0f3"
+        readonly property bool active: NotificationService.doNotDisturb
+        readonly property string subtitle: NotificationService.doNotDisturb ? "Включено" : "Выключено"
+        readonly property Component view: null
+
+        function open() {
+            NotificationService.doNotDisturb = !NotificationService.doNotDisturb;
+        }
+
+        function toggle() {
+            NotificationService.doNotDisturb = !NotificationService.doNotDisturb;
         }
     }
 

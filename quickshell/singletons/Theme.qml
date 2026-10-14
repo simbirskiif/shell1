@@ -86,8 +86,8 @@ Singleton {
 
     // Свайп карточки уведомления: улёт за край (accelerate) и упругий
     // возврат (decelerate). Кривые — curveEmphasizedAccelerate/Decelerate.
-    readonly property int motionSwipeExit: 180
-    readonly property int motionSwipeReturn: 350
+    readonly property int motionSwipeExit: 150
+    readonly property int motionSwipeReturn: 250
 
     readonly property var curveEmphasized: [0.2, 0.0, 0.0, 1.0]
     readonly property var curveEmphasizedDecelerate: [0.05, 0.7, 0.1, 1.0]

@@ -22,6 +22,8 @@ Item {
     property string context: "popup"
 
     property real swipeOffset: 0
+    // Смещение появления: карточка выезжает справа налево.
+    property real enterOffset: 0
     // Идёт жест: Behavior выключен, карточка следует за пальцами.
     property bool isSwiping: false
     // Играет анимация улёта: Behavior тоже выключен.
@@ -68,20 +70,64 @@ Item {
 
     implicitHeight: card.implicitHeight
 
-    // Вход карточки: лёгкий scale-in в духе M3 Expressive.
+    // Появление: карточка выезжает справа налево.
     NumberAnimation {
         id: enterAnim
 
-        target: card
-        property: "scale"
-        from: Theme.motionFadeThroughScale
-        to: 1
-        duration: Theme.motionMedium1
+        target: root
+        property: "enterOffset"
+        from: root.width
+        to: 0
+        duration: Theme.motionShort4
         easing.type: Easing.Bezier
         easing.bezierCurve: Theme.curveEmphasizedDecelerate
     }
 
-    Component.onCompleted: enterAnim.restart()
+    // Съезд соседей ведём сами: Column (Positioner) ставит y ребёнка
+    // мгновенно, Behavior на y у такого ребёнка не играет. Запоминаем, на
+    // сколько карточку сдвинули, и плавно возвращаем смещение к нулю.
+    property real lastY: 0
+    property real stackShift: 0
+    property bool stackReady: false
+
+    Timer {
+        interval: 80
+        running: true
+        repeat: false
+        onTriggered: {
+            root.lastY = root.y;
+            root.stackReady = true;
+        }
+    }
+
+    onYChanged: {
+        if (!root.stackReady) {
+            root.lastY = root.y;
+            return;
+        }
+        root.stackShift += root.lastY - root.y;
+        root.lastY = root.y;
+        shiftAnim.restart();
+    }
+
+    NumberAnimation {
+        id: shiftAnim
+
+        target: root
+        property: "stackShift"
+        to: 0
+        duration: Theme.motionShort4
+        easing.type: Easing.Bezier
+        easing.bezierCurve: Theme.curveEmphasizedDecelerate
+    }
+
+    Component.onCompleted: root.playEnter()
+
+    // Запустить появление карточки (выезд справа налево).
+    function playEnter() {
+        root.enterOffset = root.width;
+        enterAnim.restart();
+    }
 
     // Отпустили пальцы, порог не пройден — сюда возвращает Behavior.
     Behavior on swipeOffset {
@@ -155,12 +201,12 @@ Item {
         }
     }
 
-    // Порог — 35% ширины карточки.
+    // Порог — 20% ширины карточки: смахивать нужно коротким жестом.
     function finishSwipe() {
         if (root.removing || root.finished)
             return;
         root.isSwiping = false;
-        if (Math.abs(root.swipeOffset) > root.width * 0.35)
+        if (Math.abs(root.swipeOffset) > root.width * 0.20)
             root.slideOut(root.swipeOffset > 0 ? root.width * 1.2 : -root.width * 1.2, false);
         else
             root.swipeOffset = 0; // Behavior вернёт упруго
@@ -192,12 +238,65 @@ Item {
         root.removed();
     }
 
+    // --- жест двумя пальцами по тачпаду -------------------------------------
+    //
+    // Handler'ы висят на неподвижном корне, а не на уезжающей карточке: если
+    // повесить их на саму карточку, она уходит из-под курсора (мышь) или
+    // из-под неподвижного пальца (тачпад), и жест обрывается.
+    WheelHandler {
+        id: wheelHandler
+
+        orientation: Qt.Horizontal
+        acceptedDevices: PointerDevice.TouchPad | PointerDevice.Mouse
+
+        onWheel: (event) => {
+            // Тачпад в Wayland даёт точные пиксели; angleDelta — фоллбэк
+            // для мыши и композиторов без pixelDelta.
+            const dx = event.pixelDelta.x !== 0 ? event.pixelDelta.x
+                                                : event.angleDelta.x * 0.5;
+            // Забираем событие, только если жест действительно
+            // горизонтальный: иначе вертикальный скролл списка сломается.
+            if (dx !== 0)
+                event.accepted = true;
+            root.applyWheelDelta(dx, event.phase);
+        }
+    }
+
+    // --- перетаскивание зажатой мышью ----------------------------------------
+    DragHandler {
+        id: dragHandler
+
+        // Двигаем карточку сами через swipeOffset, а не средствами
+        // handler'а: иначе он перебил бы привязку x.
+        target: null
+        acceptedDevices: PointerDevice.Mouse
+        xAxis.enabled: true
+        yAxis.enabled: false
+
+        property real baseOffset: 0
+
+        onActiveChanged: {
+            if (active) {
+                baseOffset = root.swipeOffset;
+                root.isSwiping = true;
+            } else {
+                root.finishSwipe();
+            }
+        }
+
+        onActiveTranslationChanged: {
+            if (active)
+                root.swipeOffset = baseOffset + activeTranslation.x;
+        }
+    }
+
     // --- карточка -----------------------------------------------------------
 
     Rectangle {
         id: card
 
-        x: root.swipeOffset
+        x: root.swipeOffset + root.enterOffset
+        y: root.stackShift
         width: parent.width
         implicitHeight: content.implicitHeight + Theme.notificationPadding * 2
         height: implicitHeight
@@ -218,54 +317,6 @@ Item {
             width: root.critical ? 3 : 0
             radius: width / 2
             color: Theme.lowColor
-        }
-
-        // --- свайп двумя пальцами по тачпаду --------------------------------
-        WheelHandler {
-            id: wheelHandler
-
-            orientation: Qt.Horizontal
-            acceptedDevices: PointerDevice.TouchPad | PointerDevice.Mouse
-
-            onWheel: (event) => {
-                // Тачпад в Wayland даёт точные пиксели; angleDelta — фоллбэк
-                // для мыши и композиторов без pixelDelta.
-                const dx = event.pixelDelta.x !== 0 ? event.pixelDelta.x
-                                                    : event.angleDelta.x * 0.5;
-                // Забираем событие, только если жест действительно
-                // горизонтальный: иначе вертикальный скролл списка сломается.
-                if (dx !== 0)
-                    event.accepted = true;
-                root.applyWheelDelta(dx, event.phase);
-            }
-        }
-
-        // --- перетаскивание зажатой мышью ------------------------------------
-        DragHandler {
-            id: dragHandler
-
-            // Двигаем карточку сами через swipeOffset, а не средствами
-            // handler'а: иначе он перебил бы привязку x.
-            target: null
-            acceptedDevices: PointerDevice.Mouse
-            xAxis.enabled: true
-            yAxis.enabled: false
-
-            property real baseOffset: 0
-
-            onActiveChanged: {
-                if (active) {
-                    baseOffset = root.swipeOffset;
-                    root.isSwiping = true;
-                } else {
-                    root.finishSwipe();
-                }
-            }
-
-            onActiveTranslationChanged: {
-                if (active)
-                    root.swipeOffset = baseOffset + activeTranslation.x;
-            }
         }
 
         Column {
