@@ -2,6 +2,7 @@
 // По одному бару на каждый экран; сам бар живёт в components/Bar.qml.
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.Polkit
 import "components"
 import "singletons"
 
@@ -14,6 +15,24 @@ ShellRoot {
         delegate: Bar {
             required property var modelData
             screen: modelData
+        }
+    }
+
+    // Агент аутентификации Polkit. Слушатель D-Bus ровно один на сессию,
+    // поэтому объект объявлен здесь, а не в диалоге на каждом экране.
+    PolkitAgent {
+        id: polkitAgent
+    }
+
+    // Запрос Polkit — модальным окном на экране с фокусом. Отдельная
+    // поверхность нужна из-за клавиатурного фокуса (см. PolkitDialog.qml).
+    Variants {
+        model: Quickshell.screens
+
+        delegate: PolkitDialog {
+            required property var modelData
+            dialogScreen: modelData
+            agent: polkitAgent
         }
     }
 
