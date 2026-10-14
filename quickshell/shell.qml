@@ -104,6 +104,12 @@ ShellRoot {
             return state();
         }
 
+        // Чувствительность горизонтального свайпа (0.5..3.0).
+        function sensitivity(v: real): string {
+            NotificationService.swipeSensitivity = Math.max(0.1, v);
+            return state();
+        }
+
         function state(): string {
             return NotificationService.summary();
         }

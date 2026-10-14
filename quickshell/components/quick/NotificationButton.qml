@@ -21,10 +21,10 @@ Rectangle {
         anchors.centerIn: parent
         anchors.verticalCenterOffset: 1
         text: "\uf0f3"
-        color: NotificationService.hasUnread ? Theme.accent : Theme.quickText
+        // Колокольчик не подсвечиваем: о непрочитанном говорит точка.
+        color: Theme.quickText
         font.family: Theme.iconFontFamily
         font.pixelSize: 14
-        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
     }
 
     // Точка непрочитанного.

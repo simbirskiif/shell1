@@ -228,11 +228,14 @@ Item {
     // функцией, чтобы логика не зависела от того, откуда пришла дельта
     // (pixelDelta тачпада или angleDelta мыши).
     function applyWheelDelta(dx, phase) {
-        if (dx !== 0) {
+        // Чувствительность из настроек: у разных тачпадов pixelDelta
+        // отличается в разы, поэтому дельту умножаем.
+        const step = dx * NotificationService.swipeSensitivity;
+        if (step !== 0) {
             // Сначала выключаем Behavior, и только потом двигаем: иначе
             // первая же дельта уедет анимацией и часть жеста потеряется.
             root.isSwiping = true;
-            root.swipeOffset += dx;
+            root.swipeOffset += step;
             wheelEndTimer.restart();
         }
         // Композитор умеет фазы — не ждём таймер.

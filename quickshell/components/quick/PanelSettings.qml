@@ -70,6 +70,51 @@ Item {
             }
         }
 
+        PanelSection { text: "Notifications" }
+
+        // Чувствительность горизонтального свайпа: множитель дельты
+        // тачпада. 1.00 — карточка идёт ровно за пальцами.
+        Item {
+            width: parent.width
+            height: 60
+
+            Column {
+                anchors.left: parent.left
+                anchors.leftMargin: 16
+                anchors.right: sensitivityValue.left
+                anchors.rightMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 10
+
+                Text {
+                    text: "Swipe sensitivity"
+                    color: Theme.quickText
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 13
+                }
+
+                PanelSlider {
+                    width: parent.width
+                    // Ползунок 0..1 — это 0.5..3.0, шаг 0.05.
+                    value: (NotificationService.swipeSensitivity - 0.5) / 2.5
+                    onMoved: v => NotificationService.swipeSensitivity =
+                                 Math.round((0.5 + v * 2.5) * 20) / 20
+                }
+            }
+
+            Text {
+                id: sensitivityValue
+
+                anchors.right: parent.right
+                anchors.rightMargin: 16
+                anchors.verticalCenter: parent.verticalCenter
+                text: NotificationService.swipeSensitivity.toFixed(2) + "×"
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
+                font.pixelSize: 12
+            }
+        }
+
         PanelSection { text: "Bar order" }
 
         // Порядок слева-направо = порядок в модели; стрелки двигают элемент.

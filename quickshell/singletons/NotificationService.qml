@@ -31,9 +31,14 @@ Singleton {
     property bool centerOpen: false
     // Сколько уведомлений пришло с момента последнего открытия Центра.
     property int unseen: 0
+    // Чувствительность горизонтального свайпа: множитель дельты тачпада.
+    // 1.0 — карточка идёт ровно за пальцами.
+    property real swipeSensitivity: 1.0
 
     readonly property int count: root.history.count
-    readonly property bool hasUnread: root.unseen > 0
+    // Индикатор считает только то, что реально лежит в истории: если
+    // приложение отозвало все уведомления, точки быть не должно.
+    readonly property bool hasUnread: root.unseen > 0 && root.history.count > 0
 
     // Просьба убрать всё с анимацией: карточки уезжают сами и закрывают
     // уведомления, поэтому списки тут не чистим.
@@ -106,6 +111,9 @@ Singleton {
         index = root.indexOf(root.history, notification);
         if (index !== -1)
             root.history.remove(index);
+        // Отозванное уведомление не должно оставлять «непрочитанное»:
+        // иначе при нуле уведомлений в баре всё ещё горит точка.
+        root.unseen = Math.min(root.unseen, root.history.count);
     }
 
     // Смахнули тост: убираем только из активных, в истории оставляем.
@@ -163,6 +171,8 @@ Singleton {
         return "count=" + root.history.count
             + " popups=" + root.popups.count
             + " unseen=" + root.unseen
+            + " unread=" + (root.hasUnread ? "yes" : "no")
+            + " sens=" + root.swipeSensitivity.toFixed(2)
             + " dnd=" + (root.doNotDisturb ? "on" : "off")
             + " center=" + (root.centerOpen ? "open" : "closed")
             + " last=" + last;
