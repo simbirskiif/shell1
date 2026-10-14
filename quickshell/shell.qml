@@ -356,6 +356,24 @@ ShellRoot {
             return state();
         }
 
+        // Кофеин: открыть панель выбора срока.
+        function caffeine(): string {
+            UiState.open(UiState.defaultScreen(), "caffeine");
+            return state();
+        }
+
+        // Режим кофеина: off | 30 | 60 | 120 | infinite.
+        function caffeineMode(mode: string): string {
+            CaffeineService.setMode(mode);
+            return state();
+        }
+
+        // Кружок плитки: бесконечно вкл/выкл.
+        function caffeineToggle(): string {
+            CaffeineService.toggle();
+            return state();
+        }
+
         // Яркость каждого экрана: список целей и текущие значения.
         function displays(): string {
             const parts = [];
@@ -576,6 +594,7 @@ ShellRoot {
                 + " bg=" + Wal.background + " accent=" + Wal.accent
                 + " brightness=" + BrightnessService.summary
                 + " screens=" + BrightnessService.targets.length
+                + " caffeine=" + CaffeineService.mode
                 + " h=" + Math.round(UiState.popupHeight)
                 + " tiles=" + tiles + (UiState.editing ? " [edit]" : "")
                 + " netTile=" + (NetworkService.internetViaEthernet ? "Internet" : "Wi-Fi")

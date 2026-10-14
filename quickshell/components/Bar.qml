@@ -20,6 +20,13 @@ PanelWindow {
     exclusiveZone: Theme.barHeight
     WlrLayershell.namespace: "quickshell-bar"
 
+    // Кофеин: idle-inhibit привязывается к поверхности, поэтому ингибитор
+    // живёт в окне бара — у каждого экрана своя поверхность, но включён он
+    // только когда выбран режим.
+    IdleInhibitor {
+        enabled: CaffeineService.active
+        window: root
+    }
 
     Workspaces {
         anchors.left: parent.left

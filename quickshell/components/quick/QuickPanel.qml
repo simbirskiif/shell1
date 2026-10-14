@@ -12,10 +12,10 @@ Item {
     readonly property string panel: UiState.panel
     readonly property bool editing: UiState.editing
 
-    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, dndEntry, batteryEntry, settingsEntry, soundOutputEntry, soundInputEntry]
+    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, dndEntry, caffeineEntry, batteryEntry, settingsEntry, soundOutputEntry, soundInputEntry]
 
     // Плитки, которыми управляет редактор.
-    readonly property var tileEntries: [bluetoothEntry, internetEntry, soundEntry, dndEntry, brightnessEntry]
+    readonly property var tileEntries: [bluetoothEntry, internetEntry, soundEntry, dndEntry, caffeineEntry, brightnessEntry]
 
     readonly property var shownKeys: root.editing ? UiState.draftVisible : MockState.visibleTiles
     readonly property var poolKeys: root.editing ? UiState.draftAvailable : MockState.availableTiles
@@ -656,6 +656,29 @@ Item {
 
         function toggle() {
             NotificationService.doNotDisturb = !NotificationService.doNotDisturb;
+        }
+    }
+
+    // Кофеин: кружок включает бесконечный режим, нажатие на остальную часть
+    // открывает панель с выбором срока (30 минут, час, два, бесконечно).
+    QtObject {
+        id: caffeineEntry
+
+        readonly property bool inGrid: true
+        readonly property string key: "caffeine"
+        readonly property string title: "Кофеин"
+        readonly property string icon: "\uf0f4"
+        readonly property bool active: CaffeineService.active
+        readonly property string subtitle: CaffeineService.active
+                                           ? CaffeineService.label : "Выключен"
+        readonly property Component view: Component { PanelCaffeine {} }
+
+        function open() {
+            UiState.openDetail(key);
+        }
+
+        function toggle() {
+            CaffeineService.toggle();
         }
     }
 
