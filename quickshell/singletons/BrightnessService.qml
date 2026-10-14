@@ -113,8 +113,14 @@ Singleton {
         }
         root.backlightNames = names;
         root.rebuildTargets();
-        if (names.length === 0)
+        if (names.length === 0) {
+            // Backlight-устройств нет вовсе (десктоп с внешними мониторами):
+            // яркость умеет менять только DDC/CI, поэтому спрашиваем сразу,
+            // не дожидаясь открытия панели.
+            if (root.hasExternalScreen())
+                root.probeDdc();
             return;
+        }
         const args = ["readlink", "-f"];
         for (let i = 0; i < names.length; ++i)
             args.push("/sys/class/backlight/" + names[i]);
@@ -169,6 +175,42 @@ Singleton {
         root.ddcProbing = true;
         ddcDetect.running = true;
         ddcWatchdog.restart();
+    }
+
+    // ddcutil detect — это несколько секунд и опрос всех шин I2C, поэтому
+    // сам по себе он не запускается: ни на старте, ни на каждое перестроение
+    // экранов, ни тем более на hot-reload конфига. Спрашиваем только когда
+    // яркость действительно нечем менять — то есть для экрана без backlight.
+    function needsDdcProbe() {
+        if (root.ddcProbed || root.ddcProbing)
+            return false;
+        return root.hasScreenWithoutBacklight();
+    }
+
+    function hasScreenWithoutBacklight() {
+        const screens = Quickshell.screens;
+        for (let i = 0; i < screens.length; ++i) {
+            const name = screens[i].name.toLowerCase();
+            let covered = false;
+            for (let b = 0; b < root.backlightNames.length; ++b) {
+                if ((root.backlightConnectors[root.backlightNames[b]] || "").toLowerCase() === name) {
+                    covered = true;
+                    break;
+                }
+            }
+            if (!covered)
+                return true;
+        }
+        return false;
+    }
+
+    function hasExternalScreen() {
+        const screens = Quickshell.screens;
+        for (let i = 0; i < screens.length; ++i) {
+            if (!root.looksInternal(screens[i].name))
+                return true;
+        }
+        return false;
     }
 
     function finishDdcProbe(text) {
@@ -230,11 +272,10 @@ Singleton {
         return { value: parseInt(match[1], 10), max: parseInt(match[2], 10) };
     }
 
-    Timer {
-        id: ddcSettle
-        interval: 600
-        onTriggered: root.readDdc()
-    }
+    // Чтение DDC — это тоже процесс и транзакция по I2C, поэтому на один
+    // дисплей одновременно не больше одного getvcp: иначе при медленном
+    // мониторе они копятся и оболочка встаёт.
+    property var ddcReading: ({})
 
     function readDdc() {
         for (let i = 0; i < root.ddcDisplays.length; ++i) {
@@ -242,9 +283,24 @@ Singleton {
             if (root.ddcSupported[display.number] === false)
                 continue;
             const number = display.number;
+            if (root.ddcReading[number])
+                continue;
+            root.ddcReading = root.mapWith(root.ddcReading, number, true);
             root.run(["ddcutil", "--display", "" + number, "getvcp", "10", "--brief"],
-                     (code, out) => root.applyDdcValue(number, code, out));
+                     (code, out) => {
+                         root.ddcReading = root.mapWithout(root.ddcReading, number);
+                         root.applyDdcValue(number, code, out);
+                     });
         }
+    }
+
+    function mapWithout(map, key) {
+        const next = {};
+        for (const existing in map) {
+            if (existing !== "" + key)
+                next[existing] = map[existing];
+        }
+        return next;
     }
 
     function applyDdcValue(number, code, out) {
@@ -387,7 +443,7 @@ Singleton {
             if (!root.ddcProbed)
                 hint = "Checking DDC/CI…";
             else if (root.ddcDisplays.length === 0)
-                hint = "Install ddcutil to control HDMI/DP brightness";
+                hint = "DDC/CI unavailable (ddcutil / i2c-dev?)";
             else
                 hint = "Monitor does not report brightness over DDC/CI";
         }
@@ -469,7 +525,7 @@ Singleton {
             return;
         // Пока идёт наша запись, файл может отдать ещё старое значение —
         // иначе слайдер дёргался бы назад под пальцем.
-        if (root.pending[key] !== undefined)
+        if (root.pendingBacklight[key] !== undefined || root.pendingDdc[key] !== undefined)
             return;
         root.storeValue(key, Math.max(0, Math.min(1, raw / max)));
     }
@@ -483,15 +539,48 @@ Singleton {
     }
 
     // ───────────── запись ─────────────
+    //
+    // Две очереди с разным темпом. Значение на экран всегда одно — последнее,
+    // поэтому очередь не растёт, а слайдер успевает за пальцем: во время
+    // перетаскивания пишем раз в throttle, а не один раз на отпускании.
+    // logind — быстрый вызов D-Bus, ему хватает 100 мс; ddcutil — это
+    // отдельный процесс и транзакция по I2C, чаще четырёх раз в секунду его
+    // дёргать нельзя: и монитор не успевает, и оболочка начинает тормозить.
 
-    property var pending: ({})
+    property var pendingBacklight: ({})
+    property var pendingDdc: ({})
     // Последнее ненулевое значение — чтобы toggle() возвращал яркость.
     property var lastNonZero: ({})
 
     Timer {
-        id: flushTimer
-        interval: 180
-        onTriggered: root.flushWrites()
+        id: backlightFlush
+        interval: 100
+        repeat: true
+        onTriggered: {
+            root.flushGroup("backlight");
+            if (!root.hasPending("backlight"))
+                backlightFlush.stop();
+        }
+    }
+
+    Timer {
+        id: ddcFlush
+        interval: 250
+        repeat: true
+        onTriggered: {
+            root.flushGroup("ddc");
+            if (!root.hasPending("ddc")) {
+                ddcFlush.stop();
+                // Драг закончился: один раз сверяем фактическое значение.
+                ddcReconcile.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: ddcReconcile
+        interval: 1200
+        onTriggered: root.readDdc()
     }
 
     function setValue(key, value) {
@@ -502,12 +591,17 @@ Singleton {
         if (clamped > 0.001)
             root.rememberNonZero(key, clamped);
         root.storeValue(key, clamped);
-        const next = {};
-        for (const existing in root.pending)
-            next[existing] = root.pending[existing];
-        next[key] = clamped;
-        root.pending = next;
-        flushTimer.restart();
+
+        if (target.method === "backlight") {
+            root.pendingBacklight = root.mapWith(root.pendingBacklight, key, clamped);
+            if (!backlightFlush.running)
+                backlightFlush.start();
+        } else if (target.method === "ddc") {
+            root.pendingDdc = root.mapWith(root.pendingDdc, key, clamped);
+            if (!ddcFlush.running)
+                ddcFlush.start();
+            ddcReconcile.stop();
+        }
     }
 
     // Кружок плитки: погасить и вернуть прежнюю яркость.
@@ -522,31 +616,40 @@ Singleton {
             const stored = root.lastNonZero[target.key];
             root.setValue(target.key, stored === undefined ? 0.5 : stored);
         }
-        root.flushWrites();
     }
 
     function rememberNonZero(key, value) {
-        const next = {};
-        for (const existing in root.lastNonZero)
-            next[existing] = root.lastNonZero[existing];
-        next[key] = value;
-        root.lastNonZero = next;
+        root.lastNonZero = root.mapWith(root.lastNonZero, key, value);
     }
 
-    function flushWrites() {
-        const queued = root.pending;
-        let hasWork = false;
-        for (const key in queued)
-            hasWork = true;
-        if (!hasWork)
-            return;
-        root.pending = ({});
-        for (const key in queued) {
+    function mapWith(map, key, value) {
+        const next = {};
+        for (const existing in map)
+            next[existing] = map[existing];
+        next[key] = value;
+        return next;
+    }
+
+    function hasPending(group) {
+        const queue = group === "ddc" ? root.pendingDdc : root.pendingBacklight;
+        for (const key in queue)
+            return true;
+        return false;
+    }
+
+    function flushGroup(group) {
+        const queue = group === "ddc" ? root.pendingDdc : root.pendingBacklight;
+        if (group === "ddc")
+            root.pendingDdc = ({});
+        else
+            root.pendingBacklight = ({});
+
+        for (const key in queue) {
             const target = root.targetByKey(key);
             if (target === null)
                 continue;
             const max = root.maximums[key] > 0 ? root.maximums[key] : 100;
-            const raw = Math.max(0, Math.min(max, Math.round(queued[key] * max)));
+            const raw = Math.max(0, Math.min(max, Math.round(queue[key] * max)));
             if (target.method === "backlight")
                 root.writeLogind(target.device, raw);
             else if (target.method === "ddc")
@@ -573,7 +676,6 @@ Singleton {
                  (code, out, err) => {
                      if (code !== 0)
                          console.warn("Brightness: ddcutil setvcp:", (err || "").trim());
-                     ddcSettle.restart();
                  });
     }
 
@@ -638,7 +740,8 @@ Singleton {
     // ───────────── перечитывание ─────────────
 
     // Панель открыли — за время, пока её не было, яркость могли поменять
-    // кнопками на клавиатуре или на мониторе.
+    // кнопками на клавиатуре или на мониторе. Тут же, если для какого-то
+    // экрана backlight нет, спрашиваем DDC (один раз на набор экранов).
     Connections {
         target: UiState
 
@@ -648,29 +751,40 @@ Singleton {
             for (let i = 0; i < brightnessViews.count; ++i)
                 brightnessViews.objectAt(i).reload();
             root.scheduleBacklightRead();
-            root.readDdc();
+            if (root.needsDdcProbe())
+                root.probeDdc();
+            else
+                root.readDdc();
         }
     }
 
     // Подключили монитор: backlight-устройства не меняются, а DDC-дисплеи
-    // надо перечитать.
+    // могли появиться или исчезнуть. Сброс делаем без опроса: ddcutil
+    // запустится только при следующем открытии панели (или сразу, если она
+    // уже открыта).
     Connections {
         target: Quickshell
 
         function onScreensChanged() {
             root.rebuildTargets();
-            screensDebounce.restart();
+            root.ddcDisplays = [];
+            root.ddcSupported = ({});
+            root.ddcProbed = false;
+            if (UiState.panel === "brightness")
+                screensDebounce.restart();
         }
     }
 
     Timer {
         id: screensDebounce
         interval: 1500
-        onTriggered: root.probeDdc()
+        onTriggered: {
+            if (root.needsDdcProbe())
+                root.probeDdc();
+        }
     }
 
     Component.onCompleted: {
         root.rebuildTargets();
-        root.probeDdc();
     }
 }
