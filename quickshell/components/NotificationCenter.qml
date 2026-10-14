@@ -2,14 +2,11 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
-import "quick"
 import "../singletons"
 
-// Центр уведомлений: панель справа со всей историей.
-//
-// Список листается вертикально двумя пальцами (Flickable), а карточки
-// смахиваются горизонтально: WheelHandler на карточке берёт только
-// горизонтальную ось и не мешает вертикальному скроллу.
+// Центр уведомлений — такая же панель, как быстрые настройки: та же
+// карточка, радиус, рамка и отступы, только с историей. Выезжает справа
+// и уезжает туда же при закрытии.
 PanelWindow {
     id: root
 
@@ -19,11 +16,27 @@ PanelWindow {
     readonly property string focusedScreenName: Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
     readonly property bool onFocusedScreen: root.focusedScreenName === ""
                                              || root.focusedScreenName === root.screenName
+    readonly property real maxHeight: root.centerScreen
+                                      ? root.centerScreen.height - Theme.barHeight - 16 : 10000
 
-    screen: centerScreen
     // Видимость ведём сами: окно должно успеть выехать, прежде чем исчезнуть.
     property bool shown: false
+
+    screen: centerScreen
     visible: root.shown && root.onFocusedScreen
+
+    anchors {
+        top: true
+        bottom: true
+        left: true
+        right: true
+    }
+
+    color: "transparent"
+    exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.namespace: "quickshell-notification-center"
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
     Connections {
         target: NotificationService
@@ -42,28 +55,13 @@ PanelWindow {
         root.shown = true;
         panelShift.x = panel.width;
         panelIn.restart();
-        backdropIn.restart();
     }
 
     function disappear() {
         if (!root.shown)
             return;
         panelOut.restart();
-        backdropOut.restart();
     }
-
-    anchors {
-        top: true
-        bottom: true
-        left: true
-        right: true
-    }
-
-    color: "transparent"
-    exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "quickshell-notification-center"
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
     Shortcut {
         sequence: "Escape"
@@ -72,55 +70,26 @@ PanelWindow {
     }
 
     // Клик мимо панели закрывает Центр.
-    Rectangle {
-        id: backdrop
-
+    MouseArea {
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.35)
-        opacity: 0
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: NotificationService.closeCenter()
-        }
+        onClicked: NotificationService.closeCenter()
     }
 
-    NumberAnimation {
-        id: backdropIn
-
-        target: backdrop
-        property: "opacity"
-        from: 0
-        to: 1
-        duration: Theme.motionShort4
-        easing.type: Easing.Bezier
-        easing.bezierCurve: Theme.curveStandardDecelerate
-    }
-
-    NumberAnimation {
-        id: backdropOut
-
-        target: backdrop
-        property: "opacity"
-        from: 1
-        to: 0
-        duration: Theme.motionShort3
-        easing.type: Easing.Bezier
-        easing.bezierCurve: Theme.curveStandardAccelerate
-    }
-
+    // Карточка панели: те же токены темы, что у остальных панелей.
     Rectangle {
         id: panel
 
         anchors.top: parent.top
-        anchors.bottom: parent.bottom
+        anchors.topMargin: Theme.barHeight + 4
         anchors.right: parent.right
-        width: Math.min(Theme.notificationCenterWidth, parent.width - 32)
+        anchors.rightMargin: Theme.barPadding
+        width: Theme.quickWidth
+        height: Math.min(layout.implicitHeight + Theme.quickPadding * 2, root.maxHeight)
+        radius: Theme.quickRadius
         color: Theme.quickBackground
         border.width: 1
         border.color: Theme.quickBorder
-
-        // Въезд и выезд панели справа.
+        clip: true
         transform: Translate { id: panelShift; x: 0 }
 
         NumberAnimation {
@@ -146,10 +115,7 @@ PanelWindow {
             easing.type: Easing.Bezier
             easing.bezierCurve: Theme.curveEmphasizedAccelerate
             // Прячем окно только после того, как панель уехала.
-            onStopped: {
-                if (!NotificationService.centerOpen)
-                    root.shown = false;
-            }
+            onStopped: if (!NotificationService.centerOpen) root.shown = false;
         }
 
         // Клики по панели не должны закрывать её через подложку.
@@ -160,7 +126,9 @@ PanelWindow {
         Column {
             id: layout
 
-            anchors.fill: parent
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
             anchors.margins: Theme.quickPadding
             spacing: Theme.notificationSpacing
 
@@ -168,80 +136,54 @@ PanelWindow {
                 id: header
 
                 width: parent.width
-                height: 32
+                height: Theme.quickHeaderHeight
 
                 Text {
                     anchors.left: parent.left
+                    anchors.leftMargin: 8
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Уведомления"
                     color: Theme.quickText
                     font.family: Theme.fontFamily
-                    font.pixelSize: 16
-                    font.weight: Font.Medium
+                    font.pixelSize: 14
+                    font.weight: Font.DemiBold
                 }
 
                 Row {
                     anchors.right: parent.right
+                    anchors.rightMargin: 8
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 6
+                    spacing: 4
 
-                    // Режим «не беспокоить» прямо в окне: та же плитка, что и
-                    // в быстрых настройках, только компактно.
-                    DialogButton {
+                    // Тот же «не беспокоить», что и плиткой в быстрых настройках.
+                    PanelIconButton {
                         icon: NotificationService.doNotDisturb ? "\uf1f6" : "\uf0f3"
                         active: NotificationService.doNotDisturb
-                        onTriggered: NotificationService.doNotDisturb = !NotificationService.doNotDisturb
+                        onClicked: NotificationService.doNotDisturb = !NotificationService.doNotDisturb
                     }
 
-                    DialogButton {
-                        text: "Очистить"
+                    PanelIconButton {
+                        icon: "\uf1f8"
                         enabled: NotificationService.history.count > 0
-                        onTriggered: NotificationService.clearHistory()
+                        onClicked: NotificationService.clearHistory()
                     }
 
-                    DialogButton {
-                        text: "Закрыть"
-                        primary: true
-                        onTriggered: NotificationService.closeCenter()
+                    PanelIconButton {
+                        icon: "\uf00d"
+                        onClicked: NotificationService.closeCenter()
                     }
                 }
             }
 
-            Flickable {
-                id: flick
-
+            // Пустой Центр.
+            Item {
                 width: parent.width
-                // Высота — всё, что осталось под шапкой.
-                height: layout.height - header.height - layout.spacing
-                contentHeight: listColumn.implicitHeight
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
+                height: NotificationService.history.count === 0 ? 130 : 0
+                visible: height > 0
 
-                Column {
-                    id: listColumn
-
-                    width: flick.width
-                    spacing: Theme.notificationSpacing
-
-                    Repeater {
-                        model: NotificationService.history
-
-                        delegate: NotificationCard {
-                            required property var entry
-
-                            notification: entry
-                            context: "center"
-                            width: listColumn.width
-                        }
-                    }
-                }
-
-                // Пустой Центр.
                 Column {
                     anchors.centerIn: parent
-                    width: parent.width
                     spacing: 8
-                    visible: NotificationService.history.count === 0
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -260,64 +202,93 @@ PanelWindow {
                     }
                 }
             }
+
+            Flickable {
+                id: flick
+
+                width: parent.width
+                visible: NotificationService.history.count > 0
+                height: visible
+                        ? Math.min(listColumn.implicitHeight,
+                                   root.maxHeight - Theme.quickHeaderHeight
+                                   - Theme.quickPadding * 2 - Theme.notificationSpacing)
+                        : 0
+                contentHeight: listColumn.implicitHeight
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+
+                // Высота едет вместе с карточками: иначе при убирании
+                // панель сжимается раньше, чем карточки успевают подняться.
+                Behavior on height {
+                    NumberAnimation {
+                        duration: Theme.motionShort4
+                        easing.type: Easing.Bezier
+                        easing.bezierCurve: Theme.curveEmphasizedDecelerate
+                    }
+                }
+
+                Column {
+                    id: listColumn
+
+                    width: flick.width
+                    spacing: Theme.notificationSpacing
+
+                    Repeater {
+                        model: NotificationService.history
+
+                        delegate: NotificationCard {
+                            required property var entry
+                            required property int index
+
+                            notification: entry
+                            context: "center"
+                            staggerIndex: index
+                            width: listColumn.width
+                        }
+                    }
+                }
+            }
         }
     }
 
-    // Кнопка панели: та же форма, что у прочих кнопок оболочки.
-    component DialogButton: Rectangle {
+    // Кнопка шапки: тот же кружок, что у действий в шапках панелей.
+    component PanelIconButton: Item {
         id: button
 
-        property string text: ""
         property string icon: ""
-        property bool primary: false
-        // Включённое состояние (например, «не беспокоить»).
         property bool active: false
 
-        signal triggered()
+        signal clicked()
 
-        width: content.implicitWidth + 24
-        height: 28
-        radius: height / 2
-        color: button.primary ? Theme.accent
-                              : (button.active ? Theme.quickTileActive : Theme.quickTile)
-        border.width: button.active && !button.primary ? 1 : 0
-        border.color: Theme.accent
-        opacity: button.enabled ? 1 : 0.45
+        width: 30
+        height: 30
+        opacity: button.enabled ? 1 : 0.4
 
-        Row {
-            id: content
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: button.active ? Theme.quickTileActive
+                                 : (buttonHover.hovered ? Theme.quickTileHover : "transparent")
+            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+        }
 
+        Text {
             anchors.centerIn: parent
-            spacing: 6
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                visible: button.icon !== ""
-                text: button.icon
-                color: button.primary ? Theme.quickIconOn
-                                      : (button.active ? Theme.accent : Theme.quickText)
-                font.family: Theme.iconFontFamily
-                font.pixelSize: 12
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                visible: button.text !== ""
-                text: button.text
-                color: button.primary ? Theme.quickIconOn
-                                      : (button.active ? Theme.accent : Theme.quickText)
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
-                font.weight: button.primary ? Font.Medium : Font.Normal
-            }
+            text: button.icon
+            color: button.active ? Theme.accent : Theme.quickText
+            font.family: Theme.iconFontFamily
+            font.pixelSize: 13
+            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
         }
 
         MouseArea {
+            id: buttonHover
+
             anchors.fill: parent
             hoverEnabled: true
             enabled: button.enabled
             cursorShape: Qt.PointingHandCursor
-            onClicked: button.triggered()
+            onClicked: button.clicked()
         }
     }
 }

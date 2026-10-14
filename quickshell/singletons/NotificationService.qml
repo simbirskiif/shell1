@@ -35,6 +35,10 @@ Singleton {
     readonly property int count: root.history.count
     readonly property bool hasUnread: root.unseen > 0
 
+    // Просьба убрать всё с анимацией: карточки уезжают сами и закрывают
+    // уведомления, поэтому списки тут не чистим.
+    signal clearRequested()
+
     // Вызывается из shell.qml после создания сервера.
     function attach(server) {
         root.server = server;
@@ -123,14 +127,8 @@ Singleton {
     }
 
     function clearHistory() {
-        const items = [];
-        for (let i = 0; i < root.history.count; ++i)
-            items.push(root.history.get(i).entry);
-        root.popups.clear();
-        root.history.clear();
         root.unseen = 0;
-        for (let i = 0; i < items.length; ++i)
-            items[i].dismiss();
+        root.clearRequested();
     }
 
     function openCenter() {

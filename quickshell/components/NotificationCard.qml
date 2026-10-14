@@ -31,6 +31,10 @@ Item {
     // Закрыть навсегда, а не просто убрать тост (крестик).
     property bool permanent: false
     property bool finished: false
+    // Действие, вызванное кликом по карточке (сработает после улёта тоста).
+    property var clickAction: null
+    // Позиция в стопке: задаёт задержку каскада при общей очистке.
+    property int staggerIndex: 0
 
     signal removed()
 
@@ -49,23 +53,36 @@ Item {
     readonly property bool critical: root.notification !== null
                                      && root.notification !== undefined
                                      && root.notification.urgency === NotificationUrgency.Critical
+    // Картинку показываем только если это настоящий файл (например, аватар
+    // из image-data). Иконку темы не тянем: она может числиться в индексе,
+    // но не грузиться, и вместо значка получается битая картинка — а в
+    // оболочке иконки и так глифы Nerd Font.
     readonly property string appIconSource: {
         const item = root.notification;
-        if (!item)
+        if (!item || item.image === undefined || item.image === "")
             return "";
-        if (item.image !== undefined && item.image !== "")
-            return item.image.charAt(0) === "/" ? "file://" + item.image : item.image;
-        const name = item.appIcon !== undefined ? item.appIcon : "";
-        if (name === "")
-            return "";
-        if (name.charAt(0) === "/")
-            return "file://" + name;
-        return Quickshell.hasThemeIcon(name) ? Quickshell.iconPath(name) : "";
+        const image = item.image;
+        if (image.charAt(0) === "/")
+            return "file://" + image;
+        if (image.indexOf("file://") === 0 || image.indexOf("http") === 0)
+            return image;
+        return "";
     }
     readonly property bool hasActions: {
         const item = root.notification;
         return item !== null && item !== undefined && item.actions !== undefined
                && item.actions.length > 0;
+    }
+    // Действие по умолчанию: его вызывает клик в любом месте карточки.
+    readonly property var defaultAction: {
+        const item = root.notification;
+        if (!item || item.actions === undefined)
+            return null;
+        for (let i = 0; i < item.actions.length; ++i) {
+            if (item.actions[i].identifier === "default")
+                return item.actions[i];
+        }
+        return null;
     }
 
     implicitHeight: card.implicitHeight
@@ -76,11 +93,25 @@ Item {
 
         target: root
         property: "enterOffset"
-        from: root.width
         to: 0
         duration: Theme.motionShort4
         easing.type: Easing.Bezier
         easing.bezierCurve: Theme.curveEmphasizedDecelerate
+    }
+
+    // У только что созданного делегата ширина может быть ещё не разрешена,
+    // поэтому старт откладываем до раскладки — иначе выезд схлопнется в 0.
+    Timer {
+        id: enterStart
+
+        interval: 0
+        repeat: false
+        onTriggered: root.startEnter()
+    }
+
+    function startEnter() {
+        root.enterOffset = root.width;
+        enterAnim.restart();
     }
 
     // Съезд соседей ведём сами: Column (Positioner) ставит y ребёнка
@@ -125,8 +156,10 @@ Item {
 
     // Запустить появление карточки (выезд справа налево).
     function playEnter() {
-        root.enterOffset = root.width;
-        enterAnim.restart();
+        if (root.width > 0)
+            root.startEnter();
+        else
+            enterStart.restart();
     }
 
     // Отпустили пальцы, порог не пройден — сюда возвращает Behavior.
@@ -149,6 +182,14 @@ Item {
         easing.type: Easing.Bezier
         easing.bezierCurve: Theme.curveEmphasizedAccelerate
         onStopped: root.completeRemoval()
+    }
+
+    // Задержка перед улётом: нужна каскаду при общей очистке.
+    Timer {
+        id: exitDelay
+
+        repeat: false
+        onTriggered: exitAnim.restart()
     }
 
     // WheelEvent не всегда присылает финальную фазу: если ScrollEnd не
@@ -218,24 +259,63 @@ Item {
         root.slideOut(root.width * 1.2, false);
     }
 
-    function slideOut(target, permanent) {
+    // Клик в любом месте карточки: действие по умолчанию. Если его нет —
+    // в Центре закрываем уведомление, тост просто убираем.
+    function invokeDefault() {
+        const action = root.defaultAction;
+        if (root.context === "center") {
+            if (action)
+                action.invoke();
+            else
+                root.dismissPermanently();
+            return;
+        }
+        root.clickAction = action;
+        root.slideOut(root.width * 1.2, false);
+    }
+
+    function slideOut(target, permanent, delay) {
         if (root.removing || root.finished)
             return;
         root.permanent = root.permanent || permanent;
         root.removing = true; // Behavior off, дальше ведёт exitAnim
         exitAnim.to = target;
-        exitAnim.restart();
+        if (delay !== undefined && delay > 0) {
+            exitDelay.interval = delay;
+            exitDelay.restart();
+        } else {
+            exitAnim.restart();
+        }
     }
 
     function completeRemoval() {
         if (!root.removing || root.finished)
             return;
         root.finished = true;
+        // Клик по карточке: сначала действие, потом убираем тост.
+        if (root.clickAction) {
+            const action = root.clickAction;
+            root.clickAction = null;
+            if (root.context === "popup")
+                NotificationService.dropPopup(root.notification);
+            action.invoke();
+            root.removed();
+            return;
+        }
         if (root.context === "center" || root.permanent)
             NotificationService.dismiss(root.notification);   // навсегда
         else
             NotificationService.dropPopup(root.notification); // только тост
         root.removed();
+    }
+
+    // Общая очистка: уезжаем каскадом и закрываем уведомления навсегда.
+    Connections {
+        target: NotificationService
+
+        function onClearRequested() {
+            root.slideOut(root.width * 1.2, true, Math.min(root.staggerIndex, 8) * 30);
+        }
     }
 
     // --- жест двумя пальцами по тачпаду -------------------------------------
@@ -306,6 +386,14 @@ Item {
         border.color: root.critical ? Theme.withAlpha(Theme.lowColor, 0.55) : Theme.quickBorder
         // Плавно тает, пока едет за край.
         opacity: Math.max(0, 1.0 - Math.abs(root.swipeOffset) / (width * 0.85))
+
+        // Клик в любом месте карточки — действие по умолчанию. Кнопки
+        // действий и крестик объявлены ниже, поэтому получают клик первыми.
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.invokeDefault()
+        }
 
         // Полоска важности: у critical она красная.
         Rectangle {

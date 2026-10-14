@@ -32,26 +32,17 @@ PanelWindow {
     }
 
     implicitWidth: Theme.notificationWidth
-    // Окно не анимируем: «растущая рамка» выглядит как артефакт. Карточки
-    // съезжают сами (Behavior on y), а высота растёт сразу и лишь сжимается
-    // с задержкой — иначе нижнюю карточку обрежет во время съезда.
-    readonly property real contentHeight: column.implicitHeight
-    property real heldHeight: 0
-    implicitHeight: Math.max(root.contentHeight, root.heldHeight)
+    // Высота едет вместе с карточками: тот же тайминг, что у их съезда,
+    // поэтому рамка не «раскрывается» отдельно от содержимого и нижнюю
+    // карточку не обрезает при убирании.
+    implicitHeight: column.implicitHeight
 
-    onContentHeightChanged: {
-        if (root.contentHeight >= root.heldHeight)
-            root.heldHeight = root.contentHeight;
-        else
-            holdTimer.restart();
-    }
-
-    Timer {
-        id: holdTimer
-
-        interval: Theme.motionShort4
-        repeat: false
-        onTriggered: root.heldHeight = root.contentHeight
+    Behavior on implicitHeight {
+        NumberAnimation {
+            duration: Theme.motionShort4
+            easing.type: Easing.Bezier
+            easing.bezierCurve: Theme.curveEmphasizedDecelerate
+        }
     }
 
     color: "transparent"
@@ -70,9 +61,11 @@ PanelWindow {
 
             delegate: NotificationCard {
                 required property var entry
+                required property int index
 
                 notification: entry
                 context: "popup"
+                staggerIndex: index
                 width: column.width
             }
         }
