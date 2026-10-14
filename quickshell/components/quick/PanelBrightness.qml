@@ -2,7 +2,9 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Панель яркости: слайдер во всю ширину с иконкой и процентом.
+// Панель яркости: по строке на каждый экран композитора. Управляемые экраны
+// получают слайдер, остальные — объяснение, почему яркость недоступна
+// (нет backlight, не установлен ddcutil, монитор не умеет DDC/CI).
 Item {
     id: root
 
@@ -31,42 +33,39 @@ Item {
             color: Theme.quickSeparator
         }
 
-        Item {
+        PanelDisabled {
             width: parent.width
-            height: 76
+            readonly property bool shown: BrightnessService.targets.length === 0
+            visible: shown
+            height: shown ? implicitHeight : 0
+            icon: "\uf185"
+            title: "No displays"
+            description: "The compositor reported no screens"
+            actionText: ""
+            showAction: false
+        }
 
-            Text {
-                id: brightnessIcon
-                anchors.left: parent.left
-                anchors.leftMargin: 18
-                anchors.verticalCenter: parent.verticalCenter
-                text: "\uf185"
-                color: Theme.quickTextDim
-                font.family: Theme.iconFontFamily
-                font.pixelSize: 15
-            }
+        Column {
+            id: content
+            width: parent.width
+            spacing: 0
+            readonly property bool shown: BrightnessService.targets.length > 0
+            visible: shown
+            height: shown ? implicitHeight : 0
 
-            Text {
-                id: percentText
-                anchors.right: parent.right
-                anchors.rightMargin: 18
-                anchors.verticalCenter: parent.verticalCenter
-                text: Math.round(MockState.brightness * 100) + "%"
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
-            }
+            Repeater {
+                model: BrightnessService.targets
 
-            PanelSlider {
-                anchors.left: brightnessIcon.right
-                anchors.leftMargin: 16
-                anchors.right: percentText.left
-                anchors.rightMargin: 16
-                anchors.verticalCenter: parent.verticalCenter
-                height: 22
-                value: MockState.brightness
-                onMoved: v => {
-                    MockState.brightness = v;
+                delegate: BrightnessRow {
+                    required property var modelData
+
+                    width: content.width
+                    label: modelData.label
+                    subtitle: modelData.subtitle
+                    controllable: modelData.controllable
+                    hint: modelData.hint
+                    value: BrightnessService.valueFor(modelData.key)
+                    onMoved: v => BrightnessService.setValue(modelData.key, v)
                 }
             }
         }

@@ -48,9 +48,9 @@ ShellRoot {
             return internet();
         }
 
-        // Яркость (тестовая заглушка): погасить/вернуть.
+        // Яркость основного экрана: погасить и вернуть прежнюю.
         function toggleBrightness(): string {
-            MockState.toggleBrightness();
+            BrightnessService.togglePrimary();
             return state();
         }
 
@@ -254,6 +254,34 @@ ShellRoot {
             return state();
         }
 
+        // Яркость каждого экрана: список целей и текущие значения.
+        function displays(): string {
+            const parts = [];
+            for (let i = 0; i < BrightnessService.targets.length; ++i) {
+                const target = BrightnessService.targets[i];
+                parts.push("screen[" + i + "]=" + target.label
+                    + "/" + (target.method || "none")
+                    + (target.controllable
+                       ? "/" + Math.round(BrightnessService.valueFor(target.key) * 100) + "%"
+                       : "/" + target.hint));
+            }
+            return parts.join(" ");
+        }
+
+        // Проверка без мыши: яркость основного экрана и конкретного экрана.
+        function setBrightness(value: real): string {
+            if (BrightnessService.primary !== null)
+                BrightnessService.setValue(BrightnessService.primary.key, value);
+            return displays();
+        }
+
+        function screenBrightness(index: int, value: real): string {
+            const target = BrightnessService.targets[index];
+            if (target)
+                BrightnessService.setValue(target.key, value);
+            return displays();
+        }
+
         // Порядок элементов бара: сдвинуть первый в конец (для проверки).
         function rotateBarItems(): string {
             if (MockState.barItems.count > 1)
@@ -444,7 +472,8 @@ ShellRoot {
                 + " panel=" + (UiState.panel === "" ? "main" : UiState.panel)
                 + " palette=" + (Wal.walLoaded ? "wal" : "fallback")
                 + " bg=" + Wal.background + " accent=" + Wal.accent
-                + " brightness=" + Math.round(MockState.brightness * 100) + "%"
+                + " brightness=" + BrightnessService.summary
+                + " screens=" + BrightnessService.targets.length
                 + " h=" + Math.round(UiState.popupHeight)
                 + " tiles=" + tiles + (UiState.editing ? " [edit]" : "")
                 + " netTile=" + (NetworkService.internetViaEthernet ? "Internet" : "Wi-Fi")

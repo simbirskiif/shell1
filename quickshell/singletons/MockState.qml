@@ -3,11 +3,11 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-// Тестовые данные для панелей, у которых бэкенда ещё нет: Bluetooth,
-// яркость. Сеть (Wi-Fi и Ethernet) переехала в NetworkService —
-// реальный backend поверх NetworkManager, батарея и режимы питания — в
-// PowerService (UPower и power-profiles-daemon), звук — в AudioService
-// (PipeWire).
+// Тестовые данные для панелей, у которых бэкенда ещё нет: Bluetooth.
+// Сеть (Wi-Fi и Ethernet) переехала в NetworkService — реальный backend
+// поверх NetworkManager, батарея и режимы питания — в PowerService (UPower
+// и power-profiles-daemon), звук — в AudioService (PipeWire), яркость —
+// в BrightnessService (backlight/logind и DDC/CI).
 Singleton {
     id: root
 
@@ -34,19 +34,8 @@ Singleton {
         barItems.move(index, target, 1);
     }
 
-    // Яркость экрана (пока заглушка). lastBrightness — чтобы вернуть
-    // прежнее значение после «выключения» кружком.
-    property real brightness: 0.7
-    property real lastBrightness: 0.7
-
-    function toggleBrightness() {
-        if (brightness > 0) {
-            lastBrightness = brightness;
-            brightness = 0;
-        } else {
-            brightness = lastBrightness > 0 ? lastBrightness : 0.7;
-        }
-    }
+    // Яркость переехала в BrightnessService (backlight/logind и DDC/CI):
+    // заглушки здесь больше нет.
 
     // Батарея и режимы питания переехали в PowerService (UPower и
     // power-profiles-daemon): заглушек здесь больше нет.

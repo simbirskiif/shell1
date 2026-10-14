@@ -646,8 +646,8 @@ Item {
         readonly property string key: "brightness"
         readonly property string title: "Brightness"
         readonly property string icon: "\uf185"
-        readonly property bool active: MockState.brightness > 0
-        readonly property string subtitle: Math.round(MockState.brightness * 100) + "%"
+        readonly property bool active: BrightnessService.available
+        readonly property string subtitle: BrightnessService.summary
         readonly property Component view: Component { PanelBrightness {} }
 
         function open() {
