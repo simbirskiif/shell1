@@ -51,6 +51,7 @@ PanelWindow {
                 visible: itemKey !== "battery" || PowerService.present
                 anchors.verticalCenter: parent.verticalCenter
                 sourceComponent: itemKey === "battery" ? batteryItem
+                               : itemKey === "notifications" ? notificationsItem
                                : itemKey === "status" ? statusItem
                                : null
             }
@@ -86,6 +87,15 @@ PanelWindow {
         dialogScreen: root.screen
     }
 
+
+    Component {
+        id: notificationsItem
+
+        NotificationButton {
+            opened: NotificationService.centerOpen
+            onClicked: NotificationService.toggleCenter()
+        }
+    }
 
     Component {
         id: batteryItem

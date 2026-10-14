@@ -24,6 +24,7 @@ Singleton {
     // Порядок элементов в баре: порядок в модели = слева-направо.
     readonly property ListModel barItems: ListModel {
         ListElement { itemKey: "battery"; title: "Battery" }
+        ListElement { itemKey: "notifications"; title: "Notifications" }
         ListElement { itemKey: "status"; title: "Quick settings" }
     }
 

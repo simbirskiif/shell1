@@ -1,7 +1,9 @@
 // Точка входа конфигурации Quickshell.
 // По одному бару на каждый экран; сам бар живёт в components/Bar.qml.
+import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.Notifications
 import Quickshell.Services.Polkit
 import "components"
 import "singletons"
@@ -35,6 +37,81 @@ ShellRoot {
             agent: polkitAgent
         }
     }
+
+    // Сервер уведомлений (D-Bus org.freedesktop.Notifications). Живёт в дереве
+    // оболочки, как и Process у Bluetooth; состояние — в NotificationService.
+    NotificationServer {
+        id: notificationServer
+
+        // Уведомления переживают перезагрузку конфига, иначе они пропадали бы
+        // при каждом hot reload.
+        keepOnReload: true
+        bodySupported: true
+        actionsSupported: true
+        imageSupported: true
+
+        onNotification: notification => NotificationService.add(notification)
+    }
+
+    // Тосты — правый верхний угол экрана с фокусом.
+    Variants {
+        model: Quickshell.screens
+
+        delegate: NotificationPopups {
+            required property var modelData
+            popupScreen: modelData
+        }
+    }
+
+    // Центр уведомлений — панель справа, по одному окну на экран.
+    Variants {
+        model: Quickshell.screens
+
+        delegate: NotificationCenter {
+            required property var modelData
+            centerScreen: modelData
+        }
+    }
+
+    // Управление уведомлениями снаружи:
+    //   qs ipc -p ~/shell/quickshell call notifications toggle
+    IpcHandler {
+        target: "notifications"
+
+        function toggle(): string {
+            NotificationService.toggleCenter();
+            return state();
+        }
+
+        function open(): string {
+            NotificationService.centerOpen = true;
+            return state();
+        }
+
+        function close(): string {
+            NotificationService.closeCenter();
+            return state();
+        }
+
+        function clear(): string {
+            NotificationService.clearHistory();
+            return state();
+        }
+
+        // Режим «не беспокоить»: история пишется, тостов нет.
+        function dnd(): string {
+            NotificationService.doNotDisturb = !NotificationService.doNotDisturb;
+            return state();
+        }
+
+        function state(): string {
+            return NotificationService.summary();
+        }
+    }
+
+    // Сервер отдаёт пережившие reload уведомления только после того, как
+    // создан, поэтому связываем его с состоянием здесь.
+    Component.onCompleted: NotificationService.attach(notificationServer)
 
     // Управление снаружи: qs ipc -p ~/shell/quickshell call bar <функция>.
     // Удобно повесить на бинд в Hyprland, например:

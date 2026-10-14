@@ -39,6 +39,13 @@ Singleton {
     readonly property int quickRowHeight: 44
     readonly property int quickSectionHeight: 28
 
+    // Карточки уведомлений и Центр уведомлений.
+    readonly property int notificationWidth: 360
+    readonly property int notificationCenterWidth: 400
+    readonly property int notificationRadius: 16
+    readonly property int notificationPadding: 12
+    readonly property int notificationSpacing: 8
+
     readonly property color accent: Wal.accent
 
     // Панели быстрых настроек намеренно почти нейтральные: тёмная база
@@ -76,6 +83,11 @@ Singleton {
     readonly property int motionMedium1: 250
     readonly property int motionMedium2: 300
     readonly property int motionLong1: 450
+
+    // Свайп карточки уведомления: улёт за край (accelerate) и упругий
+    // возврат (decelerate). Кривые — curveEmphasizedAccelerate/Decelerate.
+    readonly property int motionSwipeExit: 180
+    readonly property int motionSwipeReturn: 350
 
     readonly property var curveEmphasized: [0.2, 0.0, 0.0, 1.0]
     readonly property var curveEmphasizedDecelerate: [0.05, 0.7, 0.1, 1.0]
