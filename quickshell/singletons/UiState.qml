@@ -17,9 +17,71 @@ Singleton {
     // (проверка без мыши) и выбор переживает закрытие попапа.
     property string soundTab: "output"
 
+    // Последняя вкладка звука сохраняется между запусками.
+    onSoundTabChanged: {
+        if (!root.restoring && Settings.loaded)
+            Settings.setValue("sound.tab", soundTab);
+    }
+
+    property bool restoring: false
+
+    Connections {
+        target: Settings
+
+        function onLoadedChanged() {
+            if (Settings.loaded)
+                root.restoreSoundTab();
+        }
+    }
+
+    // Синглтон создаётся лениво: настройки могли прочитаться раньше нас.
+    Component.onCompleted: {
+        if (Settings.loaded)
+            root.restoreSoundTab();
+    }
+
+    function restoreSoundTab() {
+        root.restoring = true;
+        root.setSoundTab(Settings.value("sound.tab", root.soundTab));
+        root.restoring = false;
+    }
+
     function setSoundTab(key) {
         if (key === "output" || key === "input")
             soundTab = key;
+    }
+
+    // --- ввод строки в отдельном окне ------------------------------------
+    // Попап не может забрать клавиатурный фокус, поэтому редактирование
+    // значений живёт в отдельной поверхности (см. InputDialog).
+    // inputTarget — кто запросил ввод; результат уходит сигналом.
+
+    property string inputTarget: ""
+    property string inputTitle: ""
+    property string inputHint: ""
+    property string inputText: ""
+
+    signal inputAccepted(string target, string text)
+
+    function requestInput(target, title, hint, value) {
+        root.dialogScreen = root.openedScreen;
+        root.inputTitle = title;
+        root.inputHint = hint;
+        // Текст кладём до target: target открывает окно, и оно сразу читает
+        // inputText — иначе поле окажется пустым.
+        root.inputText = value;
+        root.inputTarget = target;
+    }
+
+    function submitInput(text) {
+        const target = root.inputTarget;
+        root.inputTarget = "";
+        if (target !== "")
+            root.inputAccepted(target, text);
+    }
+
+    function cancelInput() {
+        root.inputTarget = "";
     }
 
     // Режим редактирования плиток основной панели: правки идут в черновик

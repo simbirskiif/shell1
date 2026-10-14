@@ -28,11 +28,93 @@ Singleton {
         ListElement { itemKey: "status"; title: "Quick settings" }
     }
 
-    function moveBarItem(index, delta) {
-        const target = index + delta;
-        if (target < 0 || target >= barItems.count)
+    // Подписи элементов бара по ключу: из них собирается модель при
+    // восстановлении порядка.
+    readonly property var barItemTitles: ({
+        "battery": "Battery",
+        "notifications": "Notifications",
+        "status": "Quick settings"
+    })
+
+    // --- сохранение настроек ------------------------------------------------
+    // Значения живут здесь (к ним привязан интерфейс), а Settings хранит их
+    // между запусками. Во время восстановления обратной записи не делаем.
+
+    property bool restoring: false
+
+    onVisibleTilesChanged: root.store("tiles.visible", visibleTiles)
+    onAvailableTilesChanged: root.store("tiles.available", availableTiles)
+    onShowBatteryPercentChanged: root.store("bar.showBatteryPercent", showBatteryPercent)
+
+    function store(key, value) {
+        if (root.restoring || !Settings.loaded)
             return;
-        barItems.move(index, target, 1);
+        Settings.setValue(key, value);
+    }
+
+    Connections {
+        target: Settings
+
+        function onLoadedChanged() {
+            if (Settings.loaded)
+                root.restore();
+        }
+    }
+
+    function restore() {
+        root.restoring = true;
+        root.visibleTiles = Settings.value("tiles.visible", root.visibleTiles);
+        root.availableTiles = Settings.value("tiles.available", root.availableTiles);
+        root.showBatteryPercent = Settings.value("bar.showBatteryPercent", root.showBatteryPercent);
+        root.restoreBarOrder(Settings.value("bar.items", []));
+        root.restoring = false;
+    }
+
+    // Сохранённый порядок применяем к модели: незнакомые ключи отбрасываем,
+    // пропавшие из настройки — дописываем в конец, чтобы элемент не исчез.
+    function restoreBarOrder(saved) {
+        if (!saved || saved.length === 0)
+            return;
+        const order = [];
+        for (let i = 0; i < saved.length; ++i) {
+            const key = String(saved[i]);
+            if (root.barItemTitles[key] !== undefined && order.indexOf(key) < 0)
+                order.push(key);
+        }
+        for (const key in root.barItemTitles) {
+            if (order.indexOf(key) < 0)
+                order.push(key);
+        }
+        root.barItems.clear();
+        for (let i = 0; i < order.length; ++i)
+            root.barItems.append({ itemKey: order[i], title: root.barItemTitles[order[i]] });
+    }
+
+    function storeBarOrder() {
+        const order = [];
+        for (let i = 0; i < root.barItems.count; ++i)
+            order.push(root.barItems.get(i).itemKey);
+        root.store("bar.items", order);
+    }
+
+    function moveBarItem(index, delta) {
+        root.moveBarItemTo(index, index + delta);
+    }
+
+    function moveBarItemTo(from, to) {
+        if (from === to || from < 0 || to < 0
+                || from >= root.barItems.count || to >= root.barItems.count)
+            return;
+        root.barItems.move(from, to, 1);
+        root.storeBarOrder();
+    }
+
+    // Первый элемент в конец — для проверки снаружи.
+    function rotateBarItems() {
+        if (root.barItems.count > 1) {
+            root.barItems.move(0, root.barItems.count - 1, 1);
+            root.storeBarOrder();
+        }
     }
 
     // Яркость переехала в BrightnessService (backlight/logind и DDC/CI):
@@ -165,5 +247,10 @@ Singleton {
         refresh();
     }
 
-    Component.onCompleted: refresh()
+    Component.onCompleted: {
+        refresh();
+        // Синглтон создаётся лениво: настройки могли прочитаться раньше нас.
+        if (Settings.loaded)
+            root.restore();
+    }
 }

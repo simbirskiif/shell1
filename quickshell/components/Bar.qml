@@ -28,6 +28,12 @@ PanelWindow {
         window: root
     }
 
+    // Правка строковых настроек (сейчас — длительности кофеина): попап не
+    // может забрать клавиатуру, поэтому ввод идёт в отдельном окне.
+    InputDialog {
+        dialogScreen: root.screen
+    }
+
     Workspaces {
         anchors.left: parent.left
         anchors.leftMargin: Theme.barPadding

@@ -115,6 +115,67 @@ Item {
             }
         }
 
+        PanelSection { text: "Кофеин" }
+
+        // Длительности кофеина строкой: "30, 1h, 2h 30m", без единицы —
+        // минуты. Правит отдельное окно: попап клавиатуру не получает.
+        Item {
+            width: parent.width
+            height: 60
+
+            Rectangle {
+                anchors.fill: parent
+                color: durationsHover.hovered ? Theme.quickTileHover : "transparent"
+                Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+            }
+
+            Column {
+                anchors.left: parent.left
+                anchors.leftMargin: 16
+                anchors.right: editIcon.left
+                anchors.rightMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 2
+
+                Text {
+                    text: "Длительности"
+                    color: Theme.quickText
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 13
+                }
+
+                Text {
+                    width: parent.width
+                    text: CaffeineService.durations !== "" ? CaffeineService.durations : "не заданы"
+                    elide: Text.ElideRight
+                    color: Theme.quickTextDim
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 11
+                }
+            }
+
+            Text {
+                id: editIcon
+                anchors.right: parent.right
+                anchors.rightMargin: 18
+                anchors.verticalCenter: parent.verticalCenter
+                text: "\uf040"
+                color: Theme.quickText
+                font.family: Theme.iconFontFamily
+                font.pixelSize: 13
+            }
+
+            MouseArea {
+                id: durationsHover
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: UiState.requestInput("caffeine.durations", "Длительности кофеина",
+                                                "Например: 30, 1h, 2h 30m. Число без единицы — минуты.",
+                                                CaffeineService.durations)
+            }
+        }
+
         PanelSection { text: "Bar order" }
 
         // Порядок слева-направо = порядок в модели; стрелки двигают элемент.

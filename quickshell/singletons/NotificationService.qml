@@ -35,6 +35,42 @@ Singleton {
     // 1.0 — карточка идёт ровно за пальцами.
     property real swipeSensitivity: 1.0
 
+    // --- сохранение настроек --------------------------------------------
+
+    property bool restoring: false
+
+    onDoNotDisturbChanged: root.store("notifications.doNotDisturb", doNotDisturb)
+    onSwipeSensitivityChanged: root.store("notifications.swipeSensitivity", swipeSensitivity)
+
+    function store(key, value) {
+        if (root.restoring || !Settings.loaded)
+            return;
+        Settings.setValue(key, value);
+    }
+
+    Connections {
+        target: Settings
+
+        function onLoadedChanged() {
+            if (Settings.loaded)
+                root.restore()
+        }
+    }
+
+    function restore() {
+        root.restoring = true;
+        root.doNotDisturb = Settings.value("notifications.doNotDisturb", root.doNotDisturb);
+        root.swipeSensitivity = Settings.value("notifications.swipeSensitivity",
+                                               root.swipeSensitivity);
+        root.restoring = false;
+    }
+
+    // Синглтон создаётся лениво: настройки могли прочитаться раньше нас.
+    Component.onCompleted: {
+        if (Settings.loaded)
+            root.restore();
+    }
+
     readonly property int count: root.history.count
     // Индикатор считает только то, что реально лежит в истории: если
     // приложение отозвало все уведомления, точки быть не должно.

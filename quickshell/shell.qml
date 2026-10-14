@@ -404,9 +404,47 @@ ShellRoot {
 
         // Порядок элементов бара: сдвинуть первый в конец (для проверки).
         function rotateBarItems(): string {
-            if (MockState.barItems.count > 1)
-                MockState.barItems.move(0, MockState.barItems.count - 1, 1);
+            MockState.rotateBarItems();
             return state();
+        }
+
+        // Состояние настроек: файл, ключи и то, что сейчас в памяти.
+        function settingsState(): string {
+            const bar = [];
+            for (let i = 0; i < MockState.barItems.count; ++i)
+                bar.push(MockState.barItems.get(i).itemKey);
+            return "path=" + Settings.path
+                + " loaded=" + Settings.loaded
+                + " keys=" + Object.keys(Settings.values).join("|")
+                + " caffeine=" + CaffeineService.mode
+                + " last=" + CaffeineService.lastMode
+                + " durations=[" + CaffeineService.durations + "]"
+                + " tiles=" + MockState.visibleTiles.join(",")
+                + " available=" + MockState.availableTiles.join(",")
+                + " bar=" + bar.join(",")
+                + " barPercent=" + (MockState.showBatteryPercent ? "on" : "off")
+                + " dnd=" + (NotificationService.doNotDisturb ? "on" : "off")
+                + " sens=" + NotificationService.swipeSensitivity.toFixed(2)
+                + " soundTab=" + UiState.soundTab;
+        }
+
+        // Строка длительностей кофеина: проверить без мыши можно и так.
+        function caffeineDurations(text: string): string {
+            CaffeineService.durations = text;
+            return settingsState();
+        }
+
+        // Открыть окно правки длительностей и подтвердить ввод (без мыши).
+        function caffeineEdit(): string {
+            UiState.requestInput("caffeine.durations", "Длительности кофеина",
+                                 "Например: 30, 1h, 2h 30m. Число без единицы — минуты.",
+                                 CaffeineService.durations);
+            return state();
+        }
+
+        function caffeineSubmit(text: string): string {
+            UiState.submitInput(text);
+            return settingsState();
         }
 
         // Настройка бара: показывать ли процент батареи.

@@ -2,8 +2,9 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Панель «Кофеин»: выбор режима — выключен, 30 минут, час, два часа,
-// бесконечно. Текущий режим отмечен галочкой, выбор применяется сразу.
+// Панель «Кофеин»: выбор срока — из настроенных длительностей и бесконечного.
+// Пункта «выключен» здесь нет: выключение делает переключатель в шапке или
+// кружок плитки.
 Item {
     id: root
 
@@ -34,7 +35,7 @@ Item {
 
         PanelList {
             width: parent.width
-            model: CaffeineService.modes
+            model: CaffeineService.options
 
             delegate: Item {
                 required property var modelData
