@@ -18,8 +18,12 @@ Singleton {
     id: root
 
     readonly property string dir: {
+        // Quickshell.env() для незаданной переменной возвращает null, а не
+        // пустую строку: без этой проверки путь превратился бы в "null/...".
         const state = Quickshell.env("XDG_STATE_HOME");
-        const base = state !== "" ? state : Quickshell.env("HOME") + "/.local/state";
+        const home = Quickshell.env("HOME") || "";
+        const base = (state === "" || state === null || state === undefined)
+            ? home + "/.local/state" : state;
         return base + "/quickshell";
     }
     readonly property string path: root.dir + "/settings.json"
