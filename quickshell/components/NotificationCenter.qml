@@ -19,11 +19,13 @@ PanelWindow {
     readonly property real maxHeight: root.centerScreen
                                       ? root.centerScreen.height - Theme.barHeight - 16 : 10000
 
-    // Видимость ведём сами: окно должно успеть выехать, прежде чем исчезнуть.
+    // Видимость ведём сами: окно должно успеть проявиться и сжаться,
+    // прежде чем исчезнуть.
     property bool shown: false
+    property bool closing: false
 
     screen: centerScreen
-    visible: root.shown && root.onFocusedScreen
+    visible: (root.shown || root.closing) && root.onFocusedScreen
 
     anchors {
         top: true
@@ -52,15 +54,28 @@ PanelWindow {
     Component.onCompleted: if (NotificationService.centerOpen) root.appear()
 
     function appear() {
+        closeTimer.stop();
+        root.closing = false;
         root.shown = true;
-        panelShift.x = panel.width;
-        panelIn.restart();
     }
 
     function disappear() {
         if (!root.shown)
             return;
-        panelOut.restart();
+        // Сначала играет анимация сжатия, и только потом окно прячется.
+        root.closing = true;
+        closeTimer.restart();
+    }
+
+    Timer {
+        id: closeTimer
+
+        interval: Theme.motionMedium1
+        repeat: false
+        onTriggered: {
+            root.shown = false;
+            root.closing = false;
+        }
     }
 
     Shortcut {
@@ -90,32 +105,25 @@ PanelWindow {
         border.width: 1
         border.color: Theme.quickBorder
         clip: true
-        transform: Translate { id: panelShift; x: 0 }
 
-        NumberAnimation {
-            id: panelIn
+        // Появление и закрытие — как у остальных панелей: проявление с 92%
+        // и рост из верхнего правого угла.
+        opacity: root.shown && !root.closing ? 1 : 0
+        scale: root.shown && !root.closing ? 1 : Theme.motionFadeThroughScale
+        transformOrigin: Item.TopRight
 
-            target: panelShift
-            property: "x"
-            from: panel.width
-            to: 0
-            duration: Theme.motionShort4
-            easing.type: Easing.Bezier
-            easing.bezierCurve: Theme.curveEmphasizedDecelerate
+        Behavior on opacity {
+            MotionNumber {
+                duration: Theme.motionMedium1
+                curve: Theme.curveEmphasizedDecelerate
+            }
         }
 
-        NumberAnimation {
-            id: panelOut
-
-            target: panelShift
-            property: "x"
-            from: 0
-            to: panel.width
-            duration: Theme.motionShort3
-            easing.type: Easing.Bezier
-            easing.bezierCurve: Theme.curveEmphasizedAccelerate
-            // Прячем окно только после того, как панель уехала.
-            onStopped: if (!NotificationService.centerOpen) root.shown = false;
+        Behavior on scale {
+            MotionNumber {
+                duration: Theme.motionMedium1
+                curve: Theme.curveEmphasizedDecelerate
+            }
         }
 
         // Клики по панели не должны закрывать её через подложку.
