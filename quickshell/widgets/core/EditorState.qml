@@ -20,6 +20,8 @@ Singleton {
     property string uiScreen: ""
     property string settingsUid: ""
     property string settingsScreen: ""
+    property string selectedUid: ""
+    property bool globalOpen: false
 
     readonly property bool hasUndo: undoStack.length > 0
     readonly property bool hasRedo: redoStack.length > 0
@@ -32,6 +34,9 @@ Singleton {
         root.redoStack = []
         root.pickerOpen = false
         root.settingsUid = ""
+        root.settingsScreen = ""
+        root.selectedUid = ""
+        root.globalOpen = false
         root.active = true
         console.info("[widgets/editor] режим редактирования включён")
     }
@@ -42,6 +47,9 @@ Singleton {
         root.active = false
         root.pickerOpen = false
         root.settingsUid = ""
+        root.settingsScreen = ""
+        root.selectedUid = ""
+        root.globalOpen = false
         root.initialSnapshot = null
         root.undoStack = []
         root.redoStack = []
@@ -57,6 +65,9 @@ Singleton {
         root.active = false
         root.pickerOpen = false
         root.settingsUid = ""
+        root.settingsScreen = ""
+        root.selectedUid = ""
+        root.globalOpen = false
         root.initialSnapshot = null
         root.undoStack = []
         root.redoStack = []
@@ -78,6 +89,8 @@ Singleton {
         root.pickerOpen = true
         root.uiScreen = screenName
         root.settingsUid = ""
+        root.settingsScreen = ""
+        root.globalOpen = false
     }
 
     function closePicker(): void {
@@ -92,10 +105,39 @@ Singleton {
         root.settingsUid = uid
         root.settingsScreen = screenName
         root.pickerOpen = false
+        root.globalOpen = false
     }
 
     function closeSettings(): void {
         root.settingsUid = ""
+        root.settingsScreen = ""
+    }
+
+    // Глобальные параметры виджетов (материал/цвет по умолчанию) живут в том
+    // же окне слоя, без отдельного окна-настройщика.
+    function openGlobalSettings(screenName: string): void {
+        if (!root.active)
+            root.enter()
+        if (!root.active)
+            return
+        root.settingsUid = ""
+        root.settingsScreen = ""
+        root.pickerOpen = false
+        root.globalOpen = true
+        root.uiScreen = screenName
+    }
+
+    function closeGlobalSettings(): void {
+        root.globalOpen = false
+    }
+
+    function select(uid: string): void {
+        root.selectedUid = uid
+    }
+
+    function clearSelection(): void {
+        root.selectedUid = ""
+        root.globalOpen = false
     }
 
     function beginOperation(): void {

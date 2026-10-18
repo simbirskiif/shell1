@@ -406,6 +406,36 @@ Singleton {
         root.scheduleSave()
     }
 
+    // Сбросить индивидуальные переопределения материала/цвета во всех
+    // раскладках: экземпляры снова наследуют глобальные параметры.
+    function clearOverrides(): int {
+        let count = 0
+        const clearList = function(list) {
+            for (const instance of list || []) {
+                if (instance.material !== null || instance.colorMode !== null)
+                    count++
+                instance.material = null
+                instance.colorMode = null
+            }
+        }
+        for (const screenName in root.screens) {
+            const entry = root.screens[screenName]
+            clearList(entry.widgets)
+            clearList(entry.tray)
+            for (const signature in entry.signatures || {}) {
+                const layout = entry.signatures[signature]
+                clearList(layout.widgets)
+                clearList(layout.tray)
+            }
+        }
+        if (count > 0) {
+            root.layoutChanged()
+            root.scheduleSave()
+            console.info("[widgets/layout] сброшено переопределений: " + count)
+        }
+        return count
+    }
+
     function setSetting(uid: string, key: string, value: var): void {
         const instance = root.findInstance(uid)
         if (!instance)

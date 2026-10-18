@@ -6,14 +6,16 @@ Rectangle {
     id: root
 
     property string text: ""
+    property bool active: false
     signal clicked()
 
     implicitWidth: label.implicitWidth + (root.text.length > 1 ? 18 : 12)
     implicitHeight: 26
     radius: 8
-    color: mouse.containsMouse ? Theme.colors.primaryContainer : Theme.colors.surface
+    color: root.active || mouse.containsMouse
+           ? Theme.colors.primaryContainer : Theme.colors.surface
     border.width: 1
-    border.color: Theme.colors.outline
+    border.color: root.active ? Theme.colors.primary : Theme.colors.outline
 
     Text {
         id: label

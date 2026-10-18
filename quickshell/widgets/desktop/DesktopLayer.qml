@@ -8,10 +8,12 @@ import "../editor"
 // Слой рабочего стола на одном экране (раздел 2 ТЗ).
 //
 // Окно занимает доступную область экрана и живёт на слое Bottom: над обоями,
-// под обычными окнами. В обычном режиме клавиатурный фокус не берётся, а
-// область ввода строится по видимым виджетам. Пока виджетов нет, маска
-// пустая — клики проходят в окна под слоем.
+// под обычными окнами. В обычном режиме клавиатурный фокус не берётся, но
+// область ввода покрывает весь рабочий стол — это единственный слой виджетов,
+// поэтому ПКМ по пустому месту открывает меню, а не уходит в другое окно.
 //
+// Редактирование — это режим того же PanelWindow (Overlay + OnDemand), а не
+// отдельное окно/слой. Меню, каталог и настройки — обычные Item внутри него.
 // Экземпляр создаётся из shell.qml через Variants по Quickshell.screens.
 PanelWindow {
     id: root
@@ -54,8 +56,8 @@ PanelWindow {
                                   : WlrKeyboardFocus.None
     WlrLayershell.focusable: root.editing
 
-    // В обычном режиме область ввода — только карточки виджетов; в редакторе
-    // маска на весь экран, потому что весь слой перехватывает ввод.
+    // Ввод всегда покрывает весь рабочий стол: виджеты — единственный слой,
+    // поэтому ПКМ по пустому месту должен открывать контекстное меню.
     mask: Region {
         id: maskRegion
     }
@@ -108,6 +110,8 @@ PanelWindow {
             metrics: gridMetrics
             screen: root.screen
             editing: root.editing
+
+            onContextRequested: (x, y) => root.openMenu(x, y)
         }
 
         onItemAdded: root.scheduleMaskSync()
@@ -153,6 +157,7 @@ PanelWindow {
         target: EditorState
 
         function onActiveChanged() {
+            desktopMenu.close()
             if (!EditorState.active) {
                 DragController.cancel()
                 PickerState.cancel()
@@ -202,75 +207,58 @@ PanelWindow {
         }
         root._maskRegions = []
 
-        if (root.editing) {
-            const region = root.contentItem
-                ? maskRegionComponent.createObject(maskRegion, { item: root.contentItem })
-                : maskRegionComponent.createObject(maskRegion, {
-                      x: 0, y: 0,
-                      width: Math.max(1, root.width),
-                      height: Math.max(1, root.height)
-                  })
-            if (region) {
-                maskRegion.regions.push(region)
-                root._maskRegions.push(region)
-            }
-            maskRegion.changed()
-            return
-        }
-
-        for (let i = 0; i < hostRepeater.count; i++) {
-            const host = hostRepeater.itemAt(i)
-            if (!host || !host.visible)
-                continue
-            const hostRegion = maskRegionComponent.createObject(maskRegion, { item: host })
-            if (hostRegion) {
-                maskRegion.regions.push(hostRegion)
-                root._maskRegions.push(hostRegion)
-            }
-        }
-        if (editButton.visible) {
-            const buttonRegion = maskRegionComponent.createObject(maskRegion, { item: editButton })
-            if (buttonRegion) {
-                maskRegion.regions.push(buttonRegion)
-                root._maskRegions.push(buttonRegion)
-            }
+        const region = root.contentItem
+            ? maskRegionComponent.createObject(maskRegion, { item: root.contentItem })
+            : maskRegionComponent.createObject(maskRegion, {
+                  x: 0, y: 0,
+                  width: Math.max(1, root.width),
+                  height: Math.max(1, root.height)
+              })
+        if (region) {
+            maskRegion.regions.push(region)
+            root._maskRegions.push(region)
         }
         maskRegion.changed()
-        console.info("[widgets/mask] " + gridMetrics.screenName + ": "
-                     + root._maskRegions.length + " областей, экземпляров "
-                     + hostRepeater.count)
+        console.info("[widgets/mask] " + gridMetrics.screenName
+                     + ": весь рабочий стол, экземпляров " + hostRepeater.count)
     }
 
+    function openMenu(x: real, y: real): void {
+        if (!root.screen)
+            return
+        desktopMenu.screenName = root.screen.name
+        desktopMenu.openAt(x, y)
+    }
 
-    // Всегда доступная кнопка входа в редактор на пустом рабочем столе.
-    Rectangle {
-        id: editButton
-
-        width: 96
-        height: 34
-        anchors.top: parent.top
-        anchors.right: parent.right
-        anchors.margins: 12
-        z: 45
-        visible: !root.editing
-        radius: 10
-        color: Theme.colors.surface
-        border.width: 1
-        border.color: Theme.colors.outline
-        opacity: editMouse.containsMouse ? 0.95 : 0.72
-
-        Text {
-            anchors.centerIn: parent
-            color: Theme.colors.onSurface
-            font.pixelSize: 12
-            text: "✎ Править"
+    function handleMenuAction(name: string): void {
+        if (name === "add") {
+            EditorState.openPicker(root.screen.name)
+        } else if (name === "global") {
+            EditorState.openGlobalSettings(root.screen.name)
+        } else if (name === "edit") {
+            EditorState.enter()
+        } else if (name === "commit") {
+            EditorState.exitCommit()
+        } else if (name === "cancel") {
+            EditorState.cancel()
         }
+    }
 
-        MouseArea {
-            id: editMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            onClicked: EditorState.enter()
+    // Клики по пустому рабочему столу: ПКМ открывает меню, ЛКМ закрывает его
+    // и снимает выделение. Слой под виджетами, поэтому интерактив карточек
+    // получает события первым.
+    MouseArea {
+        anchors.fill: parent
+        z: -20
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.RightButton) {
+                root.openMenu(mouse.x, mouse.y)
+            } else {
+                desktopMenu.close()
+                EditorState.clearSelection()
+            }
         }
     }
 
@@ -413,18 +401,47 @@ PanelWindow {
         metrics: gridMetrics
     }
 
+    WidgetsGlobalPopup {
+        screen: root.screen
+    }
+
+    // Затемняющая подложка меню: закрывает его по клику вне панели, но не
+    // создаёт отдельного слоя.
+    MouseArea {
+        anchors.fill: parent
+        visible: desktopMenu.opened
+        z: 200
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: desktopMenu.close()
+    }
+
+    DesktopContextMenu {
+        id: desktopMenu
+        editing: root.editing
+        onAction: (name) => root.handleMenuAction(name)
+    }
+
     // Esc / Ctrl+Z / Ctrl+Shift+Z. Фокус получает только редактор.
     Item {
         id: keys
 
         anchors.fill: parent
-        z: 90
+        z: 220
         enabled: root.editing
         focus: root.editing
 
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape) {
-                EditorState.exitCommit()
+                if (desktopMenu.opened)
+                    desktopMenu.close()
+                else if (EditorState.settingsUid.length > 0)
+                    EditorState.closeSettings()
+                else if (EditorState.globalOpen)
+                    EditorState.closeGlobalSettings()
+                else if (EditorState.pickerOpen)
+                    EditorState.closePicker()
+                else
+                    EditorState.exitCommit()
                 event.accepted = true
             } else if (event.key === Qt.Key_Z
                        && (event.modifiers & Qt.ControlModifier)) {

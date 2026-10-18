@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Shapes
 import "../../singletons"
 import Quickshell
 import "../core"
@@ -24,6 +25,8 @@ Item {
 
     property bool editing: false
     property bool preview: false
+
+    signal contextRequested(real x, real y)
 
     // Увеличивается при каждой перезагрузке QML — используется в URL.
     property int reloadToken: 0
@@ -69,6 +72,10 @@ Item {
     readonly property real baseY:
         root.metrics.originY + root.safeRow * (root.metrics.cell + root.metrics.gap)
 
+    readonly property bool selected: root.editing && root.instance
+                                     && EditorState.selectedUid === root.instance.uid
+    readonly property bool scalable: root.widget && root.widget.sizeSpec
+                                     && root.widget.sizeSpec.scalable
     readonly property bool previewing: DragController.active && root.instance
                                        && DragController.uid === root.instance.uid
     readonly property int liveCols: root.previewing ? DragController.cols : root.gridCols
@@ -457,15 +464,54 @@ Item {
     }
 
     // --- Редактор (раздел 8 ТЗ) ---
-    Rectangle {
+    // Выделение — скруглённый контур по форме карточки, без квадратной рамки
+    // и без отдельных квадратных ручек. Тянуть за контур = менять размер.
+    Shape {
+        id: selectionOutline
+
         anchors.fill: parent
-        z: 5
-        visible: root.editing
-        color: "transparent"
-        radius: root.materialRadius
-        border.width: 2
-        border.color: root.previewing && !DragController.valid
-                      ? Theme.colors.error : Theme.colors.primary
+        anchors.margins: 1
+        z: 15
+        visible: root.editing && root.selected
+        asynchronous: false
+
+        readonly property real r: Math.max(0, Math.min(root.materialRadius,
+                                          Math.min(width, height) / 2))
+
+        ShapePath {
+            fillColor: "transparent"
+            strokeColor: "#4CAF50"
+            strokeWidth: 2
+            capStyle: ShapePath.FlatCap
+            joinStyle: ShapePath.RoundJoin
+            startX: selectionOutline.r
+            startY: 0
+
+            PathLine { x: selectionOutline.width - selectionOutline.r; y: 0 }
+            PathArc {
+                x: selectionOutline.width; y: selectionOutline.r
+                radiusX: selectionOutline.r; radiusY: selectionOutline.r
+                direction: PathArc.Clockwise
+            }
+            PathLine { x: selectionOutline.width; y: selectionOutline.height - selectionOutline.r }
+            PathArc {
+                x: selectionOutline.width - selectionOutline.r; y: selectionOutline.height
+                radiusX: selectionOutline.r; radiusY: selectionOutline.r
+                direction: PathArc.Clockwise
+            }
+            PathLine { x: selectionOutline.r; y: selectionOutline.height }
+            PathArc {
+                x: 0; y: selectionOutline.height - selectionOutline.r
+                radiusX: selectionOutline.r; radiusY: selectionOutline.r
+                direction: PathArc.Clockwise
+            }
+            PathLine { x: 0; y: selectionOutline.r }
+            PathArc {
+                x: selectionOutline.r; y: 0
+                radiusX: selectionOutline.r; radiusY: selectionOutline.r
+                direction: PathArc.Clockwise
+            }
+        }
     }
 
     MouseArea {
@@ -479,6 +525,8 @@ Item {
         cursorShape: Qt.SizeAllCursor
 
         onPressed: (mouse) => {
+            if (root.instance)
+                EditorState.select(root.instance.uid)
             DragController.startDrag(root, dragArea.mapToItem(null, mouse.x, mouse.y))
             mouse.accepted = true
         }
@@ -491,59 +539,71 @@ Item {
         onReleased: DragController.finish()
     }
 
+    // Зоны вдоль всего зелёного контура. Углы — диагональный ресайз, стороны —
+    // по одной оси. Отдельных видимых квадратов-ручек больше нет.
     Repeater {
         model: ["topleft", "top", "topright", "right",
                 "bottomright", "bottom", "bottomleft", "left"]
 
         delegate: MouseArea {
-            id: handle
+            id: resizeZone
 
             required property var modelData
 
             readonly property string edge: modelData
+            readonly property int band: 11
+            readonly property int corner: 20
             readonly property bool horizontal: edge.indexOf("left") >= 0
                                                  || edge.indexOf("right") >= 0
             readonly property bool vertical: edge.indexOf("top") >= 0
                                                || edge.indexOf("bottom") >= 0
+            readonly property bool cornerZone: horizontal && vertical
 
-            width: 14
-            height: 14
             z: 20
-            visible: root.editing && root.widget
-                     && root.widget.sizeSpec && root.widget.sizeSpec.scalable
-            cursorShape: horizontal && vertical
+            visible: root.scalable
+            cursorShape: cornerZone
                          ? (edge === "topleft" || edge === "bottomright"
                             ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor)
-                         : (horizontal ? Qt.SizeHorCursor
-                                       : (vertical ? Qt.SizeVerCursor : Qt.ArrowCursor))
+                         : (horizontal ? Qt.SizeHorCursor : Qt.SizeVerCursor)
 
-            x: edge.indexOf("left") >= 0 ? 0
-               : (edge.indexOf("right") >= 0 ? root.width - width
-                                              : (root.width - width) / 2)
-            y: edge.indexOf("top") >= 0 ? 0
-               : (edge.indexOf("bottom") >= 0 ? root.height - height
-                                               : (root.height - height) / 2)
+            width: cornerZone ? corner
+                   : (horizontal ? band : Math.max(1, root.width - 2 * corner))
+            height: cornerZone ? corner
+                    : (vertical ? band : Math.max(1, root.height - 2 * corner))
+            x: horizontal ? (edge.indexOf("left") >= 0 ? 0 : root.width - width)
+                          : corner
+            y: vertical ? (edge.indexOf("top") >= 0 ? 0 : root.height - height)
+                        : corner
 
             onPressed: (mouse) => {
-                DragController.startResize(root, handle.edge,
-                                           handle.mapToItem(null, mouse.x, mouse.y))
+                if (root.instance)
+                    EditorState.select(root.instance.uid)
+                DragController.startResize(root, resizeZone.edge,
+                                           resizeZone.mapToItem(null, mouse.x, mouse.y))
                 mouse.accepted = true
             }
 
             onPositionChanged: (mouse) => {
                 if (DragController.active && DragController.uid === root.instance.uid)
-                    DragController.update(handle.mapToItem(null, mouse.x, mouse.y))
+                    DragController.update(resizeZone.mapToItem(null, mouse.x, mouse.y))
             }
 
             onReleased: DragController.finish()
+        }
+    }
 
-            Rectangle {
-                anchors.fill: parent
-                radius: 3
-                color: Theme.colors.primary
-                border.width: 1
-                border.color: Theme.colors.onPrimary
-            }
+    // ПКМ по виджету открывает то же меню слоя, что и ПКМ по пустому месту.
+    // Кнопка только правая, поэтому левый интерактив виджета не страдает.
+    MouseArea {
+        anchors.fill: parent
+        z: 40
+        acceptedButtons: Qt.RightButton
+
+        onClicked: (mouse) => {
+            if (root.instance && root.editing)
+                EditorState.select(root.instance.uid)
+            const point = mapToItem(null, mouse.x, mouse.y)
+            root.contextRequested(point.x, point.y)
         }
     }
 

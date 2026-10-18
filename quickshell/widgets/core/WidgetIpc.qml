@@ -30,8 +30,11 @@ IpcHandler {
         lines.push("wallpaper: " + Wallpaper.sourceUrl)
         lines.push("extraPaths: " + (Config.extraPaths || []).join(":"))
         lines.push("editing: " + (EditorState.active ? "true" : "false")
+                   + " selected=" + (EditorState.selectedUid || "none")
                    + " undo=" + EditorState.undoStack.length
-                   + " redo=" + EditorState.redoStack.length)
+                   + " redo=" + EditorState.redoStack.length
+                   + " defaults=" + Config.defaultMaterial + "/"
+                   + Config.defaultColorMode)
         return lines.join("\n")
     }
 
@@ -70,6 +73,21 @@ IpcHandler {
         const located = LayoutStore.locate(uid)
         if (located)
             EditorState.openSettings(uid, located.screen)
+        return state()
+    }
+
+    function globals(): string {
+        const screen = Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
+        if (screen)
+            EditorState.openGlobalSettings(screen.name)
+        return state()
+    }
+
+    function defaults(materialId: string, mode: string): string {
+        if (materialId.length > 0)
+            Config.setDefaultMaterial(materialId)
+        if (mode.length > 0)
+            Config.setDefaultColorMode(mode)
         return state()
     }
 

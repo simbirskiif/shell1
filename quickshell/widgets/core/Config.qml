@@ -89,6 +89,27 @@ Singleton {
     readonly property string defaultMaterial: adapter.defaults.material
     readonly property string defaultColorMode: adapter.defaults.colorMode
 
+    // Глобальные параметры виджетов. Экземпляр может переопределить любой
+    // из них, выбрав «По умолчанию» в своих настройках.
+    function setDefaultMaterial(materialId: string): bool {
+        const value = String(materialId || "")
+        if (value.length === 0)
+            return false
+        adapter.defaults.material = value
+        configFile.writeAdapter()
+        console.info("[widgets/config] материал по умолчанию: " + value)
+        return true
+    }
+
+    function setDefaultColorMode(mode: string): bool {
+        if (mode !== "accent" && mode !== "widget")
+            return false
+        adapter.defaults.colorMode = mode
+        configFile.writeAdapter()
+        console.info("[widgets/config] режим цвета по умолчанию: " + mode)
+        return true
+    }
+
     // Каталоги для пользовательских настроек/материалов. Создаём заранее,
     // чтобы наблюдатели за папками не пропускали вложенное создание.
     Process {

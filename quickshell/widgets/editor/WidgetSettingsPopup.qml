@@ -17,9 +17,17 @@ Item {
     readonly property var widget: root.instance
                                    ? WidgetRegistry.widgetById(root.instance.id)
                                    : null
+    readonly property string instanceMaterial:
+        root.instance ? (root.instance.material || "") : ""
+    readonly property string instanceColorMode:
+        root.instance ? (root.instance.colorMode || "") : ""
     property var values: ({})
 
-    visible: EditorState.settingsUid === root.uid
+    // root.uid связан с EditorState.settingsUid, поэтому одной проверки
+    // равенства мало: после закрытия оба становятся "" и попап оставался
+    // пустым окном. Требуем непустой uid и существующий виджет.
+    visible: root.uid.length > 0
+             && root.widget !== null
              && root.screen !== null
              && EditorState.settingsScreen === root.screen.name
     anchors.fill: parent
@@ -89,7 +97,11 @@ Item {
     Component.onCompleted: root.refreshValues()
 
     onUidChanged: root.refreshValues()
-    onWidgetChanged: root.refreshValues()
+    onWidgetChanged: {
+        root.refreshValues()
+        if (root.uid.length > 0 && root.widget === null)
+            EditorState.closeSettings()
+    }
     onVisibleChanged: {
         if (root.visible)
             root.refreshValues()
@@ -101,6 +113,11 @@ Item {
         function onInstanceChanged(uid) {
             if (uid === root.uid)
                 root.refreshValues()
+        }
+
+        function onLayoutChanged() {
+            if (root.uid.length > 0 && !LayoutStore.findInstance(root.uid))
+                EditorState.closeSettings()
         }
     }
 
@@ -160,6 +177,15 @@ Item {
                 width: parent.width
                 spacing: 4
 
+                HostButton {
+                    text: "По умолчанию"
+                    active: root.instanceMaterial.length === 0
+                    onClicked: {
+                        LayoutStore.setMaterial(root.uid, "")
+                        root.refreshValues()
+                    }
+                }
+
                 Repeater {
                     model: root.materialChoices()
 
@@ -167,6 +193,7 @@ Item {
                         required property var modelData
 
                         text: modelData.name
+                        active: root.instanceMaterial === modelData.id
                         onClicked: {
                             LayoutStore.setMaterial(root.uid, modelData.id)
                             root.refreshValues()
@@ -184,13 +211,24 @@ Item {
             Row {
                 spacing: 4
 
+                HostButton {
+                    text: "По умолчанию"
+                    active: root.instanceColorMode.length === 0
+                    onClicked: {
+                        LayoutStore.setColorMode(root.uid, "")
+                        root.refreshValues()
+                    }
+                }
+
                 Repeater {
                     model: root.widget ? root.widget.colorModes : []
 
                     delegate: HostButton {
                         required property var modelData
 
-                        text: modelData
+                        text: modelData === "accent" ? "Акцент"
+                              : (modelData === "widget" ? "Палитра" : modelData)
+                        active: root.instanceColorMode === modelData
                         onClicked: {
                             LayoutStore.setColorMode(root.uid, modelData)
                             root.refreshValues()

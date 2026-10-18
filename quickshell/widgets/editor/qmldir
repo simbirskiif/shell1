@@ -3,3 +3,5 @@ singleton PickerState 1.0 PickerState.qml
 WidgetPicker 1.0 WidgetPicker.qml
 WidgetSettingsPopup 1.0 WidgetSettingsPopup.qml
 WidgetPreviewCard 1.0 WidgetPreviewCard.qml
+WidgetsGlobalPopup 1.0 WidgetsGlobalPopup.qml
+DesktopContextMenu 1.0 DesktopContextMenu.qml

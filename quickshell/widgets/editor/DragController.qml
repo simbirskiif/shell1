@@ -36,6 +36,7 @@ Singleton {
     property int rows: 1
     property bool valid: false
     property bool moved: false
+    property bool operationStarted: false
 
     function startDrag(host: var, point: var): void {
         root.begin(host, "drag", "", point)
@@ -74,7 +75,7 @@ Singleton {
         root.valid = true
         root.moved = false
         root.active = true
-        EditorState.beginOperation()
+        root.operationStarted = false
     }
 
     function update(point: var): void {
@@ -87,6 +88,12 @@ Singleton {
         const dy = point.y - root.startY
         root.dx = dx
         root.dy = dy
+        // Снимок для undo создаём только когда жест реально начался:
+        // одиночный клик по виджету не должен попадать в историю.
+        if (!root.operationStarted && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
+            EditorState.beginOperation()
+            root.operationStarted = true
+        }
 
         if (root.mode === "drag") {
             const maxCol = root.metrics.cols - root.originCols
@@ -240,6 +247,7 @@ Singleton {
         root.metrics = null
         root.valid = false
         root.moved = false
+        root.operationStarted = false
         root.dx = 0
         root.dy = 0
     }
