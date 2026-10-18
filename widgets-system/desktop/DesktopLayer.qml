@@ -16,6 +16,12 @@ PanelWindow {
 
     readonly property bool debugGrid: Config.showGrid
 
+    // Экземпляры виджетов на этом экране. Массив пересоздаётся при изменении
+    // раскладки/реестра, поэтому Repeater обновляет карточки.
+    property var instances: []
+    property var _maskRegions: []
+    property bool _maskScheduled: false
+
     visible: true
     color: "transparent"
 
@@ -38,9 +44,17 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.focusable: false
 
-    // Пустая область ввода. В следующих этапах сюда попадут прямоугольники
-    // видимых виджетов, а в режиме редактирования — весь экран.
-    mask: Region {}
+    // Область ввода строится из прямоугольников видимых карточек виджетов.
+    // Клики вне карточек проходят в окна под слоем; в режиме редактирования
+    // маска будет расширена на весь экран (этап 5).
+    mask: Region {
+        id: maskRegion
+    }
+
+    Component {
+        id: maskRegionComponent
+        Region {}
+    }
 
     GridMetrics {
         id: gridMetrics
@@ -55,7 +69,87 @@ PanelWindow {
         metrics: gridMetrics
     }
 
+    Repeater {
+        id: hostRepeater
+
+        model: root.instances
+
+        delegate: WidgetHost {
+            required property var modelData
+
+            instance: modelData
+            metrics: gridMetrics
+            screen: root.screen
+        }
+
+        onItemAdded: root.scheduleMaskSync()
+        onItemRemoved: root.scheduleMaskSync()
+    }
+
+    Connections {
+        target: WidgetRegistry
+
+        function onRegistryChanged() {
+            // Уже созданные карточки сами следят за widgetById; пересобирать
+            // их нужно только пока раскладка ещё не создана.
+            if (root.instances.length === 0 && WidgetRegistry.ready)
+                root.refreshInstances()
+        }
+    }
+
+    Connections {
+        target: LayoutStore
+
+        function onLayoutChanged() {
+            root.refreshInstances()
+        }
+    }
+
+    function refreshInstances(): void {
+        if (!root.screen || !WidgetRegistry.ready) {
+            root.instances = []
+            root.scheduleMaskSync()
+            return
+        }
+        LayoutStore.ensureScreen(root.screen.name, gridMetrics)
+        root.instances = LayoutStore.instancesFor(root.screen.name)
+        root.scheduleMaskSync()
+    }
+
+    function scheduleMaskSync(): void {
+        if (root._maskScheduled)
+            return
+        root._maskScheduled = true
+        Qt.callLater(root.syncMask)
+    }
+
+    function syncMask(): void {
+        root._maskScheduled = false
+        while (maskRegion.regions.length > 0) {
+            const region = maskRegion.regions.pop()
+            if (region)
+                region.destroy()
+        }
+        root._maskRegions = []
+
+        for (let i = 0; i < hostRepeater.count; i++) {
+            const host = hostRepeater.itemAt(i)
+            if (!host || !host.visible)
+                continue
+            const region = maskRegionComponent.createObject(maskRegion, { item: host })
+            if (region) {
+                maskRegion.regions.push(region)
+                root._maskRegions.push(region)
+            }
+        }
+        maskRegion.changed()
+        console.info("[widgets/mask] " + gridMetrics.screenName + ": "
+                     + root._maskRegions.length + " областей, экземпляров "
+                     + hostRepeater.count)
+    }
+
     Component.onCompleted: {
         console.info("[widgets/layer] desktop layer created for " + gridMetrics.screenName)
+        root.refreshInstances()
     }
 }

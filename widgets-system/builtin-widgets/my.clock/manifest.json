@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "id": "my.clock",
+  "name": "Часы",
+  "description": "Цифровые часы с датой",
+  "version": "1.0.0",
+  "author": "built-in",
+  "icon": "schedule",
+  "entry": "Main.qml",
+  "size": {
+    "min": "1x2",
+    "max": "2x4",
+    "default": "1x2"
+  },
+  "materials": ["any"],
+  "colorModes": ["accent", "widget"],
+  "settings": [
+    { "key": "format24", "type": "bool", "label": "24-часовой формат", "default": true },
+    { "key": "seconds", "type": "bool", "label": "Показывать секунды", "default": false }
+  ]
+}

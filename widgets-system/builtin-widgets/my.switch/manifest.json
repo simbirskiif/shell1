@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "id": "my.switch",
+  "name": "Переключатель",
+  "description": "Минимальный виджет с bool-настройкой",
+  "version": "1.0.0",
+  "author": "built-in",
+  "icon": "toggle_on",
+  "entry": "Main.qml",
+  "size": {
+    "min": "1x1",
+    "max": "1x1",
+    "default": "1x1"
+  },
+  "materials": ["any"],
+  "colorModes": ["accent"],
+  "settings": [
+    { "key": "enabled", "type": "bool", "label": "Включено", "default": false }
+  ]
+}

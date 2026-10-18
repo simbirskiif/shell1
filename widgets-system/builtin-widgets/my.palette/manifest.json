@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "id": "my.palette",
+  "name": "Своя палитра",
+  "description": "Виджет с собственной палитрой",
+  "version": "1.0.0",
+  "author": "built-in",
+  "icon": "palette",
+  "entry": "Main.qml",
+  "size": {
+    "min": "1x2",
+    "max": "2x4",
+    "default": "2x2"
+  },
+  "materials": ["any"],
+  "colorModes": ["accent", "widget"],
+  "palette": {
+    "light": {
+      "surface": "#FFF8E1",
+      "onSurface": "#3E2723",
+      "surfaceVariant": "#F0E6C8",
+      "onSurfaceVariant": "#5D4037",
+      "primary": "#E65100",
+      "onPrimary": "#FFFFFF",
+      "primaryContainer": "#FFE0B2",
+      "onPrimaryContainer": "#4E2600",
+      "secondary": "#6D4C41",
+      "onSecondary": "#FFFFFF",
+      "tertiary": "#00897B",
+      "outline": "#8D6E63",
+      "error": "#B3261E"
+    },
+    "dark": {
+      "surface": "#1F1A17",
+      "onSurface": "#F1E5D9",
+      "surfaceVariant": "#3E332C",
+      "onSurfaceVariant": "#D7C5B6",
+      "primary": "#FFB74D",
+      "onPrimary": "#4E2600",
+      "primaryContainer": "#6D3D00",
+      "onPrimaryContainer": "#FFE0B2",
+      "secondary": "#D7C5B6",
+      "onSecondary": "#3E2723",
+      "tertiary": "#4DB6AC",
+      "outline": "#9A8174",
+      "error": "#F2B8B5"
+    }
+  },
+  "settings": []
+}

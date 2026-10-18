@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "id": "my.color",
+  "name": "Цветной блок",
+  "description": "Статичный цветной блок",
+  "version": "1.0.0",
+  "author": "built-in",
+  "icon": "palette",
+  "entry": "Main.qml",
+  "size": {
+    "min": "1x1",
+    "max": "1x1",
+    "default": "1x1"
+  },
+  "materials": ["solid", "transparent"],
+  "colorModes": ["accent"],
+  "settings": []
+}

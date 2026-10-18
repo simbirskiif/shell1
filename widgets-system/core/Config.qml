@@ -54,6 +54,10 @@ Singleton {
     // --- Обнаружение виджетов (раздел 4 ТЗ) ---
     readonly property var extraPaths: adapter.widgets.extraPaths
 
+    // --- Оформление ---
+    // "dark" | "light"; этап 3 расширит до выбора палитры/акцента.
+    readonly property string theme: adapter.theme
+
     // --- Значения по умолчанию для экземпляров (раздел 6 ТЗ) ---
     readonly property string defaultMaterial: adapter.defaults.material
     readonly property string defaultColorMode: adapter.defaults.colorMode
@@ -91,6 +95,8 @@ Singleton {
             property JsonObject widgets: JsonObject {
                 property list<string> extraPaths: []
             }
+
+            property string theme: "dark"
 
             property JsonObject defaults: JsonObject {
                 property string material: "solid"

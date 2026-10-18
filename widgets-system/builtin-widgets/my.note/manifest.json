@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "id": "my.note",
+  "name": "Заметка",
+  "description": "Короткая заметка на рабочем столе",
+  "version": "1.0.0",
+  "author": "built-in",
+  "icon": "description",
+  "entry": "Main.qml",
+  "size": {
+    "min": "1x1",
+    "max": "3x4",
+    "default": "2x2"
+  },
+  "materials": ["any"],
+  "colorModes": ["accent", "widget"],
+  "settings": [
+    { "key": "text", "type": "string", "label": "Текст", "default": "Заметка" },
+    { "key": "align", "type": "enum", "label": "Выравнивание", "options": ["left", "center"], "default": "left" },
+    { "key": "accent", "type": "bool", "label": "Выделить", "default": false }
+  ]
+}

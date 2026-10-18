@@ -17,6 +17,7 @@
   "widgets": {
     "extraPaths": []
   },
+  "theme": "dark",
   "defaults": {
     "material": "solid",
     "colorMode": "accent"

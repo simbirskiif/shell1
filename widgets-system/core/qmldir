@@ -1,2 +1,6 @@
 singleton Config 1.0 Config.qml
+singleton Theme 1.0 Theme.qml
+singleton WidgetRegistry 1.0 WidgetRegistry.qml
+singleton LayoutStore 1.0 LayoutStore.qml
 GridMetrics 1.0 GridMetrics.qml
+WidgetContext 1.0 WidgetContext.qml

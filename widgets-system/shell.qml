@@ -6,6 +6,7 @@
 import QtQuick
 import Quickshell
 import "desktop"
+import "core"
 
 ShellRoot {
     id: root
@@ -21,6 +22,7 @@ ShellRoot {
     }
 
     Component.onCompleted: {
-        console.info("[widgets] shell started, screens=" + Quickshell.screens.length)
+        console.info("[widgets] shell started, screens=" + Quickshell.screens.length
+                     + ", путей поиска: " + WidgetRegistry.searchPaths.length)
     }
 }

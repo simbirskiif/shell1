@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "id": "my.allowed",
+  "name": "Размеры из списка",
+  "description": "Виджет только с разрешёнными размерами",
+  "version": "1.0.0",
+  "author": "built-in",
+  "icon": "aspect_ratio",
+  "entry": "Main.qml",
+  "size": {
+    "allowed": ["1x1", "2x1", "2x2"],
+    "default": "2x1"
+  },
+  "materials": ["any"],
+  "colorModes": ["accent", "widget"],
+  "settings": []
+}
