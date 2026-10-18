@@ -9,11 +9,14 @@ Item {
     property var colors: ({})
     property real radius: 0
     property real dim: 0.60
+    property var widgetsBackdrop: null
     property var size: Qt.size(0, 0)
     property string wallpaperSource: ""
     property bool editing: false
     property real offsetX: 0
     property real offsetY: 0
+    property real localX: 0
+    property real localY: 0
     property real screenWidth: 0
     property real screenHeight: 0
 
@@ -44,6 +47,17 @@ Item {
         recursive: false
     }
 
+    ShaderEffectSource {
+        id: widgetsSample
+
+        sourceItem: root.widgetsBackdrop
+        sourceRect: Qt.rect(root.localX, root.localY,
+                            Math.max(1, root.width), Math.max(1, root.height))
+        hideSource: false
+        live: true
+        recursive: false
+    }
+
     ShaderEffect {
         anchors.fill: parent
         blending: true
@@ -58,6 +72,8 @@ Item {
         property real rim: 0.6
         property color tint: Qt.rgba(root.tintColor.r, root.tintColor.g,
                                      root.tintColor.b, root.dim)
+        property variant widgets: widgetsSample
+        property real useWidgets: root.widgetsBackdrop !== null ? 1 : 0
 
         fragmentShader: Qt.resolvedUrl("liquid.frag.qsb")
     }

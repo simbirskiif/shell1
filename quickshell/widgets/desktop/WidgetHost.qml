@@ -29,6 +29,7 @@ Item {
 
     property bool editing: false
     property bool preview: false
+    property var widgetsBackdrop: null
 
     signal contextRequested(real x, real y, string uid)
 
@@ -140,6 +141,9 @@ Item {
     height: root.metrics.pixelHeight(root.gridRows)
 
     visible: root.instance !== null && root.instance !== undefined
+    // Перетаскиваемый виджет должен быть выше соседей и призрака-рамки:
+    // стекло тогда читает то, что находится под ним, а не прячется за слоем.
+    z: root.dragActive ? 100 : 0
     // Карточка клипает своё содержимое; хост не клипает, чтобы круглые
     // кнопки редактора могли чуть выходить за границу карточки.
     clip: false
@@ -220,6 +224,9 @@ Item {
             colors: root.effectiveColors,
             radius: root.materialRadius,
             dim: root.effectiveDim,
+            widgetsBackdrop: root.dragActive ? root.widgetsBackdrop : null,
+            localX: root.x,
+            localY: root.y,
             size: Qt.size(root.width, root.height),
             wallpaperSource: Wallpaper.sourceUrl,
             offsetX: root.x + root.screenOffsetX,
@@ -257,6 +264,24 @@ Item {
     onWidgetChanged: {
         if (root._initialized)
             root.reloadWidget()
+    }
+
+    onDragActiveChanged: {
+        // Binding на item материала обновляется не в том же кадре, что и
+        // начало drag; синхронизируем текстуру соседних виджетов явно.
+        dragBackdropSync.restart()
+    }
+
+    Timer {
+        id: dragBackdropSync
+        interval: 16
+        repeat: false
+        onTriggered: {
+            if (!materialLoader.item)
+                return
+            materialLoader.item.widgetsBackdrop =
+                root.dragActive ? root.widgetsBackdrop : null
+        }
     }
 
     onEffectiveMaterialChanged: {
@@ -398,6 +423,27 @@ Item {
         target: materialLoader.item
         property: "dim"
         value: root.effectiveDim
+        when: materialLoader.status === Loader.Ready
+    }
+
+    Binding {
+        target: materialLoader.item
+        property: "widgetsBackdrop"
+        value: root.dragActive ? root.widgetsBackdrop : null
+        when: materialLoader.status === Loader.Ready
+    }
+
+    Binding {
+        target: materialLoader.item
+        property: "localX"
+        value: root.x
+        when: materialLoader.status === Loader.Ready
+    }
+
+    Binding {
+        target: materialLoader.item
+        property: "localY"
+        value: root.y
         when: materialLoader.status === Loader.Ready
     }
 

@@ -101,6 +101,11 @@ IpcHandler {
         return state()
     }
 
+    function geometry(uid: string, col: int, row: int, cols: int, rows: int): string {
+        LayoutStore.applyGeometry(uid, col, row, cols, rows)
+        return state()
+    }
+
     function dimFor(uid: string, value: real): string {
         LayoutStore.setDim(uid, value)
         return state()

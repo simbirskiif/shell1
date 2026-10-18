@@ -12,9 +12,11 @@ layout(std140, binding = 0) uniform buf {
     vec4 outline;
     float tintOpacity;
     float blur;
+    float useWidgets;
 } ubuf;
 
 layout(binding = 1) uniform sampler2D source;
+layout(binding = 2) uniform sampler2D widgets;
 
 float roundedBox(vec2 p, vec2 halfSize, float r) {
     vec2 q = abs(p) - halfSize + vec2(r);
@@ -42,6 +44,12 @@ void main() {
 
     // Мягкий верхний блик.
     color += vec3(1.0) * smoothstep(0.55, 0.0, uv.y) * 0.08;
+
+    // Соседние виджеты (без перетаскиваемого) поверх обоев.
+    if (ubuf.useWidgets > 0.5) {
+        vec4 w = texture(widgets, uv);
+        color = color * (1.0 - w.a) + w.rgb;
+    }
 
     vec2 p = (uv - 0.5) * ubuf.size;
     float d = roundedBox(p, ubuf.size * 0.5, ubuf.radius);

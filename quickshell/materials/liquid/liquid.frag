@@ -13,9 +13,11 @@ layout(std140, binding = 0) uniform buf {
     float bezel;       // refracting edge width px (try 28)
     float rim;         // highlight strength 0..1 (try 0.6)
     vec4  tint;        // premultiplied-ish overlay colour, alpha = amount
+    float useWidgets;
 } ubuf;
 
 layout(binding = 1) uniform sampler2D source; // backdrop texture (wallpaper / screencopy)
+layout(binding = 2) uniform sampler2D widgets; // other widgets under the dragged card
 
 float sdRoundBox(vec2 p, vec2 b, float r) {
     vec2 q = abs(p) - b + r;
@@ -63,6 +65,13 @@ void main() {
 
     // tint + rim light (top-left light source)
     col = mix(col, ubuf.tint.rgb, ubuf.tint.a);
+
+    // Соседние виджеты (без перетаскиваемого) поверх обоев.
+    if (ubuf.useWidgets > 0.5) {
+        vec4 w = texture(widgets, qt_TexCoord0);
+        col = col * (1.0 - w.a) + w.rgb;
+    }
+
     float edgeBand = smoothstep(-3.0, 0.0, d) ;               // thin line at the border
     float light = pow(clamp(dot(n, normalize(vec2(-0.6, -0.8))) * 0.5 + 0.5, 0.0, 1.0), 3.0);
     col += ubuf.rim * edgeBand * mix(0.15, 0.9, light);

@@ -96,12 +96,44 @@ PanelWindow {
             metrics: gridMetrics
             screen: root.screen
             editing: root.editing
+            widgetsBackdrop: widgetBackdrop
 
             onContextRequested: (x, y, uid) => root.openMenu(x, y, uid)
         }
 
         onItemAdded: root.scheduleMaskSync()
         onItemRemoved: root.scheduleMaskSync()
+    }
+
+    // Текстура «все виджеты, кроме перетаскиваемого». Драgged host получает
+    // её в материал, поэтому glass/liquid показывает соседние карточки, а не
+    // только обои. Копии лежат под настоящими карточками, так что в обычном
+    // режиме их не видно.
+    Item {
+        id: widgetBackdrop
+
+        anchors.fill: parent
+        z: -10
+        visible: DragController.active
+
+        Repeater {
+            model: hostRepeater.count
+
+            delegate: ShaderEffectSource {
+                required property int index
+
+                readonly property var sourceHost: hostRepeater.itemAt(index)
+
+                sourceItem: sourceHost
+                x: sourceHost ? sourceHost.x : 0
+                y: sourceHost ? sourceHost.y : 0
+                width: sourceHost ? sourceHost.width : 0
+                height: sourceHost ? sourceHost.height : 0
+                visible: sourceHost !== null && sourceHost.uid !== DragController.uid
+                live: true
+                hideSource: false
+            }
+        }
     }
 
     Connections {
@@ -192,6 +224,9 @@ PanelWindow {
             if (root.rowFor(instance.uid) < 0)
                 instanceModel.append({ instanceUid: instance.uid })
         }
+        console.info("[widgets/model] screen=" + root.screen.name
+                     + " list=" + list.length + " wanted=" + Object.keys(wanted).length
+                     + " model=" + instanceModel.count)
         root.tray = LayoutStore.trayFor(root.screen.name)
         root.scheduleMaskSync()
     }
