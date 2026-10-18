@@ -75,6 +75,6 @@ Item {
         property variant widgets: widgetsSample
         property real useWidgets: root.widgetsBackdrop !== null ? 1 : 0
 
-        fragmentShader: Qt.resolvedUrl("liquid.frag.qsb")
+        fragmentShader: Qt.resolvedUrl("liquid-prism.frag.qsb")
     }
 }

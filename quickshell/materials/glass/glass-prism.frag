@@ -18,6 +18,17 @@ layout(std140, binding = 0) uniform buf {
 layout(binding = 1) uniform sampler2D source;
 layout(binding = 2) uniform sampler2D widgets;
 
+// Обои + соседние виджеты в одной выборке: дальше к ним применяются
+// одинаковые размытие, тонировка и кромка.
+vec4 sampleAll(vec2 uv) {
+    vec4 c = texture(source, uv);
+    if (ubuf.useWidgets > 0.5) {
+        vec4 w = texture(widgets, uv);
+        c.rgb = c.rgb * (1.0 - w.a) + w.rgb;
+    }
+    return c;
+}
+
 float roundedBox(vec2 p, vec2 halfSize, float r) {
     vec2 q = abs(p) - halfSize + vec2(r);
     return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
@@ -30,26 +41,20 @@ void main() {
     vec2 texel = ubuf.blur / max(ubuf.size, vec2(1.0));
 
     // 9-tap box-ish blur; weights sum to 1.
-    vec3 color = texture(source, uv).rgb * 0.16;
-    color += texture(source, uv + vec2(texel.x, 0.0)).rgb * 0.12;
-    color += texture(source, uv - vec2(texel.x, 0.0)).rgb * 0.12;
-    color += texture(source, uv + vec2(0.0, texel.y)).rgb * 0.12;
-    color += texture(source, uv - vec2(0.0, texel.y)).rgb * 0.12;
-    color += texture(source, uv + texel).rgb * 0.09;
-    color += texture(source, uv - texel).rgb * 0.09;
-    color += texture(source, uv + vec2(texel.x, -texel.y)).rgb * 0.09;
-    color += texture(source, uv + vec2(-texel.x, texel.y)).rgb * 0.09;
+    vec3 color = sampleAll(uv).rgb * 0.16;
+    color += sampleAll(uv + vec2(texel.x, 0.0)).rgb * 0.12;
+    color += sampleAll(uv - vec2(texel.x, 0.0)).rgb * 0.12;
+    color += sampleAll(uv + vec2(0.0, texel.y)).rgb * 0.12;
+    color += sampleAll(uv - vec2(0.0, texel.y)).rgb * 0.12;
+    color += sampleAll(uv + texel).rgb * 0.09;
+    color += sampleAll(uv - texel).rgb * 0.09;
+    color += sampleAll(uv + vec2(texel.x, -texel.y)).rgb * 0.09;
+    color += sampleAll(uv + vec2(-texel.x, texel.y)).rgb * 0.09;
 
     color = mix(color, ubuf.tint.rgb, clamp(ubuf.tintOpacity, 0.0, 1.0));
 
     // Мягкий верхний блик.
     color += vec3(1.0) * smoothstep(0.55, 0.0, uv.y) * 0.08;
-
-    // Соседние виджеты (без перетаскиваемого) поверх обоев.
-    if (ubuf.useWidgets > 0.5) {
-        vec4 w = texture(widgets, uv);
-        color = color * (1.0 - w.a) + w.rgb;
-    }
 
     vec2 p = (uv - 0.5) * ubuf.size;
     float d = roundedBox(p, ubuf.size * 0.5, ubuf.radius);

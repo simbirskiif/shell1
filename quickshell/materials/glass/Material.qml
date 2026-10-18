@@ -79,6 +79,6 @@ Item {
         property variant widgets: widgetsSample
         property real useWidgets: root.widgetsBackdrop !== null ? 1 : 0
 
-        fragmentShader: "glass-rounded.frag.qsb"
+        fragmentShader: "glass-prism.frag.qsb"
     }
 }

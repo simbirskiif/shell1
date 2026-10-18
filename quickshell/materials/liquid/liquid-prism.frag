@@ -19,6 +19,17 @@ layout(std140, binding = 0) uniform buf {
 layout(binding = 1) uniform sampler2D source; // backdrop texture (wallpaper / screencopy)
 layout(binding = 2) uniform sampler2D widgets; // other widgets under the dragged card
 
+// Обои + соседние виджеты в одной выборке. Преломление и блюр ниже
+// применяются к обоим слоям одинаково, включая их рамки.
+vec4 sampleAll(vec2 uv) {
+    vec4 c = texture(source, clamp(uv, 0.0, 1.0));
+    if (ubuf.useWidgets > 0.5) {
+        vec4 w = texture(widgets, clamp(uv, 0.0, 1.0));
+        c.rgb = c.rgb * (1.0 - w.a) + w.rgb;
+    }
+    return c;
+}
+
 float sdRoundBox(vec2 p, vec2 b, float r) {
     vec2 q = abs(p) - b + r;
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
@@ -57,20 +68,14 @@ void main() {
         float a = float(i) * 2.399963;
         float r = sqrt((float(i) + 0.5) / float(N)) * ubuf.blurRadius;
         vec2 o = vec2(cos(a), sin(a)) * r / ubuf.size;
-        col.r += texture(source, clamp(uvR + o, 0.0, 1.0)).r;
-        col.g += texture(source, clamp(uvG + o, 0.0, 1.0)).g;
-        col.b += texture(source, clamp(uvB + o, 0.0, 1.0)).b;
+        col.r += sampleAll(clamp(uvR + o, 0.0, 1.0)).r;
+        col.g += sampleAll(clamp(uvG + o, 0.0, 1.0)).g;
+        col.b += sampleAll(clamp(uvB + o, 0.0, 1.0)).b;
     }
     col /= float(N);
 
     // tint + rim light (top-left light source)
     col = mix(col, ubuf.tint.rgb, ubuf.tint.a);
-
-    // Соседние виджеты (без перетаскиваемого) поверх обоев.
-    if (ubuf.useWidgets > 0.5) {
-        vec4 w = texture(widgets, qt_TexCoord0);
-        col = col * (1.0 - w.a) + w.rgb;
-    }
 
     float edgeBand = smoothstep(-3.0, 0.0, d) ;               // thin line at the border
     float light = pow(clamp(dot(n, normalize(vec2(-0.6, -0.8))) * 0.5 + 0.5, 0.0, 1.0), 3.0);
