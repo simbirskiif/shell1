@@ -7,6 +7,8 @@ import Quickshell
 // Цвета приходят из Wal (pywal с откатом на стандартную палитру),
 // производные оттенки считаются здесь, в разметке магических значений нет.
 Singleton {
+    id: root
+
     // Бар
     readonly property int barHeight: 44
     readonly property int barPadding: 12
@@ -47,6 +49,56 @@ Singleton {
     readonly property int notificationSpacing: 8
 
     readonly property color accent: Wal.accent
+
+    // --- Material-роли для системы виджетов -------------------------------
+    // Виджеты используют тот же Wal-акцент и нейтральную базу, что панели
+    // оболочки, поэтому рабочий стол не выбивается из оформления.
+    readonly property bool isDark: root.relativeLuminance(Wal.background) < 0.55
+    readonly property color widgetSurface:
+        withAlpha(mix(neutralSurface, Wal.background, 0.07), 0.97)
+
+    readonly property var colors: ({
+        surface: root.widgetSurface,
+        onSurface: Wal.foreground,
+        surfaceVariant: mix(neutralSurface, Wal.foreground, 0.10),
+        onSurfaceVariant: withAlpha(Wal.foreground, 0.65),
+        primary: Wal.accent,
+        onPrimary: root.relativeLuminance(Wal.accent) > 0.55 ? "#151519" : "#ffffff",
+        primaryContainer: mix(neutralSurface, Wal.accent, 0.22),
+        onPrimaryContainer: Wal.foreground,
+        secondary: mix(neutralSurface, Wal.accent, 0.10),
+        onSecondary: Wal.foreground,
+        tertiary: mix(Wal.background, Wal.accent, 0.35),
+        outline: withAlpha(Wal.foreground, 0.18),
+        error: lowColor
+    })
+
+    function relativeLuminance(color) {
+        if (!color)
+            return 0
+        const channel = function(value) {
+            return value <= 0.03928 ? value / 12.92
+                                     : Math.pow((value + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * channel(color.r) + 0.7152 * channel(color.g)
+             + 0.0722 * channel(color.b)
+    }
+
+    function colorsFor(mode, widget) {
+        if (mode !== "widget" || !widget || !widget.palette)
+            return root.colors
+        const scheme = root.isDark ? widget.palette.dark : widget.palette.light
+        if (!scheme || typeof scheme !== "object")
+            return root.colors
+        const merged = ({})
+        for (const key in root.colors)
+            merged[key] = root.colors[key]
+        for (const key in scheme) {
+            if (typeof scheme[key] === "string" && scheme[key].length > 0)
+                merged[key] = scheme[key]
+        }
+        return merged
+    }
 
     // Панели быстрых настроек намеренно почти нейтральные: тёмная база
     // фиксированная, от обоев остаётся лишь лёгкий оттенок.

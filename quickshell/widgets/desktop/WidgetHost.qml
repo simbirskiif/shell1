@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../singletons"
 import Quickshell
 import "../core"
 import "../editor"

@@ -1,4 +1,5 @@
 import QtQuick
+import "../../singletons"
 import "../core"
 
 // Карточка состояния вместо контента виджета: ошибка загрузки QML или

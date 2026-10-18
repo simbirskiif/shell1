@@ -3,7 +3,7 @@
 # qsb ищется в PATH, QSB_DIR, /usr/lib/qt6/bin и /usr/lib/qt6/bin/qsb.
 set -euo pipefail
 
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 qsb="${QSB:-}"
 if [[ -z "$qsb" ]]; then
     if command -v qsb >/dev/null 2>&1; then

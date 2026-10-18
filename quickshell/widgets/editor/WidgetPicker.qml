@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../singletons"
 import "../core"
 
 // Каталог виджетов (раздел 8.5 ТЗ): поиск, превью, добавление тапом,
@@ -48,7 +49,8 @@ Item {
         closeTimer.restart()
     }
 
-    visible: EditorState.pickerOpen && EditorState.uiScreen === root.screen.name
+    visible: EditorState.pickerOpen && root.screen !== null
+             && EditorState.uiScreen === root.screen.name
     width: Math.min(360, parent.width - 24)
     height: Math.min(parent.height - 24, 700)
     anchors.right: parent.right

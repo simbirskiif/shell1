@@ -56,9 +56,6 @@ Singleton {
     // --- Обнаружение виджетов (раздел 4 ТЗ) ---
     readonly property var extraPaths: adapter.widgets.extraPaths
 
-    // --- Оформление ---
-    // "dark" | "light"; этап 3 расширит до выбора палитры/акцента.
-    readonly property string theme: adapter.theme
     // Путь к файлу обоев для материала glass. Пусто — спросить hyprpaper.
     readonly property string wallpaper: adapter.wallpaper
 
@@ -137,7 +134,6 @@ Singleton {
                 property list<string> extraPaths: []
             }
 
-            property string theme: "dark"
             property string wallpaper: ""
 
             property JsonObject defaults: JsonObject {

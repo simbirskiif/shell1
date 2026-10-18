@@ -7,6 +7,8 @@ import Quickshell.Services.Notifications
 import Quickshell.Services.Polkit
 import "components"
 import "singletons"
+import "widgets/desktop"
+import "widgets/core"
 
 ShellRoot {
     id: shellRoot
@@ -25,6 +27,19 @@ ShellRoot {
             screen: modelData
         }
     }
+
+    // Рабочий стол с виджетами: второй слой под окнами, часть этой же
+    // оболочки. Стили/палитра — из общего Theme (Wal), IPC target "widgets".
+    Variants {
+        model: Quickshell.screens
+
+        delegate: DesktopLayer {
+            required property var modelData
+            screen: modelData
+        }
+    }
+
+    WidgetIpc {}
 
     // Всплывающие индикаторы громкости и яркости — по одному на экран;
     // показывается только тот, что на экране с фокусом.

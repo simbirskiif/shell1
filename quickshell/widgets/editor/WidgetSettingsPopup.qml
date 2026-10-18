@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../singletons"
 import "../core"
 
 // Попап настроек экземпляра (раздел 8.6 ТЗ): материал, режим цвета,
@@ -19,6 +20,7 @@ Item {
     property var values: ({})
 
     visible: EditorState.settingsUid === root.uid
+             && root.screen !== null
              && EditorState.settingsScreen === root.screen.name
     anchors.fill: parent
     z: 130

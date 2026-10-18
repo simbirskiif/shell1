@@ -1,4 +1,5 @@
 import QtQuick
+import "../../singletons"
 import Quickshell
 import Quickshell.Wayland
 import "../core"

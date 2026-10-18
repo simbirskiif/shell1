@@ -1,4 +1,5 @@
 import QtQuick
+import "../../singletons"
 import Quickshell
 
 // Контекст, который shell инъектирует в корень виджета (раздел 3.5 ТЗ).

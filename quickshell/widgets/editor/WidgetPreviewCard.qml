@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../singletons"
 import "../core"
 
 // Карточка каталога с живым превью (раздел 8.5 ТЗ).

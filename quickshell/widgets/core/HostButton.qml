@@ -1,4 +1,5 @@
 import QtQuick
+import "../../singletons"
 
 // Маленькая кнопка для карточек, каталога и попапа настроек.
 Rectangle {
