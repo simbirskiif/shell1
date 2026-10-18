@@ -15,19 +15,32 @@ SidePanel {
     required property var screen
     required property var metrics
 
+    // LayoutStore меняет поля существующего объекта, а не заменяет его.
+    // Без явного счётчика readonly-биндинги ниже не узнают об изменении
+    // colorMode/material/dim и кнопки панели остаются на старой вкладке.
+    property int instanceRevision: 0
+
     readonly property var instance: LayoutStore.findInstance(root.uid)
     readonly property var widget: root.instance
                                    ? WidgetRegistry.widgetById(root.instance.id)
                                    : null
-    readonly property string instanceMaterial:
-        root.instance ? (root.instance.material || "") : ""
-    readonly property string instanceColorMode:
-        root.instance ? (root.instance.colorMode || "") : ""
-    readonly property real dim:
-        root.instance && Number.isFinite(root.instance.dim)
-        ? root.instance.dim : Config.defaultMaterialDim
-    readonly property bool dimOverridden:
-        root.instance && Number.isFinite(root.instance.dim)
+    readonly property string instanceMaterial: {
+        root.instanceRevision
+        return root.instance ? (root.instance.material || "") : ""
+    }
+    readonly property string instanceColorMode: {
+        root.instanceRevision
+        return root.instance ? (root.instance.colorMode || "") : ""
+    }
+    readonly property real dim: {
+        root.instanceRevision
+        return root.instance && Number.isFinite(root.instance.dim)
+               ? root.instance.dim : Config.defaultMaterialDim
+    }
+    readonly property bool dimOverridden: {
+        root.instanceRevision
+        return root.instance && Number.isFinite(root.instance.dim)
+    }
     property var values: ({})
 
     // root.uid связан с EditorState.settingsUid, поэтому одной проверки
@@ -95,23 +108,30 @@ SidePanel {
 
     Component.onCompleted: root.refreshValues()
 
-    onUidChanged: root.refreshValues()
+    onUidChanged: {
+        root.instanceRevision++
+        root.refreshValues()
+    }
     onWidgetChanged: {
         root.refreshValues()
         if (root.uid.length > 0 && root.widget === null)
             EditorState.closeSettings()
     }
     onOpenedChanged: {
-        if (root.opened)
+        if (root.opened) {
+            root.instanceRevision++
             root.refreshValues()
+        }
     }
 
     Connections {
         target: LayoutStore
 
         function onInstanceChanged(uid) {
-            if (uid === root.uid)
+            if (uid === root.uid) {
+                root.instanceRevision++
                 root.refreshValues()
+            }
         }
 
         function onLayoutChanged() {
