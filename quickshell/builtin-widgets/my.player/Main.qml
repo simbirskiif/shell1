@@ -59,11 +59,10 @@ Item {
     Behavior on gradBottom { ColorAnimation { duration: 700; easing.type: Easing.InOutQuad } }
     Behavior on gradTop { ColorAnimation { duration: 700; easing.type: Easing.InOutQuad } }
 
-    // Прозрачный материал должен оставаться прозрачным: собственный градиент
-    // обложки перекрыл бы обои и сделал бы ctx.backdrop бессмысленным.
+    // В нейтральном режиме фон карточки — градиент из обложки. Это
+    // осознанное оформление плеера; прозрачный материал не отменяет его.
     readonly property bool transparentMode: ctx.material === "transparent"
-    readonly property bool gradientOn: !transparentMode
-                                       && ctx.colorMode === "neutral"
+    readonly property bool gradientOn: ctx.colorMode === "neutral"
                                        && (ctx.preview || coverReady)
 
     function applySample(r, g, b) {
@@ -104,11 +103,11 @@ Item {
     // Цвет текста в прозрачном режиме берём у shell: он уже проверил
     // обои под карточкой и выбрал максимально контрастный ink.
     readonly property bool useBackdropInk: transparentMode && !!ctx.backdrop
-    property color fg: useBackdropInk ? ctx.backdrop.ink
-        : (gradientOn ? bestOn(bgC)
+    property color fg: gradientOn ? bestOn(bgC)
+        : (useBackdropInk ? ctx.backdrop.ink
         : (contrast(onSurfaceC, bgC) >= 4.5 ? onSurfaceC : bestOn(bgC)))
-    property color fgDim: useBackdropInk ? ctx.backdrop.inkMuted
-        : Qt.alpha(fg, 0.72)
+    property color fgDim: gradientOn ? Qt.alpha(fg, 0.72)
+        : (useBackdropInk ? ctx.backdrop.inkMuted : Qt.alpha(fg, 0.72))
     property color toggleFill: gradientOn ? fg
         : (contrast(primaryC, bgC) >= 3 ? primaryC : fg)
     property color toggleIconColor: bestOn(toggleFill)
