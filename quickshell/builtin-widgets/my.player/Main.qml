@@ -100,9 +100,11 @@ Item {
                   (gradTop.b + gradBottom.b) / 2, 1)
         : surfaceC
 
-    // Цвет текста в прозрачном режиме берём у shell: он уже проверил
-    // обои под карточкой и выбрал максимально контрастный ink.
-    readonly property bool useBackdropInk: transparentMode && !!ctx.backdrop
+    // Есть собственный градиент — все цвета выбираем сами от него.
+    // Нет градиента — цвета приходят от shell: для прозрачного материала
+    // это ctx.backdrop (проба обоев), иначе ctx.colors.
+    readonly property bool useBackdropInk: !gradientOn && transparentMode
+                                           && !!ctx.backdrop
     property color fg: gradientOn ? bestOn(bgC)
         : (useBackdropInk ? ctx.backdrop.ink
         : (contrast(onSurfaceC, bgC) >= 4.5 ? onSurfaceC : bestOn(bgC)))
@@ -399,8 +401,6 @@ Item {
             elide: Text.ElideRight
             horizontalAlignment: root.centered ? Text.AlignHCenter : Text.AlignLeft
             color: root.fg
-            style: root.useBackdropInk ? Text.Outline : Text.Normal
-            styleColor: root.useBackdropInk ? root.ctx.backdrop.halo : "transparent"
             font.family: root.ctx.fontFamily
             font.bold: true
             font.pixelSize: Math.max(12, Math.round(root.ctx.dp * 15))
@@ -412,8 +412,6 @@ Item {
             elide: Text.ElideRight
             horizontalAlignment: root.centered ? Text.AlignHCenter : Text.AlignLeft
             color: root.fgDim
-            style: root.useBackdropInk ? Text.Outline : Text.Normal
-            styleColor: root.useBackdropInk ? root.ctx.backdrop.halo : "transparent"
             font.family: root.ctx.fontFamily
             font.pixelSize: Math.max(10, Math.round(root.ctx.dp * 12))
         }

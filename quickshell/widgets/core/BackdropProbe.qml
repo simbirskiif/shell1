@@ -37,9 +37,6 @@ Item {
     readonly property color ink: root.bestInk(root.background)
     readonly property color inkMuted: root.mutedInk(root.ink, root.background)
     readonly property bool inkIsWhite: root.luminanceOf(root.ink) > 0.5
-    readonly property color halo: root.inkIsWhite
-                                   ? Qt.rgba(0, 0, 0, 0.62)
-                                   : Qt.rgba(1, 1, 1, 0.62)
     readonly property color veil: root.inkIsWhite
                                    ? Qt.rgba(0, 0, 0, 0.28)
                                    : Qt.rgba(1, 1, 1, 0.30)
@@ -58,7 +55,6 @@ Item {
         readonly property bool isLight: root.isLight
         readonly property color ink: root.ink
         readonly property color inkMuted: root.inkMuted
-        readonly property color halo: root.halo
         readonly property color veil: root.veil
         readonly property real contrast: root.contrast
 
