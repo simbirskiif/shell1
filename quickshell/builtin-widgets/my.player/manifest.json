@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "id": "my.player",
+  "name": "Плеер",
+  "description": "Текущий трек (MPRIS) и кнопки управления",
+  "version": "1.0.0",
+  "author": "built-in",
+  "icon": "music_note",
+  "entry": "Main.qml",
+  "size": {
+    "min": "1x2",
+    "max": "2x4",
+    "default": "2x4"
+  },
+  "settings": [
+    { "key": "showArt", "type": "bool", "label": "Показывать обложку", "default": true }
+  ]
+}

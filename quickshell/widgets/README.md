@@ -206,7 +206,7 @@ quickshell/
     tools/build-shaders.sh
     docs/WIDGET_AUTHORING.md
   builtin-widgets/            my.clock, my.note, my.color, my.allowed,
-                              my.palette, my.switch
+                              my.palette, my.switch, my.player
   materials/                  solid/transparent/gradient/grain/glass/liquid
 ```
 

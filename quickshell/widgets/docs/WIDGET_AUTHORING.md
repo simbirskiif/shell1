@@ -203,4 +203,5 @@ Item {
 - `my.color` — фиксированный размер;
 - `my.allowed` — только `size.allowed`;
 - `my.palette` — системная палитра (виджет мог бы игнорировать её);
-- `my.switch` — bool-настройка и `ctx.setSetting`.
+- `my.switch` — bool-настройка и `ctx.setSetting`;
+- `my.player` — MPRIS-плеер, обложка, `ctx.backdrop` и системная палитра.
