@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Widgets
 import "../singletons"
 
 // Общая оболочка нижних всплывашек: окно-оверлей внизу экрана, выезд снизу,
@@ -83,7 +84,11 @@ PanelWindow {
         onTriggered: root.keepingAlive = false
     }
 
-    Rectangle {
+    // Скругление должно обрезать и содержимое (полоску уровня), поэтому это
+    // ClippingRectangle, а не Rectangle с clip: обычный clip режет по
+    // прямоугольнику, и на нижних скруглённых углах торчали квадратные углы
+    // полоски.
+    ClippingRectangle {
         id: card
 
         anchors.horizontalCenter: parent.horizontalCenter
@@ -91,7 +96,7 @@ PanelWindow {
         width: root.cardWidth
         height: root.cardHeight
         radius: 14
-        clip: true
+        contentInsideBorder: false
         color: Theme.quickBackground
         border.width: 1
         border.color: Theme.quickBorder
