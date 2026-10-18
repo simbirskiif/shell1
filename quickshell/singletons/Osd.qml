@@ -40,6 +40,11 @@ Singleton {
         root.shown = false;
     }
 
+    // В заголовке — имя источника, а не слово «громкость».
+    function sourceName(name, fallback) {
+        return (name === undefined || name === null || name === "") ? fallback : name;
+    }
+
     function copyMap(map) {
         const next = {};
         for (const key in map)
@@ -66,19 +71,23 @@ Singleton {
         target: AudioService
 
         function onOutputVolumeChanged() {
-            root.show("volume", "Громкость", AudioService.outputVolume, AudioService.outputMuted);
+            root.show("volume", root.sourceName(AudioService.outputName, "Speakers"),
+                      AudioService.outputVolume, AudioService.outputMuted);
         }
 
         function onOutputMutedChanged() {
-            root.show("volume", "Громкость", AudioService.outputVolume, AudioService.outputMuted);
+            root.show("volume", root.sourceName(AudioService.outputName, "Speakers"),
+                      AudioService.outputVolume, AudioService.outputMuted);
         }
 
         function onInputVolumeChanged() {
-            root.show("input", "Микрофон", AudioService.inputVolume, AudioService.inputMuted);
+            root.show("input", root.sourceName(AudioService.inputName, "Microphone"),
+                      AudioService.inputVolume, AudioService.inputMuted);
         }
 
         function onInputMutedChanged() {
-            root.show("input", "Микрофон", AudioService.inputVolume, AudioService.inputMuted);
+            root.show("input", root.sourceName(AudioService.inputName, "Microphone"),
+                      AudioService.inputVolume, AudioService.inputMuted);
         }
     }
 
@@ -109,7 +118,7 @@ Singleton {
             if (changedKey === "")
                 return;
             const target = BrightnessService.targetByKey(changedKey);
-            root.show("brightness", target !== null ? "Яркость · " + target.label : "Яркость",
+            root.show("brightness", root.sourceName(target !== null ? target.label : "", "Brightness"),
                       values[changedKey], false);
         }
     }
