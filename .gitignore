@@ -3,3 +3,7 @@
 
 # Временный каталог зондов для проверки API Quickshell.
 .probe/
+
+# Python-байткод helper'а Bluetooth.
+__pycache__/
+*.pyc

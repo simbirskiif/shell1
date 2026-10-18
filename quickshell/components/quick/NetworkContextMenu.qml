@@ -22,9 +22,15 @@ Item {
     readonly property bool confirming: NetworkService.forgetPending !== ""
     readonly property bool open: UiState.menuNetwork !== ""
 
-    // Высота карточки: пункты меню или подтверждение удаления.
-    readonly property real cardHeight: (confirming ? confirmItem.implicitHeight
-                                                   : column.implicitHeight) + 8
+    // Высота карточки. Считаем по колонке целиком: она сама учитывает
+    // состояние — скрытые пункты имеют height 0, а блок подтверждения свою
+    // высоту. Прежний вариант брал при подтверждении только confirmItem и
+    // ЗАБЫВАЛ заголовок с именем и зарядом, который остаётся видимым: карточка
+    // выходила на ~50 px ниже, и кнопки «Отмена»/«Удалить» оказывались за её
+    // пределами.
+    readonly property real cardHeight: column.implicitHeight + 8
+    // То же, что в меню Bluetooth: окно берёт высоту карточки целиком.
+    readonly property real maxCardHeight: cardHeight
 
     visible: open
 

@@ -110,6 +110,28 @@ Singleton {
         menuNetwork = "";
     }
 
+    // Показывать ли в панели Bluetooth устройства без имени (только MAC).
+    // Состояние в UiState, а не в панели: панель пересоздаётся при уходе
+    // из вкладки, и раскрытый список должен сохраниться.
+    property bool btShowUnnamed: false
+
+    // Контекстное меню Bluetooth-устройства: адрес устройства и где показать.
+    // Адрес, а не имя: у нового устройства имя может быть пустым, и два
+    // устройства могут называться одинаково.
+    property string menuDeviceAddress: ""
+    property real menuDeviceX: 0
+    property real menuDeviceY: 0
+
+    function openDeviceMenu(address, x, y) {
+        menuDeviceAddress = address;
+        menuDeviceX = x;
+        menuDeviceY = y;
+    }
+
+    function closeDeviceMenu() {
+        menuDeviceAddress = "";
+    }
+
     // --- жест «назад» двумя пальцами -----------------------------------
     // swipe: 0..1 — насколько вернулись назад (1 — снова сетка плиток).
     // Палец не двигает прогресс напрямую: за ним тянется пружина, поэтому

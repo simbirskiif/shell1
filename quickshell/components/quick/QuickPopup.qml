@@ -79,13 +79,14 @@ PopupWindow {
     // карточка. В остальное время окно едет за той же целью, что и карточка,
     // своей m3-анимацией: поэтому запас снимается плавно, а не одним
     // прыжком, и контент в конце жеста никуда не дёргается.
-    // Окно растёт ещё и под контекстное меню сети: оно живёт в этом же окне
+    // Окно растёт ещё и под контекстное меню: оно живёт в этом же окне
     // (попап рисуется поверх layer-shell поверхностей) и должно помещаться
     // целиком, иначе карточка обрежется. Запас нужен только пока меню
     // открыто: у закрытого меню высота всё равно посчитана, и окно было бы
     // всегда выше карточки на эту величину — в полосе под ней клик мимо не
     // закрывал бы попап.
-    readonly property real menuRoom: contextMenu.open ? contextMenu.cardHeight : 0
+    readonly property real menuRoom: Math.max(contextMenu.open ? contextMenu.maxCardHeight : 0,
+                                              bluetoothContextMenu.open ? bluetoothContextMenu.maxCardHeight : 0)
 
     implicitHeight: Math.min((panelItem.gestureSizing
         ? panelItem.gestureRoom
@@ -103,6 +104,12 @@ PopupWindow {
         // внутри жеста поверхность не меняется. Выключать её нельзя: запись
         // проскакивает мимо ещё выключенного Behavior, и запас снимается
         // одним прыжком — контент от этого и дёргался.
+        //
+        // Исключение — открытое контекстное меню: его карточка появляется
+        // сразу, и при анимированном росте окна её низ (вместе с кнопками
+        // подтверждения) успевал обрезаться. Пока меню открыто, высота окна
+        // меняется мгновенно.
+        enabled: !(contextMenu.open || bluetoothContextMenu.open)
         MotionNumber {
             duration: Theme.motionMedium2
             curve: Theme.curveEmphasized
@@ -173,6 +180,14 @@ PopupWindow {
     // карточки, потому что объявлено после неё.
     NetworkContextMenu {
         id: contextMenu
+        width: parent.width
+        height: root.implicitHeight
+        y: card.height + 4
+    }
+
+    // Контекстное меню Bluetooth-устройства (правый клик по строке).
+    BluetoothContextMenu {
+        id: bluetoothContextMenu
         width: parent.width
         height: root.implicitHeight
         y: card.height + 4

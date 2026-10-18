@@ -10,3 +10,6 @@ singleton Osd 1.0 Osd.qml
 singleton NetworkService 1.0 NetworkService.qml
 singleton NotificationService 1.0 NotificationService.qml
 singleton PowerService 1.0 PowerService.qml
+singleton BluetoothBackend 1.0 BluetoothBackend.qml
+BluetoothDeviceList 1.0 BluetoothDeviceList.qml
+BluetoothHelperHost 1.0 BluetoothHelperHost.qml

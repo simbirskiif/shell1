@@ -535,8 +535,8 @@ Item {
         readonly property string key: "bluetooth"
         readonly property string title: "Bluetooth"
         readonly property string icon: "\uf293"
-        readonly property bool active: MockState.bluetoothEnabled
-        readonly property string subtitle: MockState.bluetoothSummary
+        readonly property bool active: BluetoothBackend.enabled
+        readonly property string subtitle: BluetoothBackend.connectedSummary
         readonly property Component view: Component { PanelBluetooth {} }
 
         function open() {
@@ -544,7 +544,7 @@ Item {
         }
 
         function toggle() {
-            MockState.toggleBluetooth();
+            BluetoothBackend.toggleEnabled();
         }
     }
 

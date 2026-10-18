@@ -100,6 +100,12 @@ PanelWindow {
         dialogScreen: root.screen
     }
 
+    // Запрос BlueZ-агента (PIN/passkey/подтверждение): отдельная поверхность,
+    // потому что попап не может забрать клавиатурный фокус.
+    BluetoothPinDialog {
+        dialogScreen: root.screen
+    }
+
 
     Component {
         id: notificationsItem
@@ -125,7 +131,7 @@ PanelWindow {
         id: statusItem
 
         ControlButton {
-            bluetoothEnabled: MockState.bluetoothEnabled
+            bluetoothEnabled: BluetoothBackend.enabled
             wifiEnabled: NetworkService.wifiEnabled
             wifiConnected: NetworkService.wifiConnected
             wifiSignal: NetworkService.connectedSignal

@@ -11,6 +11,12 @@ import "singletons"
 ShellRoot {
     id: shellRoot
 
+    // Владелец процесса BlueZ-helper'а: Process должен жить в дереве оболочки
+    // (внутри синглтона он не запускается). Сразу подключаем его к бэкенду.
+    BluetoothHelperHost {
+        id: bluetoothHelperHost
+    }
+
     Variants {
         model: Quickshell.screens
 
@@ -219,7 +225,7 @@ ShellRoot {
         }
 
         function toggleBluetooth(): string {
-            MockState.toggleBluetooth();
+            BluetoothBackend.toggleEnabled();
             return state();
         }
 
@@ -351,14 +357,14 @@ ShellRoot {
         }
 
         function discoverable(): string {
-            MockState.toggleDiscoverable();
+            BluetoothBackend.toggleDiscoverable();
             return state();
         }
 
         // Заново запустить поиск сетей и устройств.
         function rescan(): string {
             NetworkService.scanWifi();
-            MockState.scanBluetooth();
+            BluetoothBackend.startScan();
             return state();
         }
 
@@ -616,13 +622,15 @@ ShellRoot {
             return state();
         }
 
-        function addDevice(): string {
-            MockState.addBluetoothDevice();
+        // Включить/выключить видимость Bluetooth-адаптера.
+        function bluetoothDiscoverable(): string {
+            BluetoothBackend.toggleDiscoverable();
             return state();
         }
 
-        function removeDevice(): string {
-            MockState.removeBluetoothDevice();
+        // Запустить/остановить поиск Bluetooth-устройств.
+        function bluetoothScan(): string {
+            BluetoothBackend.toggleScan();
             return state();
         }
 
@@ -662,20 +670,21 @@ ShellRoot {
                              ? (NetworkService.internetViaEthernet ? "active" : "idle") : "off")
                 + " ethName=" + (NetworkService.ethernetName || "-")
                 + " ethSpeed=" + (NetworkService.ethernetSpeed || "-")
-                + " scanning=" + (NetworkService.wifiScanning || MockState.bluetoothScanning)
+                + " scanning=" + (NetworkService.wifiScanning || BluetoothBackend.scanning)
                 + " swipe=" + UiState.swipe.toFixed(2)
                 + " pending=" + (NetworkService.pendingNetwork === "" ? "no" : NetworkService.pendingNetwork)
-                + " connecting=" + (NetworkService.connectingName || MockState.connectingDevice || "no")
+                + " connecting=" + (NetworkService.connectingName || BluetoothBackend.busyAddress || "no")
                 + " err=" + (NetworkService.connectError || "-")
                 + " connectivity=" + NetworkService.connectivity
                 + " backend=" + (NetworkService.backendAvailable ? "ok" : "down")
                 + " radio=" + (NetworkService.wifiEnabled ? "on" : "off")
                 + " hwblock=" + (NetworkService.wifiHardBlocked ? "yes" : "no")
-                + " discoverable=" + (MockState.bluetoothDiscoverable ? "on" : "off")
+                + " discoverable=" + (BluetoothBackend.discoverable ? "on" : "off")
                 + " wifi=" + NetworkService.wifiNetworks.count
                 + " saved=" + NetworkService.savedWifiNetworks.count
                 + " ssid=" + (NetworkService.connectedSsid || "-")
-                + " devices=" + MockState.bluetoothDevices.count;
+                + " paired=" + BluetoothBackend.pairedDevices.count
+                + " devices=" + BluetoothBackend.newDevices.count;
         }
     }
 }
