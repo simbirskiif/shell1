@@ -54,22 +54,39 @@ Singleton {
     // Виджеты используют тот же Wal-акцент и нейтральную базу, что панели
     // оболочки, поэтому рабочий стол не выбивается из оформления.
     readonly property bool isDark: root.relativeLuminance(Wal.background) < 0.55
-    readonly property color widgetSurface:
-        withAlpha(mix(neutralSurface, Wal.background, 0.07), 0.97)
-
+    // Системная палитра для виджетов. Роли совпадают с токенами панелей
+    // оболочки (quick*), поэтому карточки и правые панели выглядят как части
+    // одного интерфейса. Акцент всегда приходит из Wal, а не из виджета.
     readonly property var colors: ({
-        surface: root.widgetSurface,
-        onSurface: Wal.foreground,
-        surfaceVariant: mix(neutralSurface, Wal.foreground, 0.10),
-        onSurfaceVariant: withAlpha(Wal.foreground, 0.65),
+        surface: root.quickBackground,
+        onSurface: root.quickText,
+        surfaceVariant: root.quickTile,
+        onSurfaceVariant: root.quickTextDim,
         primary: Wal.accent,
         onPrimary: root.relativeLuminance(Wal.accent) > 0.55 ? "#151519" : "#ffffff",
-        primaryContainer: mix(neutralSurface, Wal.accent, 0.22),
-        onPrimaryContainer: Wal.foreground,
-        secondary: mix(neutralSurface, Wal.accent, 0.10),
-        onSecondary: Wal.foreground,
-        tertiary: mix(Wal.background, Wal.accent, 0.35),
-        outline: withAlpha(Wal.foreground, 0.18),
+        primaryContainer: root.quickTileActive,
+        onPrimaryContainer: root.quickText,
+        secondary: root.quickTileHover,
+        onSecondary: root.quickText,
+        tertiary: root.quickSwitchOff,
+        outline: root.quickBorder,
+        error: lowColor
+    })
+
+    // Нейтральный системный вариант: без акцента, только база/текст.
+    readonly property var neutralColors: ({
+        surface: root.quickBackground,
+        onSurface: root.quickText,
+        surfaceVariant: root.quickTile,
+        onSurfaceVariant: root.quickTextDim,
+        primary: root.quickText,
+        onPrimary: root.neutralSurface,
+        primaryContainer: root.quickTileHover,
+        onPrimaryContainer: root.quickText,
+        secondary: root.quickTile,
+        onSecondary: root.quickText,
+        tertiary: root.quickSwitchOff,
+        outline: root.quickBorder,
         error: lowColor
     })
 
@@ -84,20 +101,8 @@ Singleton {
              + 0.0722 * channel(color.b)
     }
 
-    function colorsFor(mode, widget) {
-        if (mode !== "widget" || !widget || !widget.palette)
-            return root.colors
-        const scheme = root.isDark ? widget.palette.dark : widget.palette.light
-        if (!scheme || typeof scheme !== "object")
-            return root.colors
-        const merged = ({})
-        for (const key in root.colors)
-            merged[key] = root.colors[key]
-        for (const key in scheme) {
-            if (typeof scheme[key] === "string" && scheme[key].length > 0)
-                merged[key] = scheme[key]
-        }
-        return merged
+    function colorsFor(mode) {
+        return mode === "neutral" ? root.neutralColors : root.colors
     }
 
     // Панели быстрых настроек намеренно почти нейтральные: тёмная база

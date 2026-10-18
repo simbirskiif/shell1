@@ -399,7 +399,9 @@ Singleton {
         const instance = root.findInstance(uid)
         if (!instance)
             return
-        instance.colorMode = (mode === "accent" || mode === "widget") ? mode : null
+        if (mode === "widget")
+            mode = "neutral"
+        instance.colorMode = (mode === "accent" || mode === "neutral") ? mode : null
         console.info("[widgets/layout] режим цвета " + uid + " = "
                      + (instance.colorMode || "default"))
         root.instanceChanged(uid)
@@ -653,7 +655,9 @@ Singleton {
             copy.name = typeof copy.name === "string" ? copy.name : copy.id
             copy.settings = copy.settings || ({})
             copy.material = typeof copy.material === "string" ? copy.material : null
-            copy.colorMode = (copy.colorMode === "accent" || copy.colorMode === "widget")
+            if (copy.colorMode === "widget")
+                copy.colorMode = "neutral"
+            copy.colorMode = (copy.colorMode === "accent" || copy.colorMode === "neutral")
                             ? copy.colorMode : null
             copy.uid = typeof copy.uid === "string" && copy.uid.length > 0
                      ? copy.uid : root.newUid()

@@ -87,7 +87,8 @@ Singleton {
 
     // --- Значения по умолчанию для экземпляров (раздел 6 ТЗ) ---
     readonly property string defaultMaterial: adapter.defaults.material
-    readonly property string defaultColorMode: adapter.defaults.colorMode
+    readonly property string defaultColorMode:
+        adapter.defaults.colorMode === "neutral" ? "neutral" : "accent"
 
     // Глобальные параметры виджетов. Экземпляр может переопределить любой
     // из них, выбрав «По умолчанию» в своих настройках.
@@ -102,7 +103,9 @@ Singleton {
     }
 
     function setDefaultColorMode(mode: string): bool {
-        if (mode !== "accent" && mode !== "widget")
+        if (mode === "widget")
+            mode = "neutral"
+        if (mode !== "accent" && mode !== "neutral")
             return false
         adapter.defaults.colorMode = mode
         configFile.writeAdapter()

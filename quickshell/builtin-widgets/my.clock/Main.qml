@@ -19,6 +19,7 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             color: root.ctx.colors.onSurface
+            font.family: root.ctx.fontFamily
             font.pixelSize: Math.max(14, Math.round(root.ctx.dp
                 * (root.ctx.sizeClass === "compact" ? 26 : 42)))
             font.bold: true
@@ -29,6 +30,7 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             color: root.ctx.colors.onSurfaceVariant
+            font.family: root.ctx.fontFamily
             font.pixelSize: Math.max(10, Math.round(root.ctx.dp * 11))
             text: Qt.formatDate(clock.date, "ddd, d MMM")
         }

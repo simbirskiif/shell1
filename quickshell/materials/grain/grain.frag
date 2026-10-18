@@ -36,5 +36,10 @@ void main() {
                  - smoothstep(-aa, aa, d);
     color = mix(color, ubuf.outline.rgb, clamp(border, 0.0, 1.0) * 0.35);
 
+    // За пределами скругления не оставляем даже нулевой по альфе цвет:
+    // иначе на некоторых композиторах углы шейдера читаются квадратом.
+    if (alpha <= 0.001)
+        discard;
+
     fragColor = vec4(color, alpha) * ubuf.qt_Opacity;
 }

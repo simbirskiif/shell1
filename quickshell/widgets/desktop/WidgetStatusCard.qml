@@ -27,6 +27,7 @@ Item {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             color: Theme.colors.error
+            font.family: Theme.fontFamily
             font.pixelSize: root.compact ? 12 : 16
             text: root.icon
         }
@@ -34,7 +35,8 @@ Item {
         Text {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            color: Theme.colors.onSurface
+            color: Theme.quickText
+            font.family: Theme.fontFamily
             font.pixelSize: root.compact ? 9 : 12
             font.bold: true
             elide: Text.ElideRight
@@ -45,7 +47,8 @@ Item {
             width: parent.width
             visible: !root.compact && root.message.length > 0
             horizontalAlignment: Text.AlignHCenter
-            color: Theme.colors.onSurfaceVariant
+            color: Theme.quickTextDim
+            font.family: Theme.fontFamily
             font.pixelSize: 10
             wrapMode: Text.WordWrap
             maximumLineCount: 3

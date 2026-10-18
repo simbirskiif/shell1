@@ -25,12 +25,14 @@ QtObject {
     property bool editing: false
     property bool preview: false
     property string screen: ""
+    property string fontFamilyData: Theme.fontFamily
 
-    // Палитра, уже разрешённая по режиму accent/widget и схеме shell.
+    // Палитра, уже разрешённая по режиму accent/neutral и схеме shell.
     property var colorsData: Theme.colors
 
     // --- Публичный контракт (только чтение для виджета) ---
     readonly property var colors: colorsData
+    readonly property string fontFamily: fontFamilyData
     readonly property bool isDark: Theme.isDark
     readonly property var settings: settingsData
 

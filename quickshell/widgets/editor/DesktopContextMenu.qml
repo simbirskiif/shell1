@@ -15,7 +15,7 @@ Item {
     signal action(string name)
 
     visible: root.opened
-    width: 236
+    width: 240
     height: menuColumn.implicitHeight + 12
     x: Math.max(12, Math.min(root.position.x, parent.width - root.width - 12))
     y: Math.max(12, Math.min(root.position.y, parent.height - root.height - 12))
@@ -48,10 +48,10 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 12
-        color: Theme.colors.surface
+        radius: Theme.quickRadius
+        color: Theme.menuSurface
         border.width: 1
-        border.color: Theme.colors.outline
+        border.color: Theme.menuBorder
         opacity: 0.98
     }
 
@@ -82,8 +82,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width
                         height: 1
-                        color: Theme.colors.outline
-                        opacity: 0.5
+                        color: Theme.quickSeparator
                     }
                 }
 
@@ -92,14 +91,15 @@ Item {
                     visible: !menuRow.modelData.separator
                     radius: 8
                     color: menuHover.containsMouse
-                           ? Theme.colors.primaryContainer : "transparent"
+                           ? Theme.quickTileHover : "transparent"
 
                     Text {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.leftMargin: 9
-                        color: Theme.colors.onSurface
+                        color: Theme.quickText
+                        font.family: Theme.fontFamily
                         font.pixelSize: 12
                         elide: Text.ElideRight
                         text: menuRow.modelData.label

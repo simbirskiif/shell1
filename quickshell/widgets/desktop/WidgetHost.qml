@@ -87,41 +87,35 @@ Item {
                                        ? root.metrics.pixelHeight(DragController.rows)
                                        : root.height
 
-    readonly property real padding: Math.round(root.metrics.cell * 0.12)
-    readonly property real materialRadius: Math.round(root.metrics.cell * 0.28)
+    readonly property real padding: Theme.quickPadding
+    readonly property real materialRadius: Theme.quickRadius
     // Смещение окна слоя внутри экрана: верхняя/боковая панель композитора.
     readonly property real screenOffsetX:
         root.screen ? Math.max(0, root.screen.width - root.metrics.areaWidth) : 0
     readonly property real screenOffsetY:
         root.screen ? Math.max(0, root.screen.height - root.metrics.areaHeight) : 0
 
+    // Палитру и материал назначает система. Виджет получает готовые
+    // ctx.colors/ctx.material; манифест не может сузить выбор. Если автору
+    // нужны собственные цвета, он просто не использует ctx.colors.
     readonly property string effectiveColorMode: {
-        const requested = root.instanceColorMode.length > 0
-                        ? root.instanceColorMode : Config.defaultColorMode
-        const modes = root.widget ? root.widget.colorModes : ["accent", "widget"]
-        if (modes.length === 0)
-            return "accent"
-        return modes.indexOf(requested) >= 0 ? requested : modes[0]
+        let requested = root.instanceColorMode.length > 0
+                      ? root.instanceColorMode : Config.defaultColorMode
+        if (requested === "widget")
+            requested = "neutral"
+        return requested === "neutral" ? "neutral" : "accent"
     }
 
     readonly property var effectiveColors:
-        Theme.colorsFor(root.effectiveColorMode, root.widget)
+        Theme.colorsFor(root.effectiveColorMode)
 
     readonly property string effectiveMaterial: {
         const requested = root.instanceMaterial.length > 0
                         ? root.instanceMaterial : Config.defaultMaterial
-        const allowed = root.widget && root.widget.materials
-                      ? root.widget.materials : ["any"]
-        const permits = function(id) {
-            return allowed.indexOf("any") >= 0 || allowed.indexOf(id) >= 0
-        }
-
-        if (permits(requested) && MaterialRegistry.materialById(requested))
+        if (MaterialRegistry.materialById(requested))
             return requested
-        for (const id of allowed) {
-            if (id !== "any" && MaterialRegistry.materialById(id))
-                return id
-        }
+        if (MaterialRegistry.materialById("glass"))
+            return "glass"
         if (MaterialRegistry.materialById("solid"))
             return "solid"
         return MaterialRegistry.materials.length > 0
@@ -280,6 +274,7 @@ Item {
         editing: root.editing
         preview: root.preview
         screen: root.screen ? root.screen.name : ""
+        fontFamilyData: Theme.fontFamily
 
         onSettingRequested: (key, value) => {
             if (root.instance)
@@ -480,7 +475,7 @@ Item {
 
         ShapePath {
             fillColor: "transparent"
-            strokeColor: "#4CAF50"
+            strokeColor: Theme.chargeColor
             strokeWidth: 2
             capStyle: ShapePath.FlatCap
             joinStyle: ShapePath.RoundJoin

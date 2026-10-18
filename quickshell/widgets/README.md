@@ -42,9 +42,9 @@ qs ipc -p /home/adm_a/shell/quickshell call widgets addPath /path/to/widgets
 - `PanelWindow` на слое `Bottom`, `exclusionMode: Normal`,
   `exclusiveZone: 0`. Композитор ужимает поверхность под панели, сетка
   считается по фактическому размеру окна. В редакторе **то же самое окно**
-  переходит в режим `Overlay` (фокус `OnDemand`, полная маска ввода), но сетка
-  сохраняет размеры обычного слоя (`stableWidth/Height`), поэтому раскладка не
-  меняется. Отдельного окна/слоя у редактора, меню и настроек нет.
+  поднимается в `Overlay` (фокус `OnDemand`, полная маска ввода), но
+  `exclusionMode`/размер не меняются: окно остаётся ниже бара. Отдельного
+  окна/слоя у редактора, меню и настроек нет; затемнения экрана тоже нет.
 - Область ввода покрывает весь рабочий стол: это единственный слой виджетов,
   поэтому ПКМ по пустому месту открывает контекстное меню, а не уходит в
   другое окно. Клики по окнам выше слоя не затрагиваются.
@@ -69,7 +69,7 @@ qs ipc -p /home/adm_a/shell/quickshell call widgets addPath /path/to/widgets
   `width/height`, `cell`, `dp`, `sizeClass`, `material`, `editing`,
   `preview`, `screen`, `settings`, `setSetting()`.
 - Настройки из `manifest.settings` (`bool/string/int/real/enum/color`) — в
-  попапе ⚙; значения сохраняются в layout.
+  правой панели ⚙ на всю высоту; значения сохраняются в layout.
 - Пропавший с диска виджет → плейсхолдер с удалением.
 - Горячая правка QML: `FileView` на файлах виджета, перезагрузка только его
   экземпляров через cache-busting URL; чужие экземпляры не трогаются.
@@ -79,8 +79,9 @@ qs ipc -p /home/adm_a/shell/quickshell call widgets addPath /path/to/widgets
 - `ctx.colors` — Material-роли из общего `Theme`: `surface`, `onSurface`,
   `surfaceVariant`, `onSurfaceVariant`, `primary`, `onPrimary`,
   `primaryContainer`, `onPrimaryContainer`, `secondary`, `onSecondary`,
-  `tertiary`, `outline`, `error`. В `accent` это палитра shell, в `widget` —
-  палитра из `manifest.palette` с подстановкой недостающих ролей.
+  `tertiary`, `outline`, `error`. Палитру назначает система: `accent` (Wal)
+  или `neutral`. Виджет не объявляет свою палитру; если автору нужны
+  собственные цвета, он может просто не использовать `ctx.colors`.
 - `MaterialRegistry`: пользовательские материалы
   `$XDG_CONFIG_HOME/quickshell/widgets/materials` и встроенные
   `<shellDir>/materials`, приоритет у пользовательских.
@@ -92,10 +93,11 @@ qs ipc -p /home/adm_a/shell/quickshell call widgets addPath /path/to/widgets
   (`defaults.material`, `defaults.colorMode`). Экземпляр может переопределить
   их и вернуться к глобальному значению кнопкой «По умолчанию» в своих
   настройках.
-- Ограничение выбора — `materials`/`colorModes` манифеста. Смена материала или
-  цвета не перезагружает контент виджета.
-- Радиус всех карточек — `0.28·cell`; по умолчанию все встроенные виджеты
-  используют один материал (`glass`).
+- Материал тоже назначает система; `materials`/`colorModes`/`palette` из
+  манифеста больше не участвуют в выборе (оставлены только для обратной
+  совместимости чтения). Смена материала или цвета не перезагружает контент.
+- Радиус всех карточек — `Theme.quickRadius` (как у панелей оболочки); по
+  умолчанию используется `glass`.
 
 ### Раскладка
 
@@ -115,7 +117,8 @@ qs ipc -p /home/adm_a/shell/quickshell call widgets addPath /path/to/widgets
   больше нет) или IPC `edit toggle`. То же меню: «Добавить виджет…»,
   «Параметры виджетов…», «Готово», «Отмена».
 - Редактор — режим основного слоя: `Overlay`, `OnDemand`-фокус, полная маска
-  ввода, затемнение. Меню, каталог и настройки — `Item` внутри этого же окна.
+  ввода, **без затемнения**. Размер/позиция окна не меняются, бар остаётся
+  сверху. Меню, каталог и настройки — `Item` внутри этого же окна.
 - Выделение — **зелёный скруглённый контур по форме карточки**, без квадратной
   рамки и без квадратных ручек. Клик выбирает виджет; тянуть за контур —
   менять размер, за середину — перемещать.
@@ -135,9 +138,11 @@ qs ipc -p /home/adm_a/shell/quickshell call widgets addPath /path/to/widgets
   «Добавить папку…» (`Config.addExtraPath` пишет `config.json`).
 - Пикер при добавлении/переносе уходит вправо и растворяется; при drag —
   полупрозрачный.
-- ⚙ открывает `WidgetSettingsPopup`: материал, режим цвета (у обоих есть
-  «По умолчанию»), поля `settings`, «Сбросить», «Удалить», «Закрыть».
-  После закрытия/удаления попап полностью исчезает, а не оставляет пустое окно.
+- ⚙ открывает `WidgetSettingsPopup` справа на всю высоту: материал, режим
+  цвета (у обоих есть «По умолчанию»), поля `settings`, «Сбросить», «Удалить»,
+  «Закрыть». После закрытия/удаления панель полностью исчезает.
+- Каталог виджетов тоже открывается справа на всю высоту, как панели
+  оболочки.
 - «Параметры виджетов…» в ПКМ-меню открывает `WidgetsGlobalPopup`: материал и
   цвет по умолчанию для всех экземпляров, сброс переопределений. Это тот же
   слой, отдельного окна нет.
@@ -182,7 +187,7 @@ quickshell/
     core/                     Config, Registry, LayoutStore, Theme-роли, IPC
     desktop/                  DesktopLayer, WidgetHost, GridOverlay
     editor/                   DragController, PickerState, Picker, Settings,
-                              DesktopContextMenu, WidgetsGlobalPopup
+                              SidePanel, DesktopContextMenu, WidgetsGlobalPopup
     tools/build-shaders.sh
     docs/WIDGET_AUTHORING.md
   builtin-widgets/            my.clock, my.note, my.color, my.allowed,

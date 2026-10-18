@@ -12,12 +12,6 @@
     "max": "1x1",
     "default": "1x1"
   },
-  "materials": [
-    "any"
-  ],
-  "colorModes": [
-    "accent"
-  ],
   "settings": [
     {
       "key": "enabled",

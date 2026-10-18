@@ -40,10 +40,10 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 10
-        color: Theme.colors.surface
+        radius: 12
+        color: Theme.quickTile
         border.width: 1
-        border.color: mouse.containsMouse ? Theme.colors.primary : Theme.colors.outline
+        border.color: mouse.containsMouse ? Theme.colors.primary : Theme.quickBorder
         opacity: root.dragging ? 0.5 : 1
     }
 
@@ -72,7 +72,8 @@ Item {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.margins: 6
-        color: Theme.colors.onSurface
+        color: Theme.quickText
+        font.family: Theme.fontFamily
         font.pixelSize: 11
         elide: Text.ElideRight
         text: root.widget ? root.widget.name : ""
@@ -90,7 +91,7 @@ Item {
         id: previewContext
 
         settingsData: root.defaultSettings()
-        colorsData: Theme.colorsFor(root.previewColorMode, root.widget)
+        colorsData: Theme.colorsFor(root.previewColorMode)
         rows: root.defaultSize.rows
         cols: root.defaultSize.cols
         width: root.contentWidth
@@ -104,12 +105,8 @@ Item {
         screen: root.screenName
     }
 
-    readonly property string previewColorMode: {
-        if (!root.widget || !root.widget.colorModes || root.widget.colorModes.length === 0)
-            return "accent"
-        return root.widget.colorModes.indexOf(Config.defaultColorMode) >= 0
-             ? Config.defaultColorMode : root.widget.colorModes[0]
-    }
+    readonly property string previewColorMode:
+        Config.defaultColorMode === "neutral" ? "neutral" : "accent"
 
     function defaultSettings(): var {
         const values = ({})

@@ -20,8 +20,8 @@ Singleton {
     // --- Публичное состояние ---
     // Массив описаний валидных виджетов. Каждый элемент:
     // { id, name, description, version, author, icon, dir, manifestPath,
-    //   entryPath, entryUrl, sizeSpec, settingsSchema, materials, colorModes,
-    //   palette, builtin, files, fingerprint, manifest }
+    //   entryPath, entryUrl, sizeSpec, settingsSchema, builtin, files,
+    //   fingerprint, manifest }
     property var widgets: []
     // Невалидные манифесты: { dir, name, manifestPath, error }.
     property var problems: []
@@ -430,29 +430,6 @@ Singleton {
         if (errors.length > 0)
             return { ok: false, errors: errors }
 
-        let colorModes = ["accent", "widget"]
-        if (Array.isArray(manifest.colorModes)) {
-            const filtered = []
-            for (const mode of manifest.colorModes) {
-                if ((mode === "accent" || mode === "widget")
-                    && filtered.indexOf(mode) < 0)
-                    filtered.push(mode)
-            }
-            if (filtered.length > 0)
-                colorModes = filtered
-        }
-
-        let materials = ["any"]
-        if (Array.isArray(manifest.materials) && manifest.materials.length > 0) {
-            const filtered = []
-            for (const material of manifest.materials) {
-                if (typeof material === "string" && filtered.indexOf(material) < 0)
-                    filtered.push(material)
-            }
-            if (filtered.length > 0)
-                materials = filtered
-        }
-
         const settings = root.parseSettings(manifest.settings, id)
 
         return {
@@ -470,9 +447,6 @@ Singleton {
                 entryUrl: root.pathToUrl(entryPath),
                 sizeSpec: size.spec,
                 settingsSchema: settings,
-                materials: materials,
-                colorModes: colorModes,
-                palette: (manifest.palette && typeof manifest.palette === "object") ? manifest.palette : null,
                 builtin: root.isUnder(root.builtinRoot, raw.dir),
                 manifest: manifest
             }

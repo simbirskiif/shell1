@@ -53,7 +53,9 @@ Item {
         property real radius: root.radius
         property color tint: root.colors.surface || "#1C1B1F"
         property color outline: root.colors.outline || "#938F99"
-        property real tintOpacity: root.hasWallpaper ? 0.32 : 0.90
+        // Плотность тонировки близка к панелям оболочки: обои остаются
+        // лёгким оттенком, а не превращают карточку в отдельное стекло.
+        property real tintOpacity: root.hasWallpaper ? 0.72 : 0.94
         property real blur: root.blurPx
 
         fragmentShader: "glass.frag.qsb"

@@ -12,13 +12,6 @@
     "max": "2x4",
     "default": "1x2"
   },
-  "materials": [
-    "any"
-  ],
-  "colorModes": [
-    "accent",
-    "widget"
-  ],
   "settings": [
     {
       "key": "format24",

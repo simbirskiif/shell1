@@ -5,3 +5,4 @@ WidgetSettingsPopup 1.0 WidgetSettingsPopup.qml
 WidgetPreviewCard 1.0 WidgetPreviewCard.qml
 WidgetsGlobalPopup 1.0 WidgetsGlobalPopup.qml
 DesktopContextMenu 1.0 DesktopContextMenu.qml
+SidePanel 1.0 SidePanel.qml

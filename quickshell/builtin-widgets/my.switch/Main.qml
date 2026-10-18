@@ -10,6 +10,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         color: root.ctx.colors.onSurfaceVariant
+        font.family: root.ctx.fontFamily
         font.pixelSize: Math.max(9, Math.round(root.ctx.dp * 10))
         text: root.ctx.settings.enabled ? "вкл" : "выкл"
     }

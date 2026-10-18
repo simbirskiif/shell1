@@ -6,18 +6,18 @@ import "../core"
 
 // Глобальные параметры виджетов (материал и режим цвета по умолчанию).
 // Это тот же слой/окно рабочего стола, отдельного окна настроек нет.
-Item {
+SidePanel {
     id: root
 
     required property var screen
 
     property string message: ""
 
-    visible: EditorState.globalOpen
-             && root.screen !== null
-             && EditorState.uiScreen === root.screen.name
-    anchors.fill: parent
-    z: 132
+    opened: EditorState.globalOpen
+            && root.screen !== null
+            && EditorState.uiScreen === root.screen.name
+
+    onClosed: EditorState.closeGlobalSettings()
 
     function chooseMaterial(id: string): void {
         if (Config.setDefaultMaterial(id))
@@ -29,38 +29,19 @@ Item {
             root.message = "Цвет по умолчанию: " + mode
     }
 
-    Rectangle {
+    Column {
+        id: layout
+
         anchors.fill: parent
-        color: "#55000000"
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: EditorState.closeGlobalSettings()
-        }
-    }
-
-    Rectangle {
-        id: panel
-
-        anchors.centerIn: parent
-        width: Math.min(400, parent.width - 24)
-        height: Math.min(parent.height - 24, 380)
-        radius: 14
-        color: Theme.colors.surface
-        border.width: 1
-        border.color: Theme.colors.outline
-
-        Column {
-            anchors.fill: parent
-            anchors.margins: 14
-            spacing: 10
+        spacing: 10
 
             Row {
                 width: parent.width
 
                 Text {
                     width: parent.width - 34
-                    color: Theme.colors.onSurface
+                    color: Theme.quickText
+                    font.family: Theme.fontFamily
                     font.pixelSize: 16
                     font.bold: true
                     text: "Параметры виджетов"
@@ -74,7 +55,8 @@ Item {
 
             Text {
                 width: parent.width
-                color: Theme.colors.onSurfaceVariant
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
                 font.pixelSize: 11
                 wrapMode: Text.WordWrap
                 text: "Действуют для всех виджетов, пока экземпляр не переопределил "
@@ -82,7 +64,8 @@ Item {
             }
 
             Text {
-                color: Theme.colors.onSurfaceVariant
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
                 font.pixelSize: 11
                 text: "Материал по умолчанию"
             }
@@ -105,7 +88,8 @@ Item {
             }
 
             Text {
-                color: Theme.colors.onSurfaceVariant
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
                 font.pixelSize: 11
                 text: "Цвет по умолчанию"
             }
@@ -120,22 +104,23 @@ Item {
                 }
 
                 HostButton {
-                    text: "Палитра виджета"
-                    active: Config.defaultColorMode === "widget"
-                    onClicked: root.chooseColorMode("widget")
+                    text: "Нейтральная"
+                    active: Config.defaultColorMode === "neutral"
+                    onClicked: root.chooseColorMode("neutral")
                 }
             }
 
             Rectangle {
                 width: parent.width
                 height: 1
-                color: Theme.colors.outline
+                color: Theme.quickSeparator
                 opacity: 0.4
             }
 
             Text {
                 width: parent.width
-                color: Theme.colors.onSurfaceVariant
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
                 font.pixelSize: 11
                 wrapMode: Text.WordWrap
                 text: root.message.length > 0
@@ -169,4 +154,3 @@ Item {
             }
         }
     }
-}

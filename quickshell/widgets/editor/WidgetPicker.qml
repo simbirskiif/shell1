@@ -51,11 +51,10 @@ Item {
 
     visible: EditorState.pickerOpen && root.screen !== null
              && EditorState.uiScreen === root.screen.name
-    width: Math.min(360, parent.width - 24)
-    height: Math.min(parent.height - 24, 700)
-    anchors.right: parent.right
+    width: Math.min(Theme.quickWidth, parent.width)
     anchors.top: parent.top
-    anchors.margins: 12
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
     z: 120
 
     onVisibleChanged: {
@@ -110,15 +109,19 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 14
-        color: Theme.colors.surface
+        topLeftRadius: Theme.quickRadius
+        bottomLeftRadius: Theme.quickRadius
+        topRightRadius: 0
+        bottomRightRadius: 0
+        color: Theme.quickBackground
         border.width: 1
-        border.color: Theme.colors.outline
+        border.color: Theme.quickBorder
+        clip: true
     }
 
     Column {
         anchors.fill: parent
-        anchors.margins: 12
+        anchors.margins: Theme.quickPadding
         spacing: 8
 
         Row {
@@ -126,7 +129,8 @@ Item {
 
             Text {
                 width: parent.width - 30
-                color: Theme.colors.onSurface
+                color: Theme.quickText
+                font.family: Theme.fontFamily
                 font.pixelSize: 15
                 font.bold: true
                 text: "Виджеты"
@@ -144,7 +148,8 @@ Item {
             width: parent.width
             height: 30
             padding: 6
-            color: Theme.colors.onSurface
+            color: Theme.quickText
+            font.family: Theme.fontFamily
             font.pixelSize: 12
             selectionColor: Theme.colors.primary
             clip: true
@@ -160,7 +165,8 @@ Item {
                 anchors.leftMargin: 6
                 verticalAlignment: Text.AlignVCenter
                 visible: search.text.length === 0
-                color: Theme.colors.onSurfaceVariant
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
                 font.pixelSize: 12
                 text: "Поиск по имени или id"
             }
@@ -169,9 +175,8 @@ Item {
                 anchors.fill: parent
                 anchors.margins: -3
                 z: -1
-                radius: 7
-                color: Theme.colors.surfaceVariant
-                opacity: 0.4
+                radius: 8
+                color: Theme.quickTile
             }
         }
 
@@ -218,7 +223,8 @@ Item {
 
         Text {
             width: parent.width
-            color: Theme.colors.onSurfaceVariant
+            color: Theme.quickTextDim
+            font.family: Theme.fontFamily
             font.pixelSize: 11
             text: "Доступно: " + root.filtered.length
         }
@@ -227,7 +233,8 @@ Item {
             width: parent.width
             visible: root.message.length > 0
             color: root.message.indexOf("Нет места") >= 0
-                   ? Theme.colors.error : Theme.colors.onSurfaceVariant
+                   ? Theme.colors.error : Theme.quickTextDim
+            font.family: Theme.fontFamily
             font.pixelSize: 11
             wrapMode: Text.WordWrap
             text: root.message
@@ -236,12 +243,12 @@ Item {
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.colors.outline
-            opacity: 0.4
+            color: Theme.quickSeparator
         }
 
         Text {
-            color: Theme.colors.onSurfaceVariant
+            color: Theme.quickTextDim
+            font.family: Theme.fontFamily
             font.pixelSize: 11
             text: "Пользовательские пути"
         }
@@ -253,7 +260,8 @@ Item {
                 required property var modelData
 
                 width: parent.width
-                color: Theme.colors.onSurfaceVariant
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
                 font.pixelSize: 10
                 elide: Text.ElideMiddle
                 text: modelData
@@ -276,7 +284,8 @@ Item {
                 width: parent.width - 82
                 height: 28
                 padding: 4
-                color: Theme.colors.onSurface
+                color: Theme.quickText
+                font.family: Theme.fontFamily
                 font.pixelSize: 11
                 clip: true
                 selectionColor: Theme.colors.primary
@@ -285,7 +294,8 @@ Item {
                     anchors.fill: parent
                     verticalAlignment: Text.AlignVCenter
                     visible: pathInput.text.length === 0
-                    color: Theme.colors.onSurfaceVariant
+                    color: Theme.quickTextDim
+                    font.family: Theme.fontFamily
                     font.pixelSize: 10
                     text: "/путь/к/папке"
                 }

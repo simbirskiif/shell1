@@ -12,8 +12,9 @@ import "../editor"
 // область ввода покрывает весь рабочий стол — это единственный слой виджетов,
 // поэтому ПКМ по пустому месту открывает меню, а не уходит в другое окно.
 //
-// Редактирование — это режим того же PanelWindow (Overlay + OnDemand), а не
-// отдельное окно/слой. Меню, каталог и настройки — обычные Item внутри него.
+// Редактирование — это режим того же PanelWindow: размер и позиция не
+// меняются, бар остаётся сверху. Меню, каталог и настройки — обычные Item
+// внутри этого же окна, без второго окна и без затемнения всего экрана.
 // Экземпляр создаётся из shell.qml через Variants по Quickshell.screens.
 PanelWindow {
     id: root
@@ -25,10 +26,6 @@ PanelWindow {
     // раскладки/реестра, поэтому Repeater обновляет карточки.
     property var instances: []
     property var tray: []
-    // Геометрия обычного слоя (без бара). В редакторе окно становится на весь
-    // экран, но сетка должна остаться прежней.
-    property int stableWidth: 0
-    property int stableHeight: 0
     property var _maskRegions: []
     property bool _maskScheduled: false
 
@@ -44,11 +41,14 @@ PanelWindow {
 
     // Слой не резервирует место (exclusiveZone 0), но exclusionMode Normal
     // оставляет поверхность в свободной от чужих панелей области: композитор
-    // сам сдвигает её ниже бара, а GridMetrics считает сетку по фактическому
-    // размеру окна.
-    exclusionMode: root.editing ? ExclusionMode.Ignore : ExclusionMode.Normal
+    // сам сдвигает её ниже бара. Этот режим не меняется при входе в редактор,
+    // поэтому окно не прыгает по размеру и не перекрывает бар.
+    exclusionMode: ExclusionMode.Normal
     exclusiveZone: 0
 
+    // В обычном режиме — под окнами, в редакторе — поверх них. Это тот же
+    // PanelWindow и тот же namespace; второго окна/слоя для редактора нет.
+    // exclusionMode выше не меняется, поэтому размер остаётся прежним.
     WlrLayershell.layer: root.editing ? WlrLayer.Overlay : WlrLayer.Bottom
     WlrLayershell.namespace: "quickshell:widgets-desktop"
     WlrLayershell.keyboardFocus: root.editing
@@ -70,32 +70,14 @@ PanelWindow {
     GridMetrics {
         id: gridMetrics
         screen: root.screen
-        windowWidth: root.editing && root.stableWidth > 0 ? root.stableWidth : root.width
-        windowHeight: root.editing && root.stableHeight > 0 ? root.stableHeight : root.height
-    }
-
-    onWidthChanged: {
-        if (!root.editing && root.width > 0)
-            root.stableWidth = root.width
-    }
-
-    onHeightChanged: {
-        if (!root.editing && root.height > 0)
-            root.stableHeight = root.height
+        windowWidth: root.width
+        windowHeight: root.height
     }
 
     GridOverlay {
         anchors.fill: parent
         visible: root.debugGrid
         metrics: gridMetrics
-    }
-
-    // Затемнение под карточками: в редакторе сетка и виджеты читаются лучше.
-    Rectangle {
-        anchors.fill: parent
-        visible: root.editing
-        color: "#66000000"
-        z: 1
     }
 
     Repeater {
@@ -327,10 +309,10 @@ PanelWindow {
         anchors.margins: 12
         width: Math.min(280, parent.width - 24)
         height: Math.min(240, trayColumn.implicitHeight + 16)
-        radius: 12
-        color: Theme.colors.surface
+        radius: Theme.quickRadius
+        color: Theme.quickBackground
         border.width: 1
-        border.color: Theme.colors.outline
+        border.color: Theme.quickBorder
         visible: root.editing && root.tray.length > 0
         z: 95
 
@@ -342,7 +324,8 @@ PanelWindow {
             spacing: 4
 
             Text {
-                color: Theme.colors.onSurface
+                color: Theme.quickText
+                font.family: Theme.fontFamily
                 font.pixelSize: 12
                 font.bold: true
                 text: "Не помещается (" + root.tray.length + ")"
@@ -361,7 +344,8 @@ PanelWindow {
 
                     Text {
                         width: Math.max(40, trayRow.width - 96)
-                        color: Theme.colors.onSurfaceVariant
+                        color: Theme.quickTextDim
+                        font.family: Theme.fontFamily
                         font.pixelSize: 11
                         elide: Text.ElideRight
                         text: trayRow.modelData.name || trayRow.modelData.id

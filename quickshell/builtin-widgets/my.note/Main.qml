@@ -25,6 +25,7 @@ Item {
         color: root.ctx.settings.accent
                ? root.ctx.colors.onPrimaryContainer
                : root.ctx.colors.onSurfaceVariant
+        font.family: root.ctx.fontFamily
         font.pixelSize: Math.max(11, Math.round(root.ctx.dp * 13))
         wrapMode: Text.WordWrap
         elide: Text.ElideRight

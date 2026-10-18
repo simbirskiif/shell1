@@ -44,22 +44,6 @@ my.clock/
     "max": "2x4",
     "default": "1x2"
   },
-  "materials": ["any"],
-  "colorModes": ["accent", "widget"],
-  "palette": {
-    "light": {
-      "surface": "#FFFBFE",
-      "onSurface": "#1C1B1F",
-      "primary": "#6750A4",
-      "onPrimary": "#FFFFFF"
-    },
-    "dark": {
-      "surface": "#1C1B1F",
-      "onSurface": "#E6E1E5",
-      "primary": "#D0BCFF",
-      "onPrimary": "#381E72"
-    }
-  },
   "settings": [
     { "key": "format24", "type": "bool", "label": "24-часовой формат", "default": true },
     { "key": "city", "type": "string", "label": "Город", "default": "" },
@@ -84,11 +68,13 @@ my.clock/
 
 ### Материалы и цвет
 
-- `materials: ["any"]` — разрешены все материалы оболочки;
-  иначе перечислите id (`"solid"`, `"glass"`, …). Это ограничение, а не выбор.
-- `colorModes`: `"accent"` (палитра shell) и/или `"widget"` (своя `palette`).
-- В `palette` можно указать только часть ролей — недостающие берутся из
-  палитры shell (`singletons/Theme.qml` / `Wal`).
+- Палитру и материал назначает **система**: `ctx.colors` и `ctx.material`
+  приходят от shell. Манифест не задаёт `materials`, `colorModes` или
+  `palette` — эти поля больше не участвуют в выборе (старые манифесты
+  читаются, но значения игнорируются).
+- Системных режимов два: `accent` (акцент Wal) и `neutral` (нейтральная база).
+- Если автору нужны собственные цвета, виджет может **игнорировать**
+  `ctx.colors` и рисовать своими — система не навязывает цвет контента.
 - Материал и режим цвета по умолчанию задаются глобально («Параметры
   виджетов» по ПКМ на рабочем столе). В настройках экземпляра кнопка
   «По умолчанию» возвращает к этому значению.
@@ -96,8 +82,8 @@ my.clock/
 ### Настройки
 
 Типы: `bool`, `string`, `int` (`min`/`max`), `real` (`min`/`max`), `enum`
-(`options`), `color`. Shell рендерит их в попапе экземпляра и хранит значения
-в раскладке.
+(`options`), `color`. Shell рендерит их в правой панели экземпляра на всю
+высоту и хранит значения в раскладке.
 
 ## 3. QML-контракт
 
@@ -129,11 +115,12 @@ shell. Внутренние плашки можно.
 | Поле | Значение |
 | --- | --- |
 | `colors` | Роли Material: `surface`, `onSurface`, `surfaceVariant`, `onSurfaceVariant`, `primary`, `onPrimary`, `primaryContainer`, `onPrimaryContainer`, `secondary`, `onSecondary`, `tertiary`, `outline`, `error` |
-| `colorMode` | `"accent"` или `"widget"` |
+| `colorMode` | `"accent"` или `"neutral"` |
 | `isDark` | Тёмная схема |
 | `rows`, `cols` | Текущий размер в клетках |
 | `width`, `height` | Размер в логических px |
 | `cell` | Размер клетки в px |
+| `fontFamily` | Шрифт оболочки (Theme.fontFamily) |
 | `dp` | px на 1dp (160 dpi) |
 | `sizeClass` | `"compact"`, `"medium"`, `"large"` |
 | `material` | id материала подложки |
@@ -156,6 +143,8 @@ shell. Внутренние плашки можно.
 - Не создавайте таймеры без остановки; для часов используйте `SystemClock`.
 - Не задавайте собственный фон на всю карточку — материал и скругление
   задаёт shell.
+- `ctx.colors` — рекомендуемая палитра; если виджету нужны собственные
+  цвета, он может их игнорировать.
 - Ошибки QML локализуются в карточке виджета; пишите осмысленные сообщения
   в лог через `console.error`.
 - Проверка: запустите основную оболочку (`qs` или
@@ -202,5 +191,5 @@ Item {
 - `my.note` — строка/enum, клики;
 - `my.color` — фиксированный размер;
 - `my.allowed` — только `size.allowed`;
-- `my.palette` — своя палитра;
+- `my.palette` — системная палитра (виджет мог бы игнорировать её);
 - `my.switch` — bool-настройка и `ctx.setSetting`.

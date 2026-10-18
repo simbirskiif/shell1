@@ -15,12 +15,5 @@
     ],
     "default": "2x1"
   },
-  "materials": [
-    "any"
-  ],
-  "colorModes": [
-    "accent",
-    "widget"
-  ],
   "settings": []
 }

@@ -15,6 +15,7 @@ Item {
     Text {
         anchors.centerIn: parent
         color: root.ctx.colors.onPrimaryContainer
+        font.family: root.ctx.fontFamily
         font.pixelSize: Math.max(10, Math.round(root.ctx.dp * 12))
         text: "Цвет"
     }

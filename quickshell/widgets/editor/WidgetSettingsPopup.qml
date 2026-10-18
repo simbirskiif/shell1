@@ -4,9 +4,10 @@ import QtQuick
 import "../../singletons"
 import "../core"
 
-// Попап настроек экземпляра (раздел 8.6 ТЗ): материал, режим цвета,
-// поля из manifest.settings, сброс и удаление.
-Item {
+// Настройки экземпляра (раздел 8.6 ТЗ): материал, режим цвета,
+// поля из manifest.settings, сброс и удаление. Панель выезжает справа
+// на всю высоту слоя и использует токены панелей оболочки.
+SidePanel {
     id: root
 
     required property string uid
@@ -26,12 +27,12 @@ Item {
     // root.uid связан с EditorState.settingsUid, поэтому одной проверки
     // равенства мало: после закрытия оба становятся "" и попап оставался
     // пустым окном. Требуем непустой uid и существующий виджет.
-    visible: root.uid.length > 0
-             && root.widget !== null
-             && root.screen !== null
-             && EditorState.settingsScreen === root.screen.name
-    anchors.fill: parent
-    z: 130
+    opened: root.uid.length > 0
+            && root.widget !== null
+            && root.screen !== null
+            && EditorState.settingsScreen === root.screen.name
+
+    onClosed: EditorState.closeSettings()
 
     function refreshValues(): void {
         root.values = root.widget ? LayoutStore.settingsFor(root.uid, root.widget) : ({})
@@ -67,19 +68,11 @@ Item {
     }
 
     function materialChoices(): var {
-        const allowed = root.widget && root.widget.materials
-                      ? root.widget.materials : ["any"]
+        // Материал назначает система; ограничения из манифеста больше не
+        // участвуют в выборе.
         const result = []
-        if (allowed.indexOf("any") >= 0) {
-            for (const material of MaterialRegistry.materials)
-                result.push(material)
-            return result
-        }
-        for (const id of allowed) {
-            const material = MaterialRegistry.materialById(id)
-            if (material)
-                result.push(material)
-        }
+        for (const material of MaterialRegistry.materials)
+            result.push(material)
         return result
     }
 
@@ -102,8 +95,8 @@ Item {
         if (root.uid.length > 0 && root.widget === null)
             EditorState.closeSettings()
     }
-    onVisibleChanged: {
-        if (root.visible)
+    onOpenedChanged: {
+        if (root.opened)
             root.refreshValues()
     }
 
@@ -121,40 +114,19 @@ Item {
         }
     }
 
-    // Затемнение и перехват кликов вне панели.
-    Rectangle {
+    Column {
+        id: layout
+
         anchors.fill: parent
-        color: "#55000000"
-        visible: root.visible
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: EditorState.closeSettings()
-        }
-    }
-
-    Rectangle {
-        id: panel
-
-        anchors.centerIn: parent
-        width: Math.min(380, parent.width - 24)
-        height: Math.min(parent.height - 24, 520)
-        radius: 14
-        color: Theme.colors.surface
-        border.width: 1
-        border.color: Theme.colors.outline
-
-        Column {
-            anchors.fill: parent
-            anchors.margins: 12
-            spacing: 8
+        spacing: 8
 
             Row {
                 width: parent.width
 
                 Text {
                     width: parent.width - 30
-                    color: Theme.colors.onSurface
+                    color: Theme.quickText
+                    font.family: Theme.fontFamily
                     font.pixelSize: 15
                     font.bold: true
                     elide: Text.ElideRight
@@ -168,7 +140,8 @@ Item {
             }
 
             Text {
-                color: Theme.colors.onSurfaceVariant
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
                 font.pixelSize: 11
                 text: "Материал"
             }
@@ -203,7 +176,8 @@ Item {
             }
 
             Text {
-                color: Theme.colors.onSurfaceVariant
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
                 font.pixelSize: 11
                 text: "Режим цвета"
             }
@@ -220,19 +194,21 @@ Item {
                     }
                 }
 
-                Repeater {
-                    model: root.widget ? root.widget.colorModes : []
+                HostButton {
+                    text: "Акцент"
+                    active: root.instanceColorMode === "accent"
+                    onClicked: {
+                        LayoutStore.setColorMode(root.uid, "accent")
+                        root.refreshValues()
+                    }
+                }
 
-                    delegate: HostButton {
-                        required property var modelData
-
-                        text: modelData === "accent" ? "Акцент"
-                              : (modelData === "widget" ? "Палитра" : modelData)
-                        active: root.instanceColorMode === modelData
-                        onClicked: {
-                            LayoutStore.setColorMode(root.uid, modelData)
-                            root.refreshValues()
-                        }
+                HostButton {
+                    text: "Нейтральная"
+                    active: root.instanceColorMode === "neutral"
+                    onClicked: {
+                        LayoutStore.setColorMode(root.uid, "neutral")
+                        root.refreshValues()
                     }
                 }
             }
@@ -240,7 +216,7 @@ Item {
             Rectangle {
                 width: parent.width
                 height: 1
-                color: Theme.colors.outline
+                color: Theme.quickSeparator
                 opacity: 0.4
             }
 
@@ -272,7 +248,8 @@ Item {
                                 anchors.left: parent.left
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: parent.width * 0.45
-                                color: Theme.colors.onSurfaceVariant
+                                color: Theme.quickTextDim
+                                font.family: Theme.fontFamily
                                 font.pixelSize: 11
                                 elide: Text.ElideRight
                                 text: settingRow.modelData.label
@@ -287,7 +264,7 @@ Item {
                                 radius: 12
                                 color: root.values[settingRow.modelData.key]
                                        ? Theme.colors.primary
-                                       : Theme.colors.surfaceVariant
+                                       : Theme.quickTile
 
                                 Rectangle {
                                     width: 18
@@ -298,7 +275,7 @@ Item {
                                        ? parent.width - width - 3 : 3
                                     color: root.values[settingRow.modelData.key]
                                            ? Theme.colors.onPrimary
-                                           : Theme.colors.onSurfaceVariant
+                                           : Theme.quickTextDim
                                 }
 
                                 MouseArea {
@@ -335,7 +312,8 @@ Item {
                                 padding: 4
                                 visible: settingRow.modelData.type !== "bool"
                                          && settingRow.modelData.type !== "enum"
-                                color: Theme.colors.onSurface
+                                color: Theme.quickText
+                                font.family: Theme.fontFamily
                                 font.pixelSize: 11
                                 clip: true
                                 selectionColor: Theme.colors.primary
@@ -375,4 +353,3 @@ Item {
             }
         }
     }
-}

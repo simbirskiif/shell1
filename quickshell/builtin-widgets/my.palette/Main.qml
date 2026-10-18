@@ -1,7 +1,8 @@
 import QtQuick
 
-// Пример: собственная палитра. На этапе 3 при colorMode === "widget"
-// ctx.colors будет собран из manifest.palette, сейчас роли приходят из Theme.
+// Пример: палитра приходит от системы (accent/neutral). Виджет не объявляет
+// свою палитру; если бы она была нужна, он мог бы игнорировать ctx.colors и
+// рисовать собственные цвета.
 Item {
     id: root
 
@@ -33,6 +34,7 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             color: root.ctx.colors.onSurface
+            font.family: root.ctx.fontFamily
             font.pixelSize: Math.max(9, Math.round(root.ctx.dp * 10))
             text: root.ctx.colorMode
         }

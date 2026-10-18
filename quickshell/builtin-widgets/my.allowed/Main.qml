@@ -10,6 +10,7 @@ Item {
     Text {
         anchors.centerIn: parent
         color: root.ctx.colors.onSurface
+        font.family: root.ctx.fontFamily
         font.pixelSize: Math.max(11, Math.round(root.ctx.dp * 14))
         text: root.ctx.cols + " × " + root.ctx.rows
     }
@@ -18,6 +19,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         color: root.ctx.colors.onSurfaceVariant
+        font.family: root.ctx.fontFamily
         font.pixelSize: Math.max(9, Math.round(root.ctx.dp * 10))
         text: "allowed"
     }
