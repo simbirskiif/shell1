@@ -20,6 +20,17 @@ ShellRoot {
         }
     }
 
+    // Всплывающие индикаторы громкости и яркости — по одному на экран;
+    // показывается только тот, что на экране с фокусом.
+    Variants {
+        model: Quickshell.screens
+
+        delegate: OsdWindow {
+            required property var modelData
+            screen: modelData
+        }
+    }
+
     // Агент аутентификации Polkit. Слушатель D-Bus ровно один на сессию,
     // поэтому объект объявлен здесь, а не в диалоге на каждом экране.
     PolkitAgent {
