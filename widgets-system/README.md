@@ -92,11 +92,11 @@ XDG_RUNTIME_DIR=$PWD/rt/runtime qs kill -p widgets-system
   `<shellDir>/materials` (встроенные) по `meta.json` + `Material.qml`.
   Пользовательские важнее; новые материалы и правки QML подхватываются без
   перезапуска.
-- Встроенные материалы: `solid`, `transparent`, `gradient`, `grain` (PNG-шум),
-  `glass` (размытие обоев через `QtQuick.Effects.MultiEffect`, тонировка и
-  рамка). Скрипт `qsb` в системе отсутствует, поэтому шейдерные `.frag/.qsb`
-  заменены на растровый шум и `MultiEffect`; контракт материала от этого не
-  меняется.
+- Встроенные материалы: `solid`, `transparent`, `gradient`, `grain` и
+  `glass`. У `grain` процедурный шум в `grain.frag`, у `glass` — `glass.frag`
+  (9-tap размытие снимка обоев, тонировка, блик и скруглённая рамка). Оба
+  компилируются в `.qsb` через `tools/build-shaders.sh` (`qsb --qt6`), готовые
+  `.qsb` лежат в репозитории.
 - Обои для `glass` берутся из `wallpaper` конфига, иначе из
   `~/.config/hypr/hyprpaper.conf`, иначе из `hyprctl hyprpaper listactive`.
 - Материал и режим цвета меняются на лету: перезагружается только материал,
@@ -192,6 +192,7 @@ widgets-system/
     HostButton.qml              кнопка для карточек состояния
   builtin-widgets/              примеры (см. выше)
   materials/                    solid/transparent/gradient/grain/glass
+  tools/build-shaders.sh        qsb для *.frag → *.frag.qsb
   config.example.json
 ```
 

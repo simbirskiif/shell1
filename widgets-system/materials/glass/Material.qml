@@ -1,9 +1,8 @@
 import QtQuick
-import QtQuick.Effects
 
-// Полупрозрачное стекло: снимок обоев под карточкой размывается MultiEffect,
-// сверху — тонировка surface и светлая рамка. Если обои неизвестны, работает
-// как тонированная подложка.
+// Полупрозрачное стекло: шейдер samplит снимок обоев, размывает его,
+// добавляет тонировку, верхний блик и рамку. Если обои неизвестны,
+// работает как тонированная подложка.
 Item {
     id: root
 
@@ -17,70 +16,46 @@ Item {
     property real screenWidth: 0
     property real screenHeight: 0
 
-    // Кусок обоев, соответствующий положению карточки на экране.
-    Item {
-        id: wallpaperClip
+    readonly property bool hasWallpaper: root.wallpaperSource.length > 0
+    readonly property real blurPx: Math.max(2, Math.min(root.width, root.height) * 0.07)
 
-        anchors.fill: parent
-        clip: true
-        visible: root.wallpaperSource.length > 0
+    Image {
+        id: wallpaper
 
-        Image {
-            x: -root.offsetX
-            y: -root.offsetY
-            width: Math.max(1, root.screenWidth)
-            height: Math.max(1, root.screenHeight)
-            source: root.wallpaperSource
-            fillMode: Image.PreserveAspectCrop
-        }
+        width: Math.max(1, root.screenWidth)
+        height: Math.max(1, root.screenHeight)
+        source: root.wallpaperSource
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        cache: true
+        smooth: true
+        visible: root.hasWallpaper
     }
 
-    // Маска со скруглением для размытого слоя.
-    Rectangle {
-        id: roundedMask
+    ShaderEffectSource {
+        id: wallpaperSample
 
-        anchors.fill: parent
-        radius: root.radius
-        color: "black"
-        visible: false
-        layer.enabled: true
+        sourceItem: wallpaper
+        sourceRect: Qt.rect(root.offsetX, root.offsetY,
+                            Math.max(1, root.width), Math.max(1, root.height))
+        hideSource: true
+        live: true
+        recursive: false
     }
 
-    MultiEffect {
+    ShaderEffect {
         anchors.fill: parent
-        source: wallpaperClip
-        visible: root.wallpaperSource.length > 0
-        blurEnabled: true
-        blur: 0.55
-        blurMax: 32
-        maskEnabled: true
-        maskSource: roundedMask
-    }
+        blending: true
 
-    Rectangle {
-        anchors.fill: parent
-        radius: root.radius
-        color: root.colors.surface || "#1C1B1F"
-        opacity: root.wallpaperSource.length > 0 ? 0.32 : 0.88
-    }
+        property variant source: wallpaperSample
+        property vector2d size: Qt.vector2d(Math.max(1, root.width),
+                                            Math.max(1, root.height))
+        property real radius: root.radius
+        property color tint: root.colors.surface || "#1C1B1F"
+        property color outline: root.colors.outline || "#938F99"
+        property real tintOpacity: root.hasWallpaper ? 0.32 : 0.90
+        property real blur: root.blurPx
 
-    // Лёгкий верхний блик.
-    Rectangle {
-        anchors.fill: parent
-        radius: root.radius
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.13) }
-            GradientStop { position: 0.45; color: "transparent" }
-        }
-        opacity: 0.8
-    }
-
-    Rectangle {
-        anchors.fill: parent
-        radius: root.radius
-        color: "transparent"
-        border.width: 1
-        border.color: root.colors.outline || "#938F99"
-        opacity: 0.55
+        fragmentShader: "glass.frag.qsb"
     }
 }
