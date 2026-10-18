@@ -33,8 +33,9 @@ Item {
 
     signal contextRequested(real x, real y, string uid)
 
-    // Увеличивается при каждой перезагрузке QML — используется в URL.
-    property int reloadToken: 0
+    // Уникальный стартовый токен: новый экземпляр не должен попасть в
+    // QML-кеш старой (иногда уже сломанной) версии файла с ?v=0.
+    property int reloadToken: 1 + Math.floor(Math.random() * 2147483646)
     property bool _initialized: false
 
     // Локальные копии переопределений экземпляра: LayoutStore меняет поля
