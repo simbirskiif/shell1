@@ -8,10 +8,19 @@
   "icon": "aspect_ratio",
   "entry": "Main.qml",
   "size": {
-    "allowed": ["1x1", "2x1", "2x2"],
+    "allowed": [
+      "1x1",
+      "2x1",
+      "2x2"
+    ],
     "default": "2x1"
   },
-  "materials": ["any"],
-  "colorModes": ["accent", "widget"],
+  "materials": [
+    "any"
+  ],
+  "colorModes": [
+    "accent",
+    "widget"
+  ],
   "settings": []
 }

@@ -147,6 +147,8 @@ Item {
         }
 
         onPositionChanged: (event) => {
+            if (!mouse.pressed)
+                return
             const dx = event.x - root.pressX
             const dy = event.y - root.pressY
             if (!root.dragging && dx * dx + dy * dy >= 36) {

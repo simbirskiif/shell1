@@ -16,12 +16,16 @@ PanelWindow {
     id: root
 
     readonly property bool editing: EditorState.active
-    readonly property bool debugGrid: Config.showGrid || root.editing
+    readonly property bool debugGrid: Config.showGrid
 
     // Экземпляры виджетов на этом экране. Массив пересоздаётся при изменении
     // раскладки/реестра, поэтому Repeater обновляет карточки.
     property var instances: []
     property var tray: []
+    // Геометрия обычного слоя (без бара). В редакторе окно становится на весь
+    // экран, но сетка должна остаться прежней.
+    property int stableWidth: 0
+    property int stableHeight: 0
     property var _maskRegions: []
     property bool _maskScheduled: false
 
@@ -63,8 +67,18 @@ PanelWindow {
     GridMetrics {
         id: gridMetrics
         screen: root.screen
-        windowWidth: root.width
-        windowHeight: root.height
+        windowWidth: root.editing && root.stableWidth > 0 ? root.stableWidth : root.width
+        windowHeight: root.editing && root.stableHeight > 0 ? root.stableHeight : root.height
+    }
+
+    onWidthChanged: {
+        if (!root.editing && root.width > 0)
+            root.stableWidth = root.width
+    }
+
+    onHeightChanged: {
+        if (!root.editing && root.height > 0)
+            root.stableHeight = root.height
     }
 
     GridOverlay {
@@ -207,10 +221,17 @@ PanelWindow {
             const host = hostRepeater.itemAt(i)
             if (!host || !host.visible)
                 continue
-            const region = maskRegionComponent.createObject(maskRegion, { item: host })
-            if (region) {
-                maskRegion.regions.push(region)
-                root._maskRegions.push(region)
+            const hostRegion = maskRegionComponent.createObject(maskRegion, { item: host })
+            if (hostRegion) {
+                maskRegion.regions.push(hostRegion)
+                root._maskRegions.push(hostRegion)
+            }
+        }
+        if (editButton.visible) {
+            const buttonRegion = maskRegionComponent.createObject(maskRegion, { item: editButton })
+            if (buttonRegion) {
+                maskRegion.regions.push(buttonRegion)
+                root._maskRegions.push(buttonRegion)
             }
         }
         maskRegion.changed()
@@ -219,6 +240,38 @@ PanelWindow {
                      + hostRepeater.count)
     }
 
+
+    // Всегда доступная кнопка входа в редактор на пустом рабочем столе.
+    Rectangle {
+        id: editButton
+
+        width: 96
+        height: 34
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: 12
+        z: 45
+        visible: !root.editing
+        radius: 10
+        color: Theme.colors.surface
+        border.width: 1
+        border.color: Theme.colors.outline
+        opacity: editMouse.containsMouse ? 0.95 : 0.72
+
+        Text {
+            anchors.centerIn: parent
+            color: Theme.colors.onSurface
+            font.pixelSize: 12
+            text: "✎ Править"
+        }
+
+        MouseArea {
+            id: editMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: EditorState.enter()
+        }
+    }
 
     // Призрак drag-and-drop из каталога (раздел 8.5 ТЗ).
     Rectangle {
@@ -229,7 +282,7 @@ PanelWindow {
         width: gridMetrics.pixelWidth(PickerState.cols)
         height: gridMetrics.pixelHeight(PickerState.rows)
         radius: Math.round(gridMetrics.cell * 0.28)
-        color: PickerState.valid ? "#334CAF50" : "#44F44336"
+        color: PickerState.valid ? "#114CAF50" : "#11F44336"
         border.width: 2
         border.color: PickerState.valid ? "#CC4CAF50" : "#CCF44336"
         enabled: false
@@ -244,7 +297,7 @@ PanelWindow {
         width: gridMetrics.pixelWidth(DragController.cols)
         height: gridMetrics.pixelHeight(DragController.rows)
         radius: Math.round(gridMetrics.cell * 0.28)
-        color: DragController.valid ? "#334CAF50" : "#44F44336"
+        color: DragController.valid ? "#114CAF50" : "#11F44336"
         border.width: 2
         border.color: DragController.valid ? "#CC4CAF50" : "#CCF44336"
         enabled: false

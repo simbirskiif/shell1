@@ -12,9 +12,18 @@
     "max": "1x1",
     "default": "1x1"
   },
-  "materials": ["any"],
-  "colorModes": ["accent"],
+  "materials": [
+    "any"
+  ],
+  "colorModes": [
+    "accent"
+  ],
   "settings": [
-    { "key": "enabled", "type": "bool", "label": "Включено", "default": false }
+    {
+      "key": "enabled",
+      "type": "bool",
+      "label": "Включено",
+      "default": false
+    }
   ]
 }

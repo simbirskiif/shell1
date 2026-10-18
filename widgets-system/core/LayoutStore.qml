@@ -220,6 +220,28 @@ Singleton {
             if (position)
                 placed.push(root.makeInstance(widget, position, size.cols, size.rows))
         }
+
+        // Группа по умолчанию центрируется и по горизонтали, и по вертикали.
+        if (placed.length > 0) {
+            let minCol = Number.MAX_VALUE
+            let minRow = Number.MAX_VALUE
+            let maxCol = 0
+            let maxRow = 0
+            for (const instance of placed) {
+                minCol = Math.min(minCol, instance.col)
+                minRow = Math.min(minRow, instance.row)
+                maxCol = Math.max(maxCol, instance.col + instance.cols)
+                maxRow = Math.max(maxRow, instance.row + instance.rows)
+            }
+            const blockCols = maxCol - minCol
+            const blockRows = maxRow - minRow
+            const shiftCol = Math.floor((metrics.cols - blockCols) / 2) - minCol
+            const shiftRow = Math.floor((metrics.rows - blockRows) / 2) - minRow
+            for (const instance of placed) {
+                instance.col += shiftCol
+                instance.row += shiftRow
+            }
+        }
         return placed
     }
 
@@ -469,6 +491,21 @@ Singleton {
         root.reindex()
         console.info("[widgets/layout] удалён экземпляр " + uid)
         root.layoutChanged()
+        root.scheduleSave()
+    }
+
+    function applyGeometry(uid: string, col: int, row: int,
+                           cols: int, rows: int): void {
+        const instance = root.findInstance(uid)
+        if (!instance)
+            return
+        instance.col = col
+        instance.row = row
+        instance.cols = cols
+        instance.rows = rows
+        // Без layoutChanged: host сам анимирует карточку в новую геометрию,
+        // а маска ввода следит за item через Region.
+        root.instanceChanged(uid)
         root.scheduleSave()
     }
 

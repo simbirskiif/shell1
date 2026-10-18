@@ -12,7 +12,11 @@
     "max": "1x1",
     "default": "1x1"
   },
-  "materials": ["solid", "transparent"],
-  "colorModes": ["accent"],
+  "materials": [
+    "any"
+  ],
+  "colorModes": [
+    "accent"
+  ],
   "settings": []
 }

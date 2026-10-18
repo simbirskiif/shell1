@@ -15,6 +15,38 @@ Item {
     property string query: ""
     property string message: ""
     property bool showPathInput: false
+    property bool hiding: false
+    property real slideOffset: 0
+
+    opacity: root.hiding ? 0 : (PickerState.active ? 0.34 : 1)
+    transform: Translate { x: root.slideOffset }
+
+    Behavior on opacity {
+        NumberAnimation { duration: 170; easing.type: Easing.OutCubic }
+    }
+    Behavior on slideOffset {
+        NumberAnimation { duration: 190; easing.type: Easing.OutCubic }
+    }
+
+    Timer {
+        id: closeTimer
+        interval: 190
+        repeat: false
+        onTriggered: {
+            EditorState.closePicker()
+            root.hiding = false
+            root.slideOffset = 0
+            root.message = ""
+        }
+    }
+
+    function dismiss(): void {
+        if (root.hiding)
+            return
+        root.hiding = true
+        root.slideOffset = 48
+        closeTimer.restart()
+    }
 
     visible: EditorState.pickerOpen && EditorState.uiScreen === root.screen.name
     width: Math.min(360, parent.width - 24)
@@ -25,10 +57,13 @@ Item {
     z: 120
 
     onVisibleChanged: {
-        if (visible)
+        if (visible) {
+            root.hiding = false
+            root.slideOffset = 0
             root.refreshFilter()
-        else
+        } else {
             PickerState.cancel()
+        }
     }
 
     Connections {
@@ -67,6 +102,7 @@ Item {
             root.message = "Нет места для «" + widget.name + "»"
         } else {
             root.message = "Добавлен: " + widget.name
+            root.dismiss()
         }
     }
 
@@ -76,14 +112,12 @@ Item {
         color: Theme.colors.surface
         border.width: 1
         border.color: Theme.colors.outline
-        opacity: PickerState.active ? 0.42 : 1
     }
 
     Column {
         anchors.fill: parent
         anchors.margins: 12
         spacing: 8
-        opacity: PickerState.active ? 0.42 : 1
 
         Row {
             width: parent.width
@@ -98,7 +132,7 @@ Item {
 
             HostButton {
                 text: "✕"
-                onClicked: EditorState.closePicker()
+                onClicked: root.dismiss()
             }
         }
 
@@ -171,7 +205,10 @@ Item {
                                                                     root.screen.name,
                                                                     point)
                         onDragMoved: (point) => PickerState.update(point)
-                        onDragFinished: PickerState.finish()
+                        onDragFinished: {
+                            if (PickerState.finish())
+                                root.dismiss()
+                        }
                     }
                 }
             }

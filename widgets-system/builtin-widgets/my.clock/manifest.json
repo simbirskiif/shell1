@@ -12,10 +12,25 @@
     "max": "2x4",
     "default": "1x2"
   },
-  "materials": ["any"],
-  "colorModes": ["accent", "widget"],
+  "materials": [
+    "any"
+  ],
+  "colorModes": [
+    "accent",
+    "widget"
+  ],
   "settings": [
-    { "key": "format24", "type": "bool", "label": "24-часовой формат", "default": true },
-    { "key": "seconds", "type": "bool", "label": "Показывать секунды", "default": false }
+    {
+      "key": "format24",
+      "type": "bool",
+      "label": "24-часовой формат",
+      "default": true
+    },
+    {
+      "key": "seconds",
+      "type": "bool",
+      "label": "Показывать секунды",
+      "default": false
+    }
   ]
 }

@@ -12,8 +12,13 @@
     "max": "2x4",
     "default": "2x2"
   },
-  "materials": ["any"],
-  "colorModes": ["accent", "widget"],
+  "materials": [
+    "any"
+  ],
+  "colorModes": [
+    "accent",
+    "widget"
+  ],
   "palette": {
     "light": {
       "surface": "#FFF8E1",

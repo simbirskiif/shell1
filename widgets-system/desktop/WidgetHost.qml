@@ -45,22 +45,28 @@ Item {
                                            : (root.instance && root.instance.name
                                               ? root.instance.name : root.widgetId)
 
-    // Геометрия в клетках с защитой от выхода за текущую сетку. Полноценная
-    // миграция раскладки при смене сетки — этап 4.
-    readonly property int gridCols: root.instance
-                                      ? Math.max(1, Math.min(root.instance.cols, root.metrics.cols))
-                                      : 1
-    readonly property int gridRows: root.instance
-                                      ? Math.max(1, Math.min(root.instance.rows, root.metrics.rows))
-                                      : 1
-    readonly property int safeCol: root.instance
-                                     ? Math.max(0, Math.min(root.instance.col,
-                                                            root.metrics.cols - root.gridCols))
-                                     : 0
-    readonly property int safeRow: root.instance
-                                     ? Math.max(0, Math.min(root.instance.row,
-                                                            root.metrics.rows - root.gridRows))
-                                     : 0
+    // Локальная геометрия карточки. Обновляется из LayoutStore без пересборки
+    // Repeater, чтобы отпускание после drag/resize анимировалось в цель.
+    property int displayCol: 0
+    property int displayRow: 0
+    property int displayCols: 1
+    property int displayRows: 1
+
+    readonly property int gridCols:
+        Math.max(1, Math.min(root.displayCols, root.metrics.cols))
+    readonly property int gridRows:
+        Math.max(1, Math.min(root.displayRows, root.metrics.rows))
+    readonly property int safeCol:
+        Math.max(0, Math.min(root.displayCol, root.metrics.cols - root.gridCols))
+    readonly property int safeRow:
+        Math.max(0, Math.min(root.displayRow, root.metrics.rows - root.gridRows))
+
+    readonly property bool dragActive: DragController.active && root.instance
+                                       && DragController.uid === root.instance.uid
+    readonly property real baseX:
+        root.metrics.originX + root.safeCol * (root.metrics.cell + root.metrics.gap)
+    readonly property real baseY:
+        root.metrics.originY + root.safeRow * (root.metrics.cell + root.metrics.gap)
 
     readonly property bool previewing: DragController.active && root.instance
                                        && DragController.uid === root.instance.uid
@@ -116,18 +122,49 @@ Item {
 
     property var currentSettings: ({})
 
-    x: root.metrics.originX + root.safeCol * (root.metrics.cell + root.metrics.gap)
-    y: root.metrics.originY + root.safeRow * (root.metrics.cell + root.metrics.gap)
+    x: root.baseX + (root.dragActive && DragController.mode === "drag"
+                     ? DragController.dx : 0)
+    y: root.baseY + (root.dragActive && DragController.mode === "drag"
+                     ? DragController.dy : 0)
     width: root.metrics.pixelWidth(root.gridCols)
     height: root.metrics.pixelHeight(root.gridRows)
 
     visible: root.instance !== null && root.instance !== undefined
     clip: true
 
+    Behavior on x {
+        enabled: !root.dragActive
+        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+    }
+    Behavior on y {
+        enabled: !root.dragActive
+        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+    }
+    Behavior on width {
+        enabled: !root.dragActive
+        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+    }
+    Behavior on height {
+        enabled: !root.dragActive
+        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+    }
+
     function refreshSettings(): void {
         if (!root.instance)
             return
         root.currentSettings = LayoutStore.settingsFor(root.instance.uid, root.widget)
+    }
+
+    function refreshGeometry(): void {
+        if (!root.instance)
+            return
+        const current = LayoutStore.findInstance(root.instance.uid)
+        if (!current)
+            return
+        root.displayCol = current.col
+        root.displayRow = current.row
+        root.displayCols = current.cols
+        root.displayRows = current.rows
     }
 
     function refreshInstance(): void {
@@ -197,6 +234,7 @@ Item {
         root._initialized = true
         root.refreshSettings()
         root.refreshInstance()
+        root.refreshGeometry()
         root.loadWidget()
         root.loadMaterial(true)
     }
@@ -248,6 +286,7 @@ Item {
             if (root.instance && uid === root.instance.uid) {
                 root.refreshSettings()
                 root.refreshInstance()
+                root.refreshGeometry()
             }
         }
     }

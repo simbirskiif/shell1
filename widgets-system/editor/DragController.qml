@@ -23,6 +23,8 @@ Singleton {
 
     property real startX: 0
     property real startY: 0
+    property real dx: 0
+    property real dy: 0
     property int originCol: 0
     property int originRow: 0
     property int originCols: 1
@@ -59,6 +61,8 @@ Singleton {
         root.edge = edge
         root.startX = point.x
         root.startY = point.y
+        root.dx = 0
+        root.dy = 0
         root.originCol = instance.col
         root.originRow = instance.row
         root.originCols = instance.cols
@@ -81,6 +85,8 @@ Singleton {
             return
         const dx = point.x - root.startX
         const dy = point.y - root.startY
+        root.dx = dx
+        root.dy = dy
 
         if (root.mode === "drag") {
             const maxCol = root.metrics.cols - root.originCols
@@ -215,7 +221,7 @@ Singleton {
         const rows = root.rows
         root.reset()
         if (apply) {
-            LayoutStore.updateGeometry(uid, col, row, cols, rows)
+            LayoutStore.applyGeometry(uid, col, row, cols, rows)
             console.info("[widgets/editor] " + uid + " -> " + col + "," + row
                          + " " + cols + "x" + rows)
         }
@@ -234,5 +240,7 @@ Singleton {
         root.metrics = null
         root.valid = false
         root.moved = false
+        root.dx = 0
+        root.dy = 0
     }
 }

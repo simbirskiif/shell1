@@ -12,11 +12,35 @@
     "max": "3x4",
     "default": "2x2"
   },
-  "materials": ["any"],
-  "colorModes": ["accent", "widget"],
+  "materials": [
+    "any"
+  ],
+  "colorModes": [
+    "accent",
+    "widget"
+  ],
   "settings": [
-    { "key": "text", "type": "string", "label": "Текст", "default": "Заметка" },
-    { "key": "align", "type": "enum", "label": "Выравнивание", "options": ["left", "center"], "default": "left" },
-    { "key": "accent", "type": "bool", "label": "Выделить", "default": false }
+    {
+      "key": "text",
+      "type": "string",
+      "label": "Текст",
+      "default": "Заметка"
+    },
+    {
+      "key": "align",
+      "type": "enum",
+      "label": "Выравнивание",
+      "options": [
+        "left",
+        "center"
+      ],
+      "default": "left"
+    },
+    {
+      "key": "accent",
+      "type": "bool",
+      "label": "Выделить",
+      "default": false
+    }
   ]
 }
