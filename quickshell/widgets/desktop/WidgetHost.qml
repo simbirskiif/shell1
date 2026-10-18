@@ -23,10 +23,14 @@ Item {
     required property var metrics
     required property var screen
 
+    // uid приходит из стабильной модели DesktopLayer; instance резолвится
+    // заново при изменении раскладки, не пересоздавая карточку.
+    property string uid: ""
+
     property bool editing: false
     property bool preview: false
 
-    signal contextRequested(real x, real y)
+    signal contextRequested(real x, real y, string uid)
 
     // Увеличивается при каждой перезагрузке QML — используется в URL.
     property int reloadToken: 0
@@ -37,6 +41,7 @@ Item {
     // instanceChanged.
     property string instanceMaterial: ""
     property string instanceColorMode: ""
+    property real instanceDim: NaN
     property int materialToken: 0
     property string loadedMaterialUrl: ""
 
@@ -51,10 +56,10 @@ Item {
 
     // Локальная геометрия карточки. Обновляется из LayoutStore без пересборки
     // Repeater, чтобы отпускание после drag/resize анимировалось в цель.
-    property int displayCol: 0
-    property int displayRow: 0
-    property int displayCols: 1
-    property int displayRows: 1
+    property int displayCol: root.instance ? root.instance.col : 0
+    property int displayRow: root.instance ? root.instance.row : 0
+    property int displayCols: root.instance ? root.instance.cols : 1
+    property int displayRows: root.instance ? root.instance.rows : 1
 
     readonly property int gridCols:
         Math.max(1, Math.min(root.displayCols, root.metrics.cols))
@@ -108,6 +113,9 @@ Item {
 
     readonly property var effectiveColors:
         Theme.colorsFor(root.effectiveColorMode)
+    readonly property real effectiveDim:
+        Number.isFinite(root.instanceDim) ? root.instanceDim
+                                         : Config.defaultMaterialDim
 
     readonly property string effectiveMaterial: {
         const requested = root.instanceMaterial.length > 0
@@ -179,6 +187,8 @@ Item {
         const current = LayoutStore.findInstance(root.instance.uid)
         root.instanceMaterial = current ? (current.material || "") : ""
         root.instanceColorMode = current ? (current.colorMode || "") : ""
+        root.instanceDim = current && Number.isFinite(current.dim)
+                          ? current.dim : NaN
     }
 
     function loadWidget(): void {
@@ -209,6 +219,7 @@ Item {
         materialLoader.setSource(material.url + "?v=" + root.materialToken, {
             colors: root.effectiveColors,
             radius: root.materialRadius,
+            dim: root.effectiveDim,
             size: Qt.size(root.width, root.height),
             wallpaperSource: Wallpaper.sourceUrl,
             offsetX: root.x + root.screenOffsetX,
@@ -277,6 +288,7 @@ Item {
         preview: root.preview
         screen: root.screen ? root.screen.name : ""
         fontFamilyData: Theme.fontFamily
+        materialDimData: root.effectiveDim
 
         onSettingRequested: (key, value) => {
             if (root.instance)
@@ -293,6 +305,15 @@ Item {
                 root.refreshInstance()
                 root.refreshGeometry()
             }
+        }
+
+        function onLayoutChanged() {
+            if (root.uid.length === 0)
+                return
+            const resolved = LayoutStore.findInstance(root.uid)
+            if (resolved !== root.instance)
+                root.instance = resolved
+            root.refreshGeometry()
         }
     }
 
@@ -370,6 +391,13 @@ Item {
         target: materialLoader.item
         property: "radius"
         value: root.materialRadius
+        when: materialLoader.status === Loader.Ready
+    }
+
+    Binding {
+        target: materialLoader.item
+        property: "dim"
+        value: root.effectiveDim
         when: materialLoader.status === Loader.Ready
     }
 
@@ -618,7 +646,8 @@ Item {
             if (root.instance && root.editing)
                 EditorState.select(root.instance.uid)
             const point = mapToItem(null, mouse.x, mouse.y)
-            root.contextRequested(point.x, point.y)
+            root.contextRequested(point.x, point.y,
+                                  root.instance ? root.instance.uid : "")
         }
     }
 
@@ -634,19 +663,19 @@ Item {
         visible: root.editing
 
         HostIconButton {
+            text: "⚙"
+            onClicked: {
+                if (root.instance)
+                    EditorState.openSettings(root.instance.uid, root.screen.name)
+            }
+        }
+
+        HostIconButton {
             text: "✕"
             onClicked: {
                 EditorState.beginOperation()
                 if (root.instance)
                     LayoutStore.removeInstance(root.instance.uid)
-            }
-        }
-
-        HostIconButton {
-            text: "⚙"
-            onClicked: {
-                if (root.instance)
-                    EditorState.openSettings(root.instance.uid, root.screen.name)
             }
         }
     }

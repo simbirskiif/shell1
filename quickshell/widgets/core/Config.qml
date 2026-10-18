@@ -89,6 +89,11 @@ Singleton {
     readonly property string defaultMaterial: adapter.defaults.material
     readonly property string defaultColorMode:
         adapter.defaults.colorMode === "neutral" ? "neutral" : "accent"
+    readonly property real defaultMaterialDim: {
+        const value = Number(adapter.defaults.dim)
+        return Number.isFinite(value)
+             ? Math.max(0.10, Math.min(0.95, value)) : 0.60
+    }
 
     // Глобальные параметры виджетов. Экземпляр может переопределить любой
     // из них, выбрав «По умолчанию» в своих настройках.
@@ -110,6 +115,15 @@ Singleton {
         adapter.defaults.colorMode = mode
         configFile.writeAdapter()
         console.info("[widgets/config] режим цвета по умолчанию: " + mode)
+        return true
+    }
+
+    function setDefaultMaterialDim(value: real): bool {
+        const normalized = Math.max(0.10, Math.min(0.95, Number(value)))
+        if (!Number.isFinite(normalized))
+            return false
+        adapter.defaults.dim = normalized
+        configFile.writeAdapter()
         return true
     }
 
@@ -163,6 +177,7 @@ Singleton {
             property JsonObject defaults: JsonObject {
                 property string material: "glass"
                 property string colorMode: "accent"
+                property real dim: 0.60
             }
         }
     }

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../components/quick"
 import "../../singletons"
 import "../core"
 
@@ -110,6 +111,34 @@ SidePanel {
                 }
             }
 
+            Text {
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
+                font.pixelSize: 11
+                text: "Затемнение материала"
+            }
+
+            Row {
+                width: parent.width
+                spacing: 8
+
+                PanelSlider {
+                    width: Math.max(80, parent.width - 48)
+                    value: Config.defaultMaterialDim
+                    onMoved: value => Config.setDefaultMaterialDim(value)
+                }
+
+                Text {
+                    width: 40
+                    anchors.verticalCenter: parent.verticalCenter
+                    horizontalAlignment: Text.AlignRight
+                    color: Theme.quickTextDim
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 11
+                    text: Math.round(Config.defaultMaterialDim * 100) + "%"
+                }
+            }
+
             Rectangle {
                 width: parent.width
                 height: 1
@@ -128,7 +157,7 @@ SidePanel {
                       : "Экземпляры с выбранным «По умолчанию» следуют этим значениям."
             }
 
-            Item { width: 1; height: Math.max(0, parent.height - 300) }
+            Item { width: 1; height: Math.max(0, parent.height - 430) }
 
             Row {
                 width: parent.width

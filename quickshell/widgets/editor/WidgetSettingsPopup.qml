@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../components/quick"
 import "../../singletons"
 import "../core"
 
@@ -22,6 +23,11 @@ SidePanel {
         root.instance ? (root.instance.material || "") : ""
     readonly property string instanceColorMode:
         root.instance ? (root.instance.colorMode || "") : ""
+    readonly property real dim:
+        root.instance && Number.isFinite(root.instance.dim)
+        ? root.instance.dim : Config.defaultMaterialDim
+    readonly property bool dimOverridden:
+        root.instance && Number.isFinite(root.instance.dim)
     property var values: ({})
 
     // root.uid связан с EditorState.settingsUid, поэтому одной проверки
@@ -211,6 +217,40 @@ SidePanel {
                         root.refreshValues()
                     }
                 }
+            }
+
+            Text {
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
+                font.pixelSize: 11
+                text: "Затемнение материала"
+            }
+
+            Row {
+                width: parent.width
+                spacing: 8
+
+                PanelSlider {
+                    width: Math.max(80, parent.width - 48)
+                    value: root.dim
+                    onMoved: value => LayoutStore.setDim(root.uid, value)
+                }
+
+                Text {
+                    width: 40
+                    anchors.verticalCenter: parent.verticalCenter
+                    horizontalAlignment: Text.AlignRight
+                    color: Theme.quickTextDim
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 11
+                    text: Math.round(root.dim * 100) + "%"
+                }
+            }
+
+            HostButton {
+                text: "По умолчанию"
+                active: !root.dimOverridden
+                onClicked: LayoutStore.setDim(root.uid, NaN)
             }
 
             Rectangle {

@@ -10,6 +10,7 @@ Item {
     property bool opened: false
     property point position: Qt.point(0, 0)
     property string screenName: ""
+    property string targetUid: ""
     property bool editing: EditorState.active
 
     signal action(string name)
@@ -31,10 +32,14 @@ Item {
     }
 
     function menuItems(): var {
-        const items = [
-            { label: "Добавить виджет…", action: "add", separator: false },
-            { label: "Параметры виджетов…", action: "global", separator: false }
-        ]
+        const items = []
+        if (root.targetUid.length > 0) {
+            items.push({ label: "Параметры виджета…", action: "widget-settings",
+                         separator: false })
+            items.push({ label: "", action: "", separator: true })
+        }
+        items.push({ label: "Добавить виджет…", action: "add", separator: false })
+        items.push({ label: "Параметры виджетов…", action: "global", separator: false })
         if (root.editing) {
             items.push({ label: "", action: "", separator: true })
             items.push({ label: "Готово", action: "commit", separator: false })

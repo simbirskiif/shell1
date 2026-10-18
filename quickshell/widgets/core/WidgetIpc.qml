@@ -21,7 +21,9 @@ IpcHandler {
                            + " " + instance.col + "," + instance.row
                            + " " + instance.cols + "x" + instance.rows
                            + " material=" + (instance.material || "default")
-                           + " mode=" + (instance.colorMode || "default"))
+                           + " mode=" + (instance.colorMode || "default")
+                           + " dim=" + (Number.isFinite(instance.dim)
+                                        ? instance.dim : "default"))
             }
         }
         lines.push("materials: " + MaterialRegistry.materials.map(function(m) {
@@ -34,7 +36,10 @@ IpcHandler {
                    + " undo=" + EditorState.undoStack.length
                    + " redo=" + EditorState.redoStack.length
                    + " defaults=" + Config.defaultMaterial + "/"
-                   + Config.defaultColorMode)
+                   + Config.defaultColorMode + "/"
+                   + Math.round(Config.defaultMaterialDim * 100) + "%"
+                   + " settings=" + (EditorState.settingsUid || "none")
+                   + " global=" + (EditorState.globalOpen ? "true" : "false"))
         return lines.join("\n")
     }
 
@@ -88,6 +93,22 @@ IpcHandler {
             Config.setDefaultMaterial(materialId)
         if (mode.length > 0)
             Config.setDefaultColorMode(mode)
+        return state()
+    }
+
+    function dim(value: real): string {
+        Config.setDefaultMaterialDim(value)
+        return state()
+    }
+
+    function dimFor(uid: string, value: real): string {
+        LayoutStore.setDim(uid, value)
+        return state()
+    }
+
+    function remove(uid: string): string {
+        EditorState.beginOperation()
+        LayoutStore.removeInstance(uid)
         return state()
     }
 

@@ -6,6 +6,7 @@ Item {
 
     property var colors: ({})
     property real radius: 0
+    property real dim: 0.60
     property var size: Qt.size(0, 0)
     property string wallpaperSource: ""
     property bool editing: false

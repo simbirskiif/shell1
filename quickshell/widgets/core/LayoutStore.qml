@@ -64,6 +64,7 @@ Singleton {
             property JsonObject defaults: JsonObject {
                 property string material: "glass"
                 property string colorMode: "accent"
+                property real dim: 0.60
             }
             property var screens: ({})
         }
@@ -349,6 +350,7 @@ Singleton {
             rows: rows,
             material: null,
             colorMode: null,
+            dim: null,
             settings: root.defaultSettings(widget)
         }
     }
@@ -395,6 +397,16 @@ Singleton {
         root.scheduleSave()
     }
 
+    function setDim(uid: string, value: real): void {
+        const instance = root.findInstance(uid)
+        if (!instance)
+            return
+        instance.dim = Number.isFinite(value)
+                     ? Math.max(0.10, Math.min(0.95, value)) : null
+        root.instanceChanged(uid)
+        root.scheduleSave()
+    }
+
     function setColorMode(uid: string, mode: string): void {
         const instance = root.findInstance(uid)
         if (!instance)
@@ -414,10 +426,12 @@ Singleton {
         let count = 0
         const clearList = function(list) {
             for (const instance of list || []) {
-                if (instance.material !== null || instance.colorMode !== null)
+                if (instance.material !== null || instance.colorMode !== null
+                    || instance.dim !== null)
                     count++
                 instance.material = null
                 instance.colorMode = null
+                instance.dim = null
             }
         }
         for (const screenName in root.screens) {
@@ -659,6 +673,8 @@ Singleton {
                 copy.colorMode = "neutral"
             copy.colorMode = (copy.colorMode === "accent" || copy.colorMode === "neutral")
                             ? copy.colorMode : null
+            copy.dim = Number.isFinite(copy.dim)
+                     ? Math.max(0.10, Math.min(0.95, copy.dim)) : null
             copy.uid = typeof copy.uid === "string" && copy.uid.length > 0
                      ? copy.uid : root.newUid()
             out.push(copy)
@@ -749,6 +765,7 @@ Singleton {
         state.schema = 1
         state.defaults.material = Config.defaultMaterial
         state.defaults.colorMode = Config.defaultColorMode
+        state.defaults.dim = Config.defaultMaterialDim
         state.screens = JSON.parse(JSON.stringify(root.screens))
         stateFile.writeAdapter()
         console.info("[widgets/layout] сохранено: " + stateFile.path)

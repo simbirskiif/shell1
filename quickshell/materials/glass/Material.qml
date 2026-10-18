@@ -8,6 +8,7 @@ Item {
 
     property var colors: ({})
     property real radius: 0
+    property real dim: 0.60
     property var size: Qt.size(0, 0)
     property string wallpaperSource: ""
     property bool editing: false
@@ -55,7 +56,8 @@ Item {
         property color outline: root.colors.outline || "#938F99"
         // Плотность тонировки близка к панелям оболочки: обои остаются
         // лёгким оттенком, а не превращают карточку в отдельное стекло.
-        property real tintOpacity: root.hasWallpaper ? 0.60 : 0.94
+        property real tintOpacity: root.hasWallpaper ? root.dim
+                                                   : Math.min(0.98, root.dim + 0.34)
         property real blur: root.blurPx
 
         fragmentShader: "glass-rounded.frag.qsb"

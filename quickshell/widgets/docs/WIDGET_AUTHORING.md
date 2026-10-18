@@ -124,6 +124,7 @@ shell. Внутренние плашки можно.
 | `dp` | px на 1dp (160 dpi) |
 | `sizeClass` | `"compact"`, `"medium"`, `"large"` |
 | `material` | id материала подложки |
+| `materialDim` | затемнение материала (0.10–0.95) |
 | `editing` | Идёт редактирование |
 | `preview` | Рендер в каталоге (не трогайте сеть/диск) |
 | `screen` | Имя экрана |
@@ -168,6 +169,7 @@ materials/my.material/
 Item {
     property var colors: ({})
     property real radius: 0
+    property real dim: 0.60
     property var size: Qt.size(0, 0)
     property string wallpaperSource: ""
     property bool editing: false

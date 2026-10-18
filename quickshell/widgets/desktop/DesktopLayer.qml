@@ -22,9 +22,12 @@ PanelWindow {
     readonly property bool editing: EditorState.active
     readonly property bool debugGrid: Config.showGrid
 
-    // Экземпляры виджетов на этом экране. Массив пересоздаётся при изменении
-    // раскладки/реестра, поэтому Repeater обновляет карточки.
-    property var instances: []
+    // Стабильный список uid: при добавлении/удалении одного виджета
+    // Repeater не пересоздаёт остальные карточки (иначе все они летели бы
+    // из левого верхнего угла). Сами объекты берутся из LayoutStore.
+    ListModel {
+        id: instanceModel
+    }
     property var tray: []
     property var _maskRegions: []
     property bool _maskScheduled: false
@@ -83,17 +86,18 @@ PanelWindow {
     Repeater {
         id: hostRepeater
 
-        model: root.instances
+        model: instanceModel
 
         delegate: WidgetHost {
-            required property var modelData
+            required property string instanceUid
 
-            instance: modelData
+            uid: instanceUid
+            instance: LayoutStore.findInstance(instanceUid)
             metrics: gridMetrics
             screen: root.screen
             editing: root.editing
 
-            onContextRequested: (x, y) => root.openMenu(x, y)
+            onContextRequested: (x, y, uid) => root.openMenu(x, y, uid)
         }
 
         onItemAdded: root.scheduleMaskSync()
@@ -106,7 +110,7 @@ PanelWindow {
         function onRegistryChanged() {
             // Уже созданные карточки сами следят за widgetById; пересобирать
             // их нужно только пока раскладка ещё не создана.
-            if (root.instances.length === 0 && WidgetRegistry.ready)
+            if (instanceModel.count === 0 && WidgetRegistry.ready)
                 root.refreshInstances()
         }
     }
@@ -161,14 +165,33 @@ PanelWindow {
         gridRefreshTimer.restart()
     }
 
+    function rowFor(uid: string): int {
+        for (let i = 0; i < instanceModel.count; i++) {
+            if (instanceModel.get(i).instanceUid === uid)
+                return i
+        }
+        return -1
+    }
+
     function refreshInstances(): void {
         if (!root.screen || !WidgetRegistry.ready || !LayoutStore.ready) {
-            root.instances = []
+            instanceModel.clear()
             root.scheduleMaskSync()
             return
         }
         LayoutStore.ensureScreen(root.screen.name, gridMetrics)
-        root.instances = LayoutStore.instancesFor(root.screen.name)
+        const list = LayoutStore.instancesFor(root.screen.name)
+        const wanted = ({})
+        for (const instance of list)
+            wanted[instance.uid] = true
+        for (let i = instanceModel.count - 1; i >= 0; i--) {
+            if (!wanted[instanceModel.get(i).instanceUid])
+                instanceModel.remove(i)
+        }
+        for (const instance of list) {
+            if (root.rowFor(instance.uid) < 0)
+                instanceModel.append({ instanceUid: instance.uid })
+        }
         root.tray = LayoutStore.trayFor(root.screen.name)
         root.scheduleMaskSync()
     }
@@ -202,18 +225,22 @@ PanelWindow {
         }
         maskRegion.changed()
         console.info("[widgets/mask] " + gridMetrics.screenName
-                     + ": весь рабочий стол, экземпляров " + hostRepeater.count)
+                     + ": весь рабочий стол, экземпляров " + instanceModel.count)
     }
 
-    function openMenu(x: real, y: real): void {
+    function openMenu(x: real, y: real, uid: string): void {
         if (!root.screen)
             return
         desktopMenu.screenName = root.screen.name
+        desktopMenu.targetUid = uid || ""
         desktopMenu.openAt(x, y)
     }
 
     function handleMenuAction(name: string): void {
-        if (name === "add") {
+        if (name === "widget-settings") {
+            if (desktopMenu.targetUid.length > 0)
+                EditorState.openSettings(desktopMenu.targetUid, root.screen.name)
+        } else if (name === "add") {
             EditorState.openPicker(root.screen.name)
         } else if (name === "global") {
             EditorState.openGlobalSettings(root.screen.name)
