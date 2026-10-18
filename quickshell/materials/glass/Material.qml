@@ -18,7 +18,10 @@ Item {
     property real screenHeight: 0
 
     readonly property bool hasWallpaper: root.wallpaperSource.length > 0
-    readonly property real blurPx: Math.max(2, Math.min(root.width, root.height) * 0.07)
+    // Размытие задаётся в экранных пикселях и не зависит от размера виджета:
+    // иначе рисунок обоев выглядит крупнее на большой карточке и мельче на
+    // маленькой.
+    readonly property real blurPx: 14
 
     Image {
         id: wallpaper
