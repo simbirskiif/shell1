@@ -105,8 +105,35 @@ PanelWindow {
         }
     }
 
+    Connections {
+        target: gridMetrics
+
+        function onColsChanged() {
+            root.scheduleGridRefresh()
+        }
+
+        function onRowsChanged() {
+            root.scheduleGridRefresh()
+        }
+
+        function onCellChanged() {
+            root.scheduleGridRefresh()
+        }
+    }
+
+    Timer {
+        id: gridRefreshTimer
+        interval: 280
+        repeat: false
+        onTriggered: root.refreshInstances()
+    }
+
+    function scheduleGridRefresh(): void {
+        gridRefreshTimer.restart()
+    }
+
     function refreshInstances(): void {
-        if (!root.screen || !WidgetRegistry.ready) {
+        if (!root.screen || !WidgetRegistry.ready || !LayoutStore.ready) {
             root.instances = []
             root.scheduleMaskSync()
             return

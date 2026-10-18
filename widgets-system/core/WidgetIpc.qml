@@ -11,7 +11,12 @@ IpcHandler {
     function state(): string {
         const lines = []
         for (const screenName in LayoutStore.screens) {
-            for (const instance of LayoutStore.screens[screenName]) {
+            const entry = LayoutStore.screens[screenName]
+            lines.push("screen " + screenName + ": " + (entry.signature || "?")
+                       + " " + (entry.grid ? entry.grid.cols + "x" + entry.grid.rows : "?")
+                       + ", tray=" + (entry.tray ? entry.tray.length : 0)
+                       + ", signatures=" + Object.keys(entry.signatures || {}).join(","))
+            for (const instance of entry.widgets || []) {
                 lines.push(instance.uid + " " + instance.id + " @" + screenName
                            + " " + instance.col + "," + instance.row
                            + " " + instance.cols + "x" + instance.rows
