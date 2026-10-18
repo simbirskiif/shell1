@@ -85,9 +85,11 @@ qs ipc -p /home/adm_a/shell/quickshell call widgets addPath /path/to/widgets
 - `MaterialRegistry`: пользовательские материалы
   `$XDG_CONFIG_HOME/quickshell/widgets/materials` и встроенные
   `<shellDir>/materials`, приоритет у пользовательских.
-- Встроенные: `solid`, `transparent`, `gradient`, `grain`, `glass`.
-  `glass` и `grain` — шейдеры `.frag` → `.frag.qsb` (`qsb --qt6`),
-  сборка: `widgets/tools/build-shaders.sh`.
+- Встроенные: `solid`, `transparent`, `gradient`, `grain`, `glass`, `liquid`.
+  `glass`, `grain` и `liquid` — шейдеры `.frag` → `.frag.qsb` (`qsb --qt6`),
+  сборка: `widgets/tools/build-shaders.sh`. `liquid` — размытие, преломление
+  на кромке, хроматическая дисперсия и подсветка; в комплекте есть также
+  отдельный `blur.frag` для пользовательских материалов.
 - Глобальные параметры — материал, режим цвета и затемнение материала по
   умолчанию; задаются в «Параметрах виджетов» (ПКМ по рабочему столу) или в
   `config.json` (`defaults.material`, `defaults.colorMode`, `defaults.dim`).
@@ -200,7 +202,7 @@ quickshell/
     docs/WIDGET_AUTHORING.md
   builtin-widgets/            my.clock, my.note, my.color, my.allowed,
                               my.palette, my.switch
-  materials/                  solid/transparent/gradient/grain/glass
+  materials/                  solid/transparent/gradient/grain/glass/liquid
 ```
 
 ## Известные ограничения

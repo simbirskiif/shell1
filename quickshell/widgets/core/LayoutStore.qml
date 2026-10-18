@@ -401,7 +401,7 @@ Singleton {
         const instance = root.findInstance(uid)
         if (!instance)
             return
-        instance.dim = Number.isFinite(value)
+        instance.dim = Number.isFinite(value) && value >= 0
                      ? Math.max(0.10, Math.min(0.95, value)) : null
         root.instanceChanged(uid)
         root.scheduleSave()
