@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import "../core"
+import "../editor"
 
 // Обёртка одного экземпляра виджета (раздел 2 ТЗ).
 //
@@ -60,6 +61,17 @@ Item {
                                      ? Math.max(0, Math.min(root.instance.row,
                                                             root.metrics.rows - root.gridRows))
                                      : 0
+
+    readonly property bool previewing: DragController.active && root.instance
+                                       && DragController.uid === root.instance.uid
+    readonly property int liveCols: root.previewing ? DragController.cols : root.gridCols
+    readonly property int liveRows: root.previewing ? DragController.rows : root.gridRows
+    readonly property real liveWidth: root.previewing
+                                       ? root.metrics.pixelWidth(DragController.cols)
+                                       : root.width
+    readonly property real liveHeight: root.previewing
+                                       ? root.metrics.pixelHeight(DragController.rows)
+                                       : root.height
 
     readonly property real padding: Math.round(root.metrics.cell * 0.12)
     readonly property real materialRadius: Math.round(root.metrics.cell * 0.28)
@@ -211,10 +223,10 @@ Item {
 
         settingsData: root.currentSettings
         colorsData: root.effectiveColors
-        rows: root.gridRows
-        cols: root.gridCols
-        width: root.width
-        height: root.height
+        rows: root.liveRows
+        cols: root.liveCols
+        width: root.liveWidth
+        height: root.liveHeight
         cell: root.metrics.cell
         dp: root.metrics.dp
         colorMode: root.effectiveColorMode
@@ -401,6 +413,120 @@ Item {
         onDeleteRequested: {
             if (root.instance)
                 LayoutStore.removeInstance(root.instance.uid)
+        }
+    }
+
+    // --- Редактор (раздел 8 ТЗ) ---
+    Rectangle {
+        anchors.fill: parent
+        z: 5
+        visible: root.editing
+        color: "transparent"
+        radius: root.materialRadius
+        border.width: 2
+        border.color: root.previewing && !DragController.valid
+                      ? Theme.colors.error : Theme.colors.primary
+    }
+
+    MouseArea {
+        id: dragArea
+
+        anchors.fill: parent
+        z: 10
+        visible: root.editing
+        enabled: root.editing
+        acceptedButtons: Qt.LeftButton
+        cursorShape: Qt.SizeAllCursor
+
+        onPressed: (mouse) => {
+            DragController.startDrag(root, dragArea.mapToItem(null, mouse.x, mouse.y))
+            mouse.accepted = true
+        }
+
+        onPositionChanged: (mouse) => {
+            if (DragController.active && DragController.uid === root.instance.uid)
+                DragController.update(dragArea.mapToItem(null, mouse.x, mouse.y))
+        }
+
+        onReleased: DragController.finish()
+    }
+
+    Repeater {
+        model: ["topleft", "top", "topright", "right",
+                "bottomright", "bottom", "bottomleft", "left"]
+
+        delegate: MouseArea {
+            id: handle
+
+            required property var modelData
+
+            readonly property string edge: modelData
+            readonly property bool horizontal: edge.indexOf("left") >= 0
+                                                 || edge.indexOf("right") >= 0
+            readonly property bool vertical: edge.indexOf("top") >= 0
+                                               || edge.indexOf("bottom") >= 0
+
+            width: 14
+            height: 14
+            z: 20
+            visible: root.editing && root.widget
+                     && root.widget.sizeSpec && root.widget.sizeSpec.scalable
+            cursorShape: horizontal && vertical
+                         ? (edge === "topleft" || edge === "bottomright"
+                            ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor)
+                         : (horizontal ? Qt.SizeHorCursor
+                                       : (vertical ? Qt.SizeVerCursor : Qt.ArrowCursor))
+
+            x: edge.indexOf("left") >= 0 ? 0
+               : (edge.indexOf("right") >= 0 ? root.width - width
+                                              : (root.width - width) / 2)
+            y: edge.indexOf("top") >= 0 ? 0
+               : (edge.indexOf("bottom") >= 0 ? root.height - height
+                                               : (root.height - height) / 2)
+
+            onPressed: (mouse) => {
+                DragController.startResize(root, handle.edge,
+                                           handle.mapToItem(null, mouse.x, mouse.y))
+                mouse.accepted = true
+            }
+
+            onPositionChanged: (mouse) => {
+                if (DragController.active && DragController.uid === root.instance.uid)
+                    DragController.update(handle.mapToItem(null, mouse.x, mouse.y))
+            }
+
+            onReleased: DragController.finish()
+
+            Rectangle {
+                anchors.fill: parent
+                radius: 3
+                color: Theme.colors.primary
+                border.width: 1
+                border.color: Theme.colors.onPrimary
+            }
+        }
+    }
+
+    Row {
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: 2
+        spacing: 2
+        z: 30
+        visible: root.editing
+
+        HostButton {
+            text: "✕"
+            onClicked: {
+                EditorState.beginOperation()
+                if (root.instance)
+                    LayoutStore.removeInstance(root.instance.uid)
+            }
+        }
+
+        HostButton {
+            text: "⚙"
+            onClicked: console.info("[widgets/editor] настройки экземпляра — этап 6")
         }
     }
 }

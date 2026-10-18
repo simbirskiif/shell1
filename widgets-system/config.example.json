@@ -6,7 +6,7 @@
     "minCols": 4,
     "maxCols": 24,
     "dpiOverride": 0,
-    "showGrid": true,
+    "showGrid": false,
     "reserved": {
       "top": 0,
       "right": 0,

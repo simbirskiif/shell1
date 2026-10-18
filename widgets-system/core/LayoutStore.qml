@@ -444,6 +444,43 @@ Singleton {
         root.scheduleSave()
     }
 
+    // --- Снимки для undo/redo ---
+    function snapshot(): var {
+        return JSON.parse(JSON.stringify(root.screens))
+    }
+
+    function restoreSnapshot(value: var): void {
+        if (!value)
+            return
+        root.screens = root.normalizeScreens(JSON.parse(JSON.stringify(value)))
+        root.reindex()
+        root.layoutChanged()
+        root.scheduleSave()
+    }
+
+    function restoreTray(uid: string, screenName: string, metrics: var): bool {
+        const located = root.locate(uid)
+        if (!located || !located.entry || !located.entry.tray
+            || located.entry.tray.indexOf(located.instance) < 0)
+            return false
+        const widget = WidgetRegistry.widgetById(located.instance.id)
+        const size = widget && widget.sizeSpec
+                   ? widget.sizeSpec.defaultSize
+                   : { cols: located.instance.cols, rows: located.instance.rows }
+        const position = root.findFree(located.entry.widgets, size, metrics.rows, metrics.cols)
+        if (!position)
+            return false
+        located.list.splice(located.list.indexOf(located.instance), 1)
+        located.instance.col = position.col
+        located.instance.row = position.row
+        located.instance.cols = size.cols
+        located.instance.rows = size.rows
+        located.entry.widgets.push(located.instance)
+        root.layoutChanged()
+        root.scheduleSave()
+        return true
+    }
+
     // --- Нормализация загруженного ---
     function normalizeEntry(entry: var): void {
         if (!entry)

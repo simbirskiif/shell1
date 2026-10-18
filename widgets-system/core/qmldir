@@ -7,3 +7,4 @@ singleton MaterialRegistry 1.0 MaterialRegistry.qml
 GridMetrics 1.0 GridMetrics.qml
 WidgetContext 1.0 WidgetContext.qml
 WidgetIpc 1.0 WidgetIpc.qml
+singleton EditorState 1.0 EditorState.qml

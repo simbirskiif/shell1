@@ -28,7 +28,26 @@ IpcHandler {
             return m.id
         }).join(","))
         lines.push("wallpaper: " + Wallpaper.sourceUrl)
+        lines.push("editing: " + (EditorState.active ? "true" : "false")
+                   + " undo=" + EditorState.undoStack.length
+                   + " redo=" + EditorState.redoStack.length)
         return lines.join("\n")
+    }
+
+    function edit(action: string): string {
+        if (action === "toggle")
+            EditorState.toggle()
+        else if (action === "on")
+            EditorState.enter()
+        else if (action === "off")
+            EditorState.exitCommit()
+        else if (action === "cancel")
+            EditorState.cancel()
+        else if (action === "undo")
+            EditorState.undo()
+        else if (action === "redo")
+            EditorState.redo()
+        return state()
     }
 
     function material(uid: string, materialId: string): string {

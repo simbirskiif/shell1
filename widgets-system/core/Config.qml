@@ -43,7 +43,7 @@ Singleton {
     readonly property int maxCols: adapter.grid.maxCols
     // Переопределение плотности (px/мм). 0 — определять по экрану.
     readonly property real dpiOverride: adapter.grid.dpiOverride
-    // Показывать отладочную сетку (этап 1; позже — только в редакторе).
+    // Показывать сетку вне редактора. В редакторе она видна всегда.
     readonly property bool showGrid: adapter.grid.showGrid
     // Зарезервированные области (панели других клиентов), логические px.
     readonly property int reservedTop: adapter.grid.reserved.top
@@ -94,7 +94,7 @@ Singleton {
                 property int minCols: 4
                 property int maxCols: 24
                 property real dpiOverride: 0
-                property bool showGrid: true
+                property bool showGrid: false
                 property JsonObject reserved: JsonObject {
                     property int top: 0
                     property int right: 0
