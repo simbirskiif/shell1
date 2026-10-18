@@ -46,9 +46,34 @@ Item {
         ? Math.min(innerW, innerH * 0.5)
         : Math.min(innerH, innerW * 0.42)
 
-    // Прозрачный материал должен оставаться прозрачным: собственный фон
-    // на всю карточку перекрыл бы обои и сделал бы ctx.backdrop бессмысленным.
+    // ───────────────────────── Цвет обложки и градиент ─────────────────────────
+    property color sampledBase: "#555555"
+    property bool coverReady: false
+    readonly property color baseColor: ctx.preview ? "#6a4c93" : sampledBase
+    readonly property color topColor: Qt.hsva(Math.max(0, baseColor.hsvHue),
+                                              baseColor.hsvSaturation * 0.85,
+                                              Math.min(1, baseColor.hsvValue + 0.14), 1)
+    // Анимированные цвета градиента (смена обложки → плавный переход)
+    property color gradBottom: baseColor
+    property color gradTop: topColor
+    Behavior on gradBottom { ColorAnimation { duration: 700; easing.type: Easing.InOutQuad } }
+    Behavior on gradTop { ColorAnimation { duration: 700; easing.type: Easing.InOutQuad } }
+
+    // Прозрачный материал должен оставаться прозрачным: собственный градиент
+    // обложки перекрыл бы обои и сделал бы ctx.backdrop бессмысленным.
     readonly property bool transparentMode: ctx.material === "transparent"
+    readonly property bool gradientOn: !transparentMode
+                                       && ctx.colorMode === "neutral"
+                                       && (ctx.preview || coverReady)
+
+    function applySample(r, g, b) {
+        const col = Qt.rgba(r, g, b, 1)
+        const s0 = col.hsvSaturation
+        const s = s0 < 0.12 ? s0 : Math.min(0.85, Math.max(0.3, s0))   // серые обложки остаются серыми
+        const v = Math.min(0.78, Math.max(0.42, col.hsvValue))
+        sampledBase = Qt.hsva(Math.max(0, col.hsvHue), s, v, 1)
+        coverReady = true
+    }
 
     // ───────────────────────── Читаемость ─────────────────────────
     readonly property color cWhite: "#ffffff"
@@ -69,14 +94,23 @@ Item {
         return contrast(cWhite, bg) >= contrast(cDark, bg) ? cWhite : cDark
     }
 
-    // Фон карточки рисует материал, а не виджет. Для текста достаточно
-    // системной палитры; в прозрачном режиме — пробы обоев от shell.
+    // Оценка фона под виджетом: середина градиента или поверхность системной палитры.
+    // Если фон материала на деле светлее/темнее — менять нужно только эту строку.
+    readonly property color bgC: gradientOn
+        ? Qt.rgba((gradTop.r + gradBottom.r) / 2, (gradTop.g + gradBottom.g) / 2,
+                  (gradTop.b + gradBottom.b) / 2, 1)
+        : surfaceC
+
+    // Цвет текста в прозрачном режиме берём у shell: он уже проверил
+    // обои под карточкой и выбрал максимально контрастный ink.
     readonly property bool useBackdropInk: transparentMode && !!ctx.backdrop
     property color fg: useBackdropInk ? ctx.backdrop.ink
-        : (contrast(onSurfaceC, surfaceC) >= 4.5 ? onSurfaceC : bestOn(surfaceC))
+        : (gradientOn ? bestOn(bgC)
+        : (contrast(onSurfaceC, bgC) >= 4.5 ? onSurfaceC : bestOn(bgC)))
     property color fgDim: useBackdropInk ? ctx.backdrop.inkMuted
         : Qt.alpha(fg, 0.72)
-    property color toggleFill: contrast(primaryC, surfaceC) >= 3 ? primaryC : fg
+    property color toggleFill: gradientOn ? fg
+        : (contrast(primaryC, bgC) >= 3 ? primaryC : fg)
     property color toggleIconColor: bestOn(toggleFill)
     Behavior on fg { ColorAnimation { duration: 300 } }
     Behavior on fgDim { ColorAnimation { duration: 300 } }
@@ -224,6 +258,58 @@ Item {
                     }
                 }
             }
+        }
+    }
+
+    // ───────────────────────── Выборка цвета обложки ─────────────────────────
+    Canvas {
+        id: sampler
+        x: -64; y: -64
+        width: 24; height: 24
+        opacity: 0.01
+        property string src: root.artUrl
+        property string loaded: ""
+
+        function refresh() {
+            if (loaded !== "" && loaded !== src) unloadImage(loaded)
+            loaded = ""
+            if (src === "") { root.coverReady = false; return }
+            if (isImageLoaded(src)) { loaded = src; requestPaint() }
+            else loadImage(src)
+        }
+        onSrcChanged: refresh()
+        Component.onCompleted: refresh()
+        onImageLoaded: {
+            if (src !== "" && isImageLoaded(src)) { loaded = src; requestPaint() }
+        }
+        onPaint: {
+            if (loaded === "" || loaded !== src) return
+            const c = getContext("2d")
+            c.clearRect(0, 0, width, height)
+            c.drawImage(src, 0, 0, width, height)
+            const d = c.getImageData(0, 0, width, height).data
+            let r = 0, g = 0, b = 0, ws = 0
+            for (let i = 0; i < d.length; i += 4) {
+                const R = d[i] / 255, G = d[i + 1] / 255, B = d[i + 2] / 255
+                const mx = Math.max(R, G, B), mn = Math.min(R, G, B)
+                if (mx < 0.12) continue                       // почти чёрные пиксели
+                const s = (mx - mn) / mx
+                const w = 0.02 + s * s * mx                   // насыщенные и яркие весят больше
+                r += R * w; g += G * w; b += B * w; ws += w
+            }
+            if (ws > 0) root.applySample(r / ws, g / ws, b / ws)
+        }
+    }
+
+    // ───────────────────────── Фон-градиент (только нейтральный режим) ─────────────────────────
+    Rectangle {
+        anchors.fill: parent
+        radius: root.cardRadius
+        opacity: root.gradientOn ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 400 } }
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: root.gradTop }
+            GradientStop { position: 1.0; color: root.gradBottom }
         }
     }
 
