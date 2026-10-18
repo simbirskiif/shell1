@@ -27,6 +27,7 @@ QtObject {
     property string screen: ""
     property string fontFamilyData: Theme.fontFamily
     property real materialDimData: 0.60
+    property var backdropData: null
 
     // Палитра, уже разрешённая по режиму accent/neutral и схеме shell.
     property var colorsData: Theme.colors
@@ -37,6 +38,7 @@ QtObject {
     readonly property real materialDim: materialDimData
     readonly property bool isDark: Theme.isDark
     readonly property var settings: settingsData
+    readonly property var backdrop: backdropData
 
     // Компактный/средний/крупный по меньшей стороне (раздел 3.5).
     readonly property string sizeClass: {

@@ -315,11 +315,28 @@ Item {
         screen: root.screen ? root.screen.name : ""
         fontFamilyData: Theme.fontFamily
         materialDimData: root.effectiveDim
+        backdropData: backdropProbe.info
 
         onSettingRequested: (key, value) => {
             if (root.instance)
                 LayoutStore.setSetting(root.instance.uid, key, value)
         }
+    }
+
+    // Проба обоев под карточкой. Живёт рядом с контекстом, а не внутри
+    // материала: виджет получает готовые цвета через ctx.backdrop.
+    BackdropProbe {
+        id: backdropProbe
+
+        source: Wallpaper.sourceUrl
+        screenWidth: root.screen ? root.screen.width : 0
+        screenHeight: root.screen ? root.screen.height : 0
+        rectX: root.x + root.screenOffsetX
+        rectY: root.y + root.screenOffsetY
+        rectWidth: root.width
+        rectHeight: root.height
+        fallbackColor: root.effectiveColors && root.effectiveColors.surface
+                       ? root.effectiveColors.surface : "#151519"
     }
 
     Connections {
