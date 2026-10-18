@@ -1,8 +1,8 @@
 import QtQuick
 
-// Полупрозрачное стекло: шейдер samplит снимок обоев, размывает его,
-// добавляет тонировку, верхний блик и рамку. Если обои неизвестны,
-// работает как тонированная подложка.
+// Полупрозрачное стекло: шейдер samplит снимок обоев, размывает его и
+// добавляет тонировку и верхний блик. Если обои неизвестны, работает как
+// тонированная подложка.
 Item {
     id: root
 
@@ -55,9 +55,9 @@ Item {
         property color outline: root.colors.outline || "#938F99"
         // Плотность тонировки близка к панелям оболочки: обои остаются
         // лёгким оттенком, а не превращают карточку в отдельное стекло.
-        property real tintOpacity: root.hasWallpaper ? 0.72 : 0.94
+        property real tintOpacity: root.hasWallpaper ? 0.60 : 0.94
         property real blur: root.blurPx
 
-        fragmentShader: "glass.frag.qsb"
+        fragmentShader: "glass-rounded.frag.qsb"
     }
 }

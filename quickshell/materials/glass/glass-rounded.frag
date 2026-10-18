@@ -22,7 +22,9 @@ float roundedBox(vec2 p, vec2 halfSize, float r) {
 }
 
 void main() {
-    vec2 uv = qt_TexCoord0;
+    // Не уходим в самый край текстуры: на последнем texel некоторых
+    // драйверов возвращается чёрная кромка, которая читалась как линия.
+    vec2 uv = clamp(qt_TexCoord0, vec2(0.0015), vec2(0.9985));
     vec2 texel = ubuf.blur / max(ubuf.size, vec2(1.0));
 
     // 9-tap box-ish blur; weights sum to 1.
@@ -46,15 +48,11 @@ void main() {
     float aa = 1.5 / max(1.0, min(ubuf.size.x, ubuf.size.y));
     float alpha = 1.0 - smoothstep(-aa, aa, d);
 
-    // Тонкая рамка по краю скругления.
-    float border = smoothstep(-2.0 - aa, -2.0 + aa, d)
-                 - smoothstep(-aa, aa, d);
-    color = mix(color, ubuf.outline.rgb, clamp(border, 0.0, 1.0) * 0.35);
-
-    // За пределами скругления не оставляем даже нулевой по альфе цвет:
-    // иначе на некоторых композиторах углы шейдера читаются квадратом.
-    if (alpha <= 0.001)
+    // Жёсткий порог по контуру: полупрозрачная кромка на прямой нижней
+    // стороне читалась как светлая квадратная линия на фоне обоев.
+    if (alpha < 0.5)
         discard;
+    alpha = 1.0;
 
     fragColor = vec4(color, alpha) * ubuf.qt_Opacity;
 }

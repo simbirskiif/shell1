@@ -132,7 +132,9 @@ Item {
     height: root.metrics.pixelHeight(root.gridRows)
 
     visible: root.instance !== null && root.instance !== undefined
-    clip: true
+    // Карточка клипает своё содержимое; хост не клипает, чтобы круглые
+    // кнопки редактора могли чуть выходить за границу карточки.
+    clip: false
 
     Behavior on x {
         enabled: !root.dragActive
@@ -317,6 +319,23 @@ Item {
         }
     }
 
+    // Визуальная карточка. В редакторе чуть уменьшается, чтобы кнопки
+    // управления могли выйти за её границу и не закрывать контент.
+    Item {
+        id: card
+
+        anchors.fill: parent
+        scale: root.editing ? 0.95 : 1
+        transformOrigin: Item.Center
+        clip: true
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: 180
+                easing.type: Easing.OutCubic
+            }
+        }
+
     // --- Материал подложки (раздел 6.1 ТЗ) ---
     Rectangle {
         id: materialFallback
@@ -325,8 +344,6 @@ Item {
         visible: materialLoader.status !== Loader.Ready
         radius: root.materialRadius
         color: Theme.colors.surface
-        border.width: 1
-        border.color: Theme.isDark ? "#22FFFFFF" : "#11000000"
     }
 
     Loader {
@@ -339,6 +356,7 @@ Item {
                 console.error("[widgets/material] " + root.widgetId
                               + ": ошибка загрузки материала " + root.effectiveMaterial)
         }
+
     }
 
     Binding {
@@ -562,12 +580,12 @@ Item {
                          : (horizontal ? Qt.SizeHorCursor : Qt.SizeVerCursor)
 
             width: cornerZone ? corner
-                   : (horizontal ? band : Math.max(1, root.width - 2 * corner))
+                   : (horizontal ? band : Math.max(1, card.width - 2 * corner))
             height: cornerZone ? corner
-                    : (vertical ? band : Math.max(1, root.height - 2 * corner))
-            x: horizontal ? (edge.indexOf("left") >= 0 ? 0 : root.width - width)
+                    : (vertical ? band : Math.max(1, card.height - 2 * corner))
+            x: horizontal ? (edge.indexOf("left") >= 0 ? 0 : card.width - width)
                           : corner
-            y: vertical ? (edge.indexOf("top") >= 0 ? 0 : root.height - height)
+            y: vertical ? (edge.indexOf("top") >= 0 ? 0 : card.height - height)
                         : corner
 
             onPressed: (mouse) => {
@@ -587,6 +605,8 @@ Item {
         }
     }
 
+    }
+
     // ПКМ по виджету открывает то же меню слоя, что и ПКМ по пустому месту.
     // Кнопка только правая, поэтому левый интерактив виджета не страдает.
     MouseArea {
@@ -603,14 +623,17 @@ Item {
     }
 
     Row {
-        anchors.top: parent.top
-        anchors.right: parent.right
-        anchors.margins: 2
-        spacing: 2
+        id: controls
+
+        anchors.top: card.top
+        anchors.topMargin: -13
+        anchors.right: card.right
+        anchors.rightMargin: -5
+        spacing: 4
         z: 30
         visible: root.editing
 
-        HostButton {
+        HostIconButton {
             text: "✕"
             onClicked: {
                 EditorState.beginOperation()
@@ -619,7 +642,7 @@ Item {
             }
         }
 
-        HostButton {
+        HostIconButton {
             text: "⚙"
             onClicked: {
                 if (root.instance)

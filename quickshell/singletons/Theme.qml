@@ -120,7 +120,8 @@ Singleton {
 
     // Контекстное меню висит поверх произвольного окна, поэтому его подложка
     // плотнее панелей: полупрозрачный фон сливался с тёмными приложениями.
-    readonly property color menuSurface: mix(neutralSurface, "#ffffff", 0.08)
+    readonly property color menuSurface: mix(neutralSurface, Qt.rgba(1, 1, 1, 1), 0.08)
+    readonly property color menuSurfaceHover: mix(neutralSurface, Qt.rgba(1, 1, 1, 1), 0.14)
     readonly property color menuBorder: withAlpha(Wal.foreground, 0.20)
     readonly property color quickTextDim: withAlpha(Wal.foreground, 0.55)
     readonly property color quickIconOn: neutralSurface

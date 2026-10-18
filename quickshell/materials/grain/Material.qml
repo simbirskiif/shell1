@@ -25,6 +25,6 @@ Item {
         property color outline: root.colors.outline || "#938F99"
         property real strength: 0.10
 
-        fragmentShader: "grain.frag.qsb"
+        fragmentShader: "grain-rounded.frag.qsb"
     }
 }

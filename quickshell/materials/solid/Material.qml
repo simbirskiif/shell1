@@ -21,12 +21,4 @@ Item {
         color: root.colors.surface || "#1C1B1F"
     }
 
-    Rectangle {
-        anchors.fill: parent
-        radius: root.radius
-        color: "transparent"
-        border.width: 1
-        border.color: root.colors.outline || "#938F99"
-        opacity: 0.4
-    }
 }

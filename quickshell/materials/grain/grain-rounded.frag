@@ -32,14 +32,11 @@ void main() {
     float noise = hash(cell);
     vec3 color = ubuf.surface.rgb + (noise - 0.5) * ubuf.strength;
 
-    float border = smoothstep(-2.0 - aa, -2.0 + aa, d)
-                 - smoothstep(-aa, aa, d);
-    color = mix(color, ubuf.outline.rgb, clamp(border, 0.0, 1.0) * 0.35);
-
-    // За пределами скругления не оставляем даже нулевой по альфе цвет:
-    // иначе на некоторых композиторах углы шейдера читаются квадратом.
-    if (alpha <= 0.001)
+    // Жёсткий порог по контуру: полупрозрачная кромка на прямой нижней
+    // стороне читалась как светлая квадратная линия на фоне обоев.
+    if (alpha < 0.5)
         discard;
+    alpha = 1.0;
 
     fragColor = vec4(color, alpha) * ubuf.qt_Opacity;
 }

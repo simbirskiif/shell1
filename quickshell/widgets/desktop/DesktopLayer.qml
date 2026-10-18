@@ -285,16 +285,19 @@ PanelWindow {
 
         HostButton {
             text: "+"
+            prominent: true
             onClicked: EditorState.openPicker(root.screen.name)
         }
 
         HostButton {
-            text: "Готово"
+            text: "✓ Готово"
+            prominent: true
             onClicked: EditorState.exitCommit()
         }
 
         HostButton {
-            text: "Отмена"
+            text: "✕ Отмена"
+            prominent: true
             onClicked: EditorState.cancel()
         }
     }
