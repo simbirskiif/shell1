@@ -129,9 +129,20 @@ Singleton {
         return values
     }
 
+    function findInstance(uid: string): var {
+        for (const screenName in root.screens) {
+            const list = root.screens[screenName]
+            for (let i = 0; i < list.length; i++) {
+                if (list[i].uid === uid)
+                    return list[i]
+            }
+        }
+        return null
+    }
+
     function settingsFor(uid: string, widget: var): var {
         const values = root.defaultSettings(widget)
-        const instance = root._byUid[uid]
+        const instance = root.findInstance(uid)
         if (instance && instance.settings) {
             for (const key in instance.settings)
                 values[key] = instance.settings[key]
@@ -139,8 +150,26 @@ Singleton {
         return values
     }
 
+    function setMaterial(uid: string, materialId: string): void {
+        const instance = root.findInstance(uid)
+        if (!instance)
+            return
+        instance.material = materialId.length > 0 ? materialId : null
+        console.info("[widgets/layout] материал " + uid + " = " + (instance.material || "default"))
+        root.instanceChanged(uid)
+    }
+
+    function setColorMode(uid: string, mode: string): void {
+        const instance = root.findInstance(uid)
+        if (!instance)
+            return
+        instance.colorMode = (mode === "accent" || mode === "widget") ? mode : null
+        console.info("[widgets/layout] режим цвета " + uid + " = " + (instance.colorMode || "default"))
+        root.instanceChanged(uid)
+    }
+
     function setSetting(uid: string, key: string, value: var): void {
-        const instance = root._byUid[uid]
+        const instance = root.findInstance(uid)
         if (!instance)
             return
         if (!instance.settings)
@@ -164,7 +193,7 @@ Singleton {
     }
 
     function removeInstance(uid: string): void {
-        const instance = root._byUid[uid]
+        const instance = root.findInstance(uid)
         if (!instance)
             return
         const list = root.screens[instance.screen]
@@ -180,7 +209,7 @@ Singleton {
 
     function updateGeometry(uid: string, col: int, row: int,
                             cols: int, rows: int): void {
-        const instance = root._byUid[uid]
+        const instance = root.findInstance(uid)
         if (!instance)
             return
         instance.col = col

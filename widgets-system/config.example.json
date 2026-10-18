@@ -18,8 +18,9 @@
     "extraPaths": []
   },
   "theme": "dark",
+  "wallpaper": "",
   "defaults": {
-    "material": "solid",
+    "material": "glass",
     "colorMode": "accent"
   }
 }

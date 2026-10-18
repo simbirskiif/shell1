@@ -11,6 +11,9 @@ import "core"
 ShellRoot {
     id: root
 
+    // qs ipc call widgets state|material|colorMode|materialList|rescan
+    WidgetIpc {}
+
     Variants {
         model: Quickshell.screens
 

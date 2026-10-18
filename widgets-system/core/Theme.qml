@@ -47,4 +47,24 @@ Singleton {
     })
 
     readonly property var colors: isDark ? darkColors : lightColors
+
+    // Палитра для конкретного режима (раздел 6.3 ТЗ). В режиме widget
+    // недостающие роли берутся из палитры shell, чтобы виджет не ломался.
+    function colorsFor(mode: string, widget: var): var {
+        if (mode !== "widget" || !widget || !widget.palette)
+            return root.colors
+
+        const scheme = root.isDark ? widget.palette.dark : widget.palette.light
+        if (!scheme || typeof scheme !== "object")
+            return root.colors
+
+        const merged = ({})
+        for (const key in root.colors)
+            merged[key] = root.colors[key]
+        for (const key in scheme) {
+            if (typeof scheme[key] === "string" && scheme[key].length > 0)
+                merged[key] = scheme[key]
+        }
+        return merged
+    }
 }

@@ -25,8 +25,11 @@ QtObject {
     property bool preview: false
     property string screen: ""
 
+    // Палитра, уже разрешённая по режиму accent/widget и схеме shell.
+    property var colorsData: Theme.colors
+
     // --- Публичный контракт (только чтение для виджета) ---
-    readonly property var colors: Theme.colors
+    readonly property var colors: colorsData
     readonly property bool isDark: Theme.isDark
     readonly property var settings: settingsData
 

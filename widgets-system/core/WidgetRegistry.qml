@@ -79,6 +79,7 @@ Singleton {
     property var _rootWatcherModel: []
     property var _pendingReloadIds: ({})
     property bool _reloadScheduled: false
+    property var _lastSearchPaths: []
 
     function widgetById(id: string): var {
         return root._byId[id] || null
@@ -292,10 +293,19 @@ Singleton {
                 continue
             }
 
-            result.widget.files = files
-            result.widget.fingerprint = raw.path + "|" + raw.text + "|" + files.join("|")
-            byId[result.widget.id] = result.widget
-            parsed.push(result.widget)
+            const fingerprint = raw.path + "|" + raw.text + "|" + files.join("|")
+            const previous = oldById[result.widget.id]
+            if (previous && previous.fingerprint === fingerprint) {
+                // Тот же манифест и набор файлов: сохраняем объект, чтобы
+                // биндинги host'ов не перезагружали виджеты зря.
+                byId[result.widget.id] = previous
+                parsed.push(previous)
+            } else {
+                result.widget.files = files
+                result.widget.fingerprint = fingerprint
+                byId[result.widget.id] = result.widget
+                parsed.push(result.widget)
+            }
         }
 
         parsed.sort(function(a, b) {
@@ -786,7 +796,26 @@ Singleton {
         }
     }
 
-    onSearchPathsChanged: scheduleScan()
+    function samePaths(a: var, b: var): bool {
+        if (a.length !== b.length)
+            return false
+        for (let i = 0; i < a.length; i++) {
+            if (a[i] !== b[i])
+                return false
+        }
+        return true
+    }
 
-    Component.onCompleted: scheduleScan()
+    onSearchPathsChanged: {
+        const current = root.searchPaths
+        if (root.samePaths(current, root._lastSearchPaths))
+            return
+        root._lastSearchPaths = current.slice()
+        root.scheduleScan()
+    }
+
+    Component.onCompleted: {
+        root._lastSearchPaths = root.searchPaths.slice()
+        root.scheduleScan()
+    }
 }

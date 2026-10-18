@@ -57,10 +57,21 @@ Singleton {
     // --- Оформление ---
     // "dark" | "light"; этап 3 расширит до выбора палитры/акцента.
     readonly property string theme: adapter.theme
+    // Путь к файлу обоев для материала glass. Пусто — спросить hyprpaper.
+    readonly property string wallpaper: adapter.wallpaper
 
     // --- Значения по умолчанию для экземпляров (раздел 6 ТЗ) ---
     readonly property string defaultMaterial: adapter.defaults.material
     readonly property string defaultColorMode: adapter.defaults.colorMode
+
+    // Каталоги для пользовательских настроек/материалов. Создаём заранее,
+    // чтобы наблюдатели за папками не пропускали вложенное создание.
+    Process {
+        command: ["mkdir", "-p",
+                  root.configBase + "/widgets",
+                  root.configBase + "/widgets/materials"]
+        running: true
+    }
 
     FileView {
         id: configFile
@@ -97,9 +108,10 @@ Singleton {
             }
 
             property string theme: "dark"
+            property string wallpaper: ""
 
             property JsonObject defaults: JsonObject {
-                property string material: "solid"
+                property string material: "glass"
                 property string colorMode: "accent"
             }
         }

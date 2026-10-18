@@ -6,9 +6,9 @@ import "../core"
 
 // Обёртка одного экземпляра виджета (раздел 2 ТЗ).
 //
-// Shell рисует подложку и границы, виджет — только контент. В этапе 3 вместо
-// простого Rectangle появится MaterialRegistry; здесь уже есть контракт:
-// padding, radius и ctx передаются виджету.
+// Shell рисует подложку (материал) и передаёт палитру, виджет — только
+// контент. Изменение материала или режима цвета не перезагружает контент:
+// материал живёт в отдельном Loader, а ctx.colors обновляется на месте.
 //
 // Ошибка загрузки локализуется в этой карточке и не затрагивает соседние
 // экземпляры. Перезагрузка QML-файла виджета увеличивает reloadToken:
@@ -26,6 +26,14 @@ Item {
     // Увеличивается при каждой перезагрузке QML — используется в URL.
     property int reloadToken: 0
     property bool _initialized: false
+
+    // Локальные копии переопределений экземпляра: LayoutStore меняет поля
+    // объекта, а не сам объект, поэтому нужен явный refresh при
+    // instanceChanged.
+    property string instanceMaterial: ""
+    property string instanceColorMode: ""
+    property int materialToken: 0
+    property string loadedMaterialUrl: ""
 
     readonly property var widget: root.instance
                                     ? WidgetRegistry.widgetById(root.instance.id)
@@ -54,12 +62,45 @@ Item {
                                      : 0
 
     readonly property real padding: Math.round(root.metrics.cell * 0.12)
-    readonly property string effectiveMaterial: root.instance && root.instance.material
-                                                  ? root.instance.material
-                                                  : Config.defaultMaterial
-    readonly property string effectiveColorMode: root.instance && root.instance.colorMode
-                                                   ? root.instance.colorMode
-                                                   : Config.defaultColorMode
+    readonly property real materialRadius: Math.round(root.metrics.cell * 0.28)
+    // Смещение окна слоя внутри экрана: верхняя/боковая панель композитора.
+    readonly property real screenOffsetX:
+        root.screen ? Math.max(0, root.screen.width - root.metrics.areaWidth) : 0
+    readonly property real screenOffsetY:
+        root.screen ? Math.max(0, root.screen.height - root.metrics.areaHeight) : 0
+
+    readonly property string effectiveColorMode: {
+        const requested = root.instanceColorMode.length > 0
+                        ? root.instanceColorMode : Config.defaultColorMode
+        const modes = root.widget ? root.widget.colorModes : ["accent", "widget"]
+        if (modes.length === 0)
+            return "accent"
+        return modes.indexOf(requested) >= 0 ? requested : modes[0]
+    }
+
+    readonly property var effectiveColors:
+        Theme.colorsFor(root.effectiveColorMode, root.widget)
+
+    readonly property string effectiveMaterial: {
+        const requested = root.instanceMaterial.length > 0
+                        ? root.instanceMaterial : Config.defaultMaterial
+        const allowed = root.widget && root.widget.materials
+                      ? root.widget.materials : ["any"]
+        const permits = function(id) {
+            return allowed.indexOf("any") >= 0 || allowed.indexOf(id) >= 0
+        }
+
+        if (permits(requested) && MaterialRegistry.materialById(requested))
+            return requested
+        for (const id of allowed) {
+            if (id !== "any" && MaterialRegistry.materialById(id))
+                return id
+        }
+        if (MaterialRegistry.materialById("solid"))
+            return "solid"
+        return MaterialRegistry.materials.length > 0
+             ? MaterialRegistry.materials[0].id : requested
+    }
 
     property var currentSettings: ({})
 
@@ -77,6 +118,16 @@ Item {
         root.currentSettings = LayoutStore.settingsFor(root.instance.uid, root.widget)
     }
 
+    function refreshInstance(): void {
+        if (!root.instance)
+            return
+        // Repeater передаёт modelData как копию объекта, поэтому актуальные
+        // переопределения читаем из LayoutStore по uid.
+        const current = LayoutStore.findInstance(root.instance.uid)
+        root.instanceMaterial = current ? (current.material || "") : ""
+        root.instanceColorMode = current ? (current.colorMode || "") : ""
+    }
+
     function loadWidget(): void {
         if (!root.widget) {
             loader.active = false
@@ -87,6 +138,34 @@ Item {
                          { ctx: widgetContext })
         console.info("[widgets/host] загрузка " + root.widgetId
                      + " v" + root.reloadToken + " из " + root.widget.entryPath)
+    }
+
+    function loadMaterial(force: bool): void {
+        const material = MaterialRegistry.materialById(root.effectiveMaterial)
+        if (!material) {
+            materialLoader.active = false
+            root.loadedMaterialUrl = ""
+            return
+        }
+        if (!force && material.url === root.loadedMaterialUrl
+            && materialLoader.status === Loader.Ready)
+            return
+        root.loadedMaterialUrl = material.url
+        root.materialToken++
+        materialLoader.active = true
+        materialLoader.setSource(material.url + "?v=" + root.materialToken, {
+            colors: root.effectiveColors,
+            radius: root.materialRadius,
+            size: Qt.size(root.width, root.height),
+            wallpaperSource: Wallpaper.sourceUrl,
+            offsetX: root.x + root.screenOffsetX,
+            offsetY: root.y + root.screenOffsetY,
+            screenWidth: root.screen ? root.screen.width : 0,
+            screenHeight: root.screen ? root.screen.height : 0,
+            editing: root.editing
+        })
+        console.info("[widgets/material] " + root.widgetId + " <- " + material.id
+                     + " v" + root.materialToken)
     }
 
     function reloadWidget(): void {
@@ -105,12 +184,19 @@ Item {
     Component.onCompleted: {
         root._initialized = true
         root.refreshSettings()
+        root.refreshInstance()
         root.loadWidget()
+        root.loadMaterial(true)
     }
 
     onWidgetChanged: {
         if (root._initialized)
             root.reloadWidget()
+    }
+
+    onEffectiveMaterialChanged: {
+        if (root._initialized)
+            root.loadMaterial(false)
     }
 
     Timer {
@@ -124,6 +210,7 @@ Item {
         id: widgetContext
 
         settingsData: root.currentSettings
+        colorsData: root.effectiveColors
         rows: root.gridRows
         cols: root.gridCols
         width: root.width
@@ -146,8 +233,10 @@ Item {
         target: LayoutStore
 
         function onInstanceChanged(uid) {
-            if (root.instance && uid === root.instance.uid)
+            if (root.instance && uid === root.instance.uid) {
                 root.refreshSettings()
+                root.refreshInstance()
+            }
         }
     }
 
@@ -160,15 +249,108 @@ Item {
         }
     }
 
-    // Подложка — зона ответственности shell. Материалы появятся на этапе 3.
+    Connections {
+        target: MaterialRegistry
+
+        function onMaterialsChanged() {
+            if (root._initialized)
+                root.loadMaterial(false)
+        }
+
+        function onMaterialChanged(id) {
+            if (id === root.effectiveMaterial)
+                root.loadMaterial(true)
+        }
+    }
+
+    // --- Материал подложки (раздел 6.1 ТЗ) ---
     Rectangle {
+        id: materialFallback
+
         anchors.fill: parent
-        radius: Math.round(root.metrics.cell * 0.28)
+        visible: materialLoader.status !== Loader.Ready
+        radius: root.materialRadius
         color: Theme.colors.surface
         border.width: 1
         border.color: Theme.isDark ? "#22FFFFFF" : "#11000000"
     }
 
+    Loader {
+        id: materialLoader
+
+        anchors.fill: parent
+
+        onStatusChanged: {
+            if (status === Loader.Error)
+                console.error("[widgets/material] " + root.widgetId
+                              + ": ошибка загрузки материала " + root.effectiveMaterial)
+        }
+    }
+
+    Binding {
+        target: materialLoader.item
+        property: "colors"
+        value: root.effectiveColors
+        when: materialLoader.status === Loader.Ready
+    }
+
+    Binding {
+        target: materialLoader.item
+        property: "radius"
+        value: root.materialRadius
+        when: materialLoader.status === Loader.Ready
+    }
+
+    Binding {
+        target: materialLoader.item
+        property: "size"
+        value: Qt.size(root.width, root.height)
+        when: materialLoader.status === Loader.Ready
+    }
+
+    Binding {
+        target: materialLoader.item
+        property: "wallpaperSource"
+        value: Wallpaper.sourceUrl
+        when: materialLoader.status === Loader.Ready
+    }
+
+    Binding {
+        target: materialLoader.item
+        property: "offsetX"
+        value: root.x + root.screenOffsetX
+        when: materialLoader.status === Loader.Ready
+    }
+
+    Binding {
+        target: materialLoader.item
+        property: "offsetY"
+        value: root.y + root.screenOffsetY
+        when: materialLoader.status === Loader.Ready
+    }
+
+    Binding {
+        target: materialLoader.item
+        property: "screenWidth"
+        value: root.screen ? root.screen.width : 0
+        when: materialLoader.status === Loader.Ready
+    }
+
+    Binding {
+        target: materialLoader.item
+        property: "screenHeight"
+        value: root.screen ? root.screen.height : 0
+        when: materialLoader.status === Loader.Ready
+    }
+
+    Binding {
+        target: materialLoader.item
+        property: "editing"
+        value: root.editing
+        when: materialLoader.status === Loader.Ready
+    }
+
+    // --- Контент виджета ---
     Loader {
         id: loader
 

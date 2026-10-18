@@ -4,7 +4,7 @@
 которые лежат в отдельных папках и подключаются по контракту. ТЗ — `ТЗ система
 виджетов рабочего стола для Quickshell.md` (в загрузках пользователя).
 
-Реализация идёт по этапам из раздела 12 ТЗ. Сейчас готовы **этапы 1–2**.
+Реализация идёт по этапам из раздела 12 ТЗ. Сейчас готовы **этапы 1–3**.
 
 ## Запуск
 
@@ -79,6 +79,39 @@ XDG_RUNTIME_DIR=$PWD/rt/runtime qs kill -p widgets-system
 - Маска ввода `Region` строится из прямоугольников видимых карточек; клики
   вне карточек проходят в окна под слоем.
 
+### Этап 3: тема и материалы
+
+- `Theme` отдаёт палитру Material 3 в светлой/тёмной схеме (`theme` в
+  конфиге). Два режима цвета: `accent` — палитра shell, `widget` — палитра из
+  `manifest.palette` с подстановкой недостающих ролей из shell.
+- Режим выбирается глобально (`defaults.colorMode`) и переопределяется на
+  экземпляре. Если виджет не поддерживает режим (`colorModes`), берётся первый
+  поддерживаемый.
+- `MaterialRegistry` ищет материалы в
+  `$XDG_CONFIG_HOME/quickshell/widgets/materials` (пользовательские) и
+  `<shellDir>/materials` (встроенные) по `meta.json` + `Material.qml`.
+  Пользовательские важнее; новые материалы и правки QML подхватываются без
+  перезапуска.
+- Встроенные материалы: `solid`, `transparent`, `gradient`, `grain` (PNG-шум),
+  `glass` (размытие обоев через `QtQuick.Effects.MultiEffect`, тонировка и
+  рамка). Скрипт `qsb` в системе отсутствует, поэтому шейдерные `.frag/.qsb`
+  заменены на растровый шум и `MultiEffect`; контракт материала от этого не
+  меняется.
+- Обои для `glass` берутся из `wallpaper` конфига, иначе из
+  `~/.config/hypr/hyprpaper.conf`, иначе из `hyprctl hyprpaper listactive`.
+- Материал и режим цвета меняются на лету: перезагружается только материал,
+  контент виджета остаётся; `ctx.colors`/`ctx.material` обновляются.
+- Материал ограничен полем `materials` манифеста (`["any"]` или список id).
+
+IPC для проверки и будущего попапа:
+
+```sh
+qs ipc -p widgets-system call widgets state
+qs ipc -p widgets-system call widgets material i1 gradient
+qs ipc -p widgets-system call widgets colorMode i1 widget
+qs ipc -p widgets-system call widgets materialList
+```
+
 ### Раскладка (пока в памяти)
 
 `LayoutStore` хранит экземпляры по имени экрана (`uid`, `id`, `col/row`,
@@ -95,7 +128,7 @@ XDG_RUNTIME_DIR=$PWD/rt/runtime qs kill -p widgets-system
 - `my.note` — заметка, строковая/enum-настройка, кликабельность;
 - `my.color` — статичный цветной блок, `min == max` (без ресайза);
 - `my.allowed` — только `size.allowed`;
-- `my.palette` — собственная палитра в манифесте (используется на этапе 3);
+- `my.palette` — собственная палитра в манифесте и режим `widget`;
 - `my.switch` — минимальный переключатель с `bool`-настройкой и
   `ctx.setSetting()`.
 
@@ -119,11 +152,12 @@ XDG_RUNTIME_DIR=$PWD/rt/runtime qs kill -p widgets-system
   },
   "widgets": { "extraPaths": [] },
   "theme": "dark",
-  "defaults": { "material": "solid", "colorMode": "accent" }
+  "wallpaper": "",
+  "defaults": { "material": "glass", "colorMode": "accent" }
 }
 ```
 
-`showGrid` и `theme` перечитываются на лету.
+`showGrid`, `theme` и `wallpaper` перечитываются на лету.
 
 ### Про плотность
 
@@ -147,6 +181,9 @@ widgets-system/
     WidgetRegistry.qml          поиск, валидация, наблюдение за файлами
     LayoutStore.qml             экземпляры и настройки (пока в памяти)
     WidgetContext.qml           объект ctx для виджета
+    MaterialRegistry.qml        поиск материалов и их горячая перезагрузка
+    Wallpaper.qml               источник обоев для glass
+    WidgetIpc.qml               IPC-команды для проверки состояния
   desktop/
     DesktopLayer.qml            PanelWindow слоя рабочего стола
     WidgetHost.qml              подложка + Loader + ctx + ошибки
@@ -154,10 +191,11 @@ widgets-system/
     GridOverlay.qml             отладочная сетка
     HostButton.qml              кнопка для карточек состояния
   builtin-widgets/              примеры (см. выше)
+  materials/                    solid/transparent/gradient/grain/glass
   config.example.json
 ```
 
-## Проверка этапов 1–2
+## Проверка этапов 1–3
 
 - eDP 1920×1200 логических (2880×1800 физических, 300×190 мм, scale 1.5):
   сетка 16×9, клетка 104 px ≈ 16,3 мм. Headless 1280×720: 17×8, клетка 64 px.
@@ -181,7 +219,25 @@ widgets-system/
 - `my.switch`: клик по виджету меняет `enabled` через `ctx.setSetting` и
   перерисовывает переключатель.
 
+### Этап 3
+
+- Встроенные материалы: 5 шт.; `materialList` показывает
+  `gradient,grain,transparent,solid,glass`.
+- `glass` размывает обои внутри карточек (скриншот
+  `rt/widgets-stage3-final.png`); `transparent` убирает подложку, `grain`
+  добавляет шум, `gradient` рисует переход.
+- Смена материала `i7` (`glass` → `gradient` → `solid`) даёт только строку
+  `[widgets/material] my.clock <- ...`, без `[widgets/host] загрузка`.
+- `my.palette` в режиме `widget` показывает цвета своей палитры (оранжевый/
+  бирюзовый/розовый) и подпись `widget`; `my.color` с `colorModes:["accent"]`
+  остаётся в accent.
+- Переключение глобального `theme` и `defaults.colorMode` меняет цвета без
+  перезагрузки контента; `defaults.material` перезагружает только материалы.
+- Пользовательский материал `my.neon` из тестового XDG-каталога появился в
+  списке без перезапуска (после создания каталогов), применился к часам и
+  перезагрузился при правке его `Material.qml`.
+
 ## Дальше
 
-Этап 3: `Theme` с режимами accent/widget, `MaterialRegistry` и материалы
-solid/transparent/gradient/grain/glass, выбор материала на экземпляре.
+Этап 4: `LayoutStore` на диске (`~/.local/state/quickshell/widgets/layout.json`),
+атомарная запись, миграция при смене сетки, лоток «Не помещается».
