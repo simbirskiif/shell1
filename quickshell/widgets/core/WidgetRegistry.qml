@@ -151,8 +151,9 @@ Singleton {
             const priority = root.pathPriority(manifestPath)
             const scanRoot = root.rootFor(manifestPath)
             const depth = root.relativeDepth(dir, scanRoot)
-            // Папка с манифестом должна лежать на глубине 1-2 от корня поиска.
-            if (depth < 1 || depth > 2)
+            // Корень поиска может быть и папкой с виджетами, и самой папкой
+            // виджета: принимаем глубину 0-2.
+            if (depth < 0 || depth > 2)
                 continue
             entries.push({ path: manifestPath, dir: dir, priority: priority, root: scanRoot })
         }

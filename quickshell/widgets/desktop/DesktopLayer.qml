@@ -224,9 +224,6 @@ PanelWindow {
             if (root.rowFor(instance.uid) < 0)
                 instanceModel.append({ instanceUid: instance.uid })
         }
-        console.info("[widgets/model] screen=" + root.screen.name
-                     + " list=" + list.length + " wanted=" + Object.keys(wanted).length
-                     + " model=" + instanceModel.count)
         root.tray = LayoutStore.trayFor(root.screen.name)
         root.scheduleMaskSync()
     }

@@ -132,7 +132,9 @@ Singleton {
             if (!rootPath)
                 continue
             const depth = root.relativeDepth(dir, rootPath)
-            if (depth < 1 || depth > 2)
+            // Как и у виджетов: путь может указывать на папку с материалами
+            // или непосредственно на папку материала.
+            if (depth < 0 || depth > 2)
                 continue
             entries.push({
                 dir: dir,

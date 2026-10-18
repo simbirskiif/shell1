@@ -58,7 +58,8 @@ qs ipc -p /home/adm_a/shell/quickshell call widgets addPath /path/to/widgets
 
 - Поиск: `widgets.extraPaths` конфига (приоритет), `$QS_WIDGET_PATH`,
   `~/.config/quickshell/widgets`, `<shellDir>/builtin-widgets`,
-  `/usr/share/quickshell-widgets`. Глубина 1–2, без симлинк-циклов.
+  `/usr/share/quickshell-widgets`. Путь может указывать на каталог или на
+  саму папку виджета (глубина 0–2), без симлинк-циклов.
 - Валидация `manifest.json`: `schema`, обратный DNS `id`, `name`, `size`,
   существование `entry`; неизвестные поля игнорируются. Ошибки — в
   `WidgetRegistry.problems`, конфликты id — в `conflicts`.
