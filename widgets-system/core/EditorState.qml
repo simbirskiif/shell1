@@ -16,6 +16,10 @@ Singleton {
     property var initialSnapshot: null
     property var undoStack: []
     property var redoStack: []
+    property bool pickerOpen: false
+    property string uiScreen: ""
+    property string settingsUid: ""
+    property string settingsScreen: ""
 
     readonly property bool hasUndo: undoStack.length > 0
     readonly property bool hasRedo: redoStack.length > 0
@@ -26,6 +30,8 @@ Singleton {
         root.initialSnapshot = LayoutStore.snapshot()
         root.undoStack = []
         root.redoStack = []
+        root.pickerOpen = false
+        root.settingsUid = ""
         root.active = true
         console.info("[widgets/editor] режим редактирования включён")
     }
@@ -34,6 +40,8 @@ Singleton {
         if (!root.active)
             return
         root.active = false
+        root.pickerOpen = false
+        root.settingsUid = ""
         root.initialSnapshot = null
         root.undoStack = []
         root.redoStack = []
@@ -47,6 +55,8 @@ Singleton {
         if (root.initialSnapshot)
             LayoutStore.restoreSnapshot(root.initialSnapshot)
         root.active = false
+        root.pickerOpen = false
+        root.settingsUid = ""
         root.initialSnapshot = null
         root.undoStack = []
         root.redoStack = []
@@ -58,6 +68,34 @@ Singleton {
             root.exitCommit()
         else
             root.enter()
+    }
+
+    function openPicker(screenName: string): void {
+        if (!root.active)
+            root.enter()
+        if (!root.active)
+            return
+        root.pickerOpen = true
+        root.uiScreen = screenName
+        root.settingsUid = ""
+    }
+
+    function closePicker(): void {
+        root.pickerOpen = false
+    }
+
+    function openSettings(uid: string, screenName: string): void {
+        if (!root.active)
+            root.enter()
+        if (!root.active)
+            return
+        root.settingsUid = uid
+        root.settingsScreen = screenName
+        root.pickerOpen = false
+    }
+
+    function closeSettings(): void {
+        root.settingsUid = ""
     }
 
     function beginOperation(): void {

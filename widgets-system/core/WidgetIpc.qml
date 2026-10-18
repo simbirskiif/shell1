@@ -28,6 +28,7 @@ IpcHandler {
             return m.id
         }).join(","))
         lines.push("wallpaper: " + Wallpaper.sourceUrl)
+        lines.push("extraPaths: " + (Config.extraPaths || []).join(":"))
         lines.push("editing: " + (EditorState.active ? "true" : "false")
                    + " undo=" + EditorState.undoStack.length
                    + " redo=" + EditorState.redoStack.length)
@@ -47,6 +48,28 @@ IpcHandler {
             EditorState.undo()
         else if (action === "redo")
             EditorState.redo()
+        return state()
+    }
+
+    function addPath(path: string): string {
+        if (Config.addExtraPath(path))
+            WidgetRegistry.scheduleScan()
+        return state()
+    }
+
+    function picker(): string {
+        if (EditorState.pickerOpen)
+            EditorState.closePicker()
+        else
+            EditorState.openPicker(Quickshell.screens.length > 0
+                                   ? Quickshell.screens[0].name : "")
+        return state()
+    }
+
+    function settings(uid: string): string {
+        const located = LayoutStore.locate(uid)
+        if (located)
+            EditorState.openSettings(uid, located.screen)
         return state()
     }
 

@@ -526,7 +526,10 @@ Item {
 
         HostButton {
             text: "⚙"
-            onClicked: console.info("[widgets/editor] настройки экземпляра — этап 6")
+            onClicked: {
+                if (root.instance)
+                    EditorState.openSettings(root.instance.uid, root.screen.name)
+            }
         }
     }
 }

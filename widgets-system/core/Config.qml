@@ -16,6 +16,8 @@ import Quickshell.Io
 Singleton {
     id: root
 
+    readonly property string home: Quickshell.env("HOME") || ""
+
     // Путь к файлу конфига (XDG-каталог Quickshell).
     // configDir/shellDir помечены в 0.3.2 как deprecated, поэтому собираем
     // путь из XDG-переменных.
@@ -60,6 +62,32 @@ Singleton {
     // Путь к файлу обоев для материала glass. Пусто — спросить hyprpaper.
     readonly property string wallpaper: adapter.wallpaper
 
+    // Добавить путь поиска виджетов и сохранить конфиг.
+    function addExtraPath(path: string): bool {
+        let value = String(path).trim()
+        if (value.length === 0)
+            return false
+        if (value === "~")
+            value = root.home + ""
+        else if (value.startsWith("~/"))
+            value = root.home + value.slice(1)
+        if (!value.startsWith("/"))
+            return false
+        if (value.length > 1 && value.endsWith("/"))
+            value = value.slice(0, -1)
+
+        const paths = []
+        for (const existing of adapter.widgets.extraPaths)
+            paths.push(existing)
+        if (paths.indexOf(value) >= 0)
+            return false
+        paths.push(value)
+        adapter.widgets.extraPaths = paths
+        configFile.writeAdapter()
+        console.info("[widgets/config] добавлен путь: " + value)
+        return true
+    }
+
     // --- Значения по умолчанию для экземпляров (раздел 6 ТЗ) ---
     readonly property string defaultMaterial: adapter.defaults.material
     readonly property string defaultColorMode: adapter.defaults.colorMode
@@ -83,6 +111,8 @@ Singleton {
         printErrors: false
 
         onFileChanged: reload()
+
+        onSaveFailed: (error) => console.warn("[widgets/config] не сохранён: " + error)
 
         JsonAdapter {
             id: adapter

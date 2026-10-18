@@ -397,6 +397,47 @@ Singleton {
         root.scheduleSave()
     }
 
+    function smallestSize(widget: var): var {
+        const spec = widget ? widget.sizeSpec : null
+        if (!spec)
+            return { cols: 1, rows: 1 }
+        if (spec.kind === "list") {
+            let best = spec.allowed[0]
+            for (const size of spec.allowed) {
+                if (size.cols * size.rows < best.cols * best.rows)
+                    best = size
+            }
+            return { cols: best.cols, rows: best.rows }
+        }
+        return { cols: spec.minSize.cols, rows: spec.minSize.rows }
+    }
+
+    function addWidget(screenName: string, widget: var, metrics: var): var {
+        const entry = root.screens[screenName]
+        if (!entry || !widget || !metrics)
+            return null
+
+        let size = widget.sizeSpec ? widget.sizeSpec.defaultSize
+                                  : { cols: 1, rows: 1 }
+        let position = root.findFree(entry.widgets, size, metrics.rows, metrics.cols)
+        if (!position) {
+            size = root.smallestSize(widget)
+            position = root.findFree(entry.widgets, size, metrics.rows, metrics.cols)
+        }
+        if (!position)
+            return null
+
+        const instance = root.makeInstance(widget, position, size.cols, size.rows)
+        entry.widgets.push(instance)
+        root.reindex()
+        root.layoutChanged()
+        root.scheduleSave()
+        console.info("[widgets/layout] добавлен " + widget.id + " @"
+                     + screenName + " " + position.col + "," + position.row
+                     + " " + size.cols + "x" + size.rows)
+        return instance
+    }
+
     function addInstance(screenName: string, widget: var,
                          col: int, row: int, cols: int, rows: int): var {
         const entry = root.screens[screenName]

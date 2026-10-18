@@ -138,8 +138,10 @@ PanelWindow {
         target: EditorState
 
         function onActiveChanged() {
-            if (!EditorState.active)
+            if (!EditorState.active) {
                 DragController.cancel()
+                PickerState.cancel()
+            }
             root.scheduleMaskSync()
             if (EditorState.active)
                 keys.forceActiveFocus()
@@ -218,6 +220,21 @@ PanelWindow {
     }
 
 
+    // Призрак drag-and-drop из каталога (раздел 8.5 ТЗ).
+    Rectangle {
+        visible: PickerState.active
+        z: 56
+        x: gridMetrics.originX + PickerState.col * (gridMetrics.cell + gridMetrics.gap)
+        y: gridMetrics.originY + PickerState.row * (gridMetrics.cell + gridMetrics.gap)
+        width: gridMetrics.pixelWidth(PickerState.cols)
+        height: gridMetrics.pixelHeight(PickerState.rows)
+        radius: Math.round(gridMetrics.cell * 0.28)
+        color: PickerState.valid ? "#334CAF50" : "#44F44336"
+        border.width: 2
+        border.color: PickerState.valid ? "#CC4CAF50" : "#CCF44336"
+        enabled: false
+    }
+
     // Призрак будущего положения/размера (раздел 8.3 ТЗ).
     Rectangle {
         visible: DragController.active
@@ -244,7 +261,7 @@ PanelWindow {
 
         HostButton {
             text: "+"
-            onClicked: console.info("[widgets/editor] каталог виджетов — этап 6")
+            onClicked: EditorState.openPicker(root.screen.name)
         }
 
         HostButton {
@@ -329,6 +346,17 @@ PanelWindow {
                 }
             }
         }
+    }
+
+    WidgetPicker {
+        screen: root.screen
+        metrics: gridMetrics
+    }
+
+    WidgetSettingsPopup {
+        uid: EditorState.settingsUid
+        screen: root.screen
+        metrics: gridMetrics
     }
 
     // Esc / Ctrl+Z / Ctrl+Shift+Z. Фокус получает только редактор.
