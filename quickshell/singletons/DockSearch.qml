@@ -47,6 +47,15 @@ Singleton {
         + " builtin=" + root.useBuiltin
         + " results=" + root.results.length
 
+    // Elephant возвращает exit 2 и «unexpected end of JSON input», когда
+    // просто ничего не нашёл. Это не потеря соединения и не повод уходить
+    // на встроенный поиск.
+    function isEmptyResultError(text) {
+        const value = String(text || "");
+        return value.indexOf("unexpected end of JSON") >= 0
+            || value.indexOf("unexpected end of json") >= 0;
+    }
+
     // --- Elephant: список провайдеров ------------------------------------
     Process {
         id: listProc
@@ -88,7 +97,7 @@ Singleton {
         onExited: (code, status) => {
             probeWatchdog.stop();
             root.probing = false;
-            if (code !== 0) {
+            if (code !== 0 && !root.isEmptyResultError(root.lastError)) {
                 root.elephantLost(root.lastError || ("probe: " + code));
                 return;
             }
@@ -167,6 +176,22 @@ Singleton {
             const arg = root.runningArg;
             root.runningArg = "";
             if (code !== 0) {
+                // Пустой результат Elephant — это не ошибка связи.
+                if (root.isEmptyResultError(root.lastError)) {
+                    root.installed = true;
+                    root.elephantAvailable = true;
+                    root.lastError = "";
+                    if (!root.useBuiltin && arg === root.elephantArg) {
+                        // Обычно список пуст; если часть строк успела
+                        // прийти, показываем её, а не теряем.
+                        root.results = root.pendingResults;
+                        root.lastQid = root.pendingQid;
+                        root.lastResultArg = arg;
+                        root.loading = false;
+                    }
+                    root.pumpQuery();
+                    return;
+                }
                 if (!root.useBuiltin && arg === root.elephantArg)
                     root.elephantLost(root.lastError || ("query: " + code));
                 else
@@ -221,6 +246,9 @@ Singleton {
         if (root.useBuiltin || !DockState.expanded || queryProc.running)
             return;
         root.runningArg = root.elephantArg;
+        root.pendingResults = [];
+        root.pendingQid = 0;
+        root.lastError = "";
         root.loading = true;
         queryProc.running = true;
     }
