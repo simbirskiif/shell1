@@ -29,6 +29,12 @@ PopupWindow {
 
     function syncVisibility() {
         root.visible = UiState.openedScreen === root.screenName;
+        if (root.visible) {
+            // Открываемся сразу нужного размера: поверхность ещё не показана,
+            // анимировать размер нечего.
+            shrinkTimer.stop();
+            root.windowHeight = root.wantedHeight;
+        }
     }
 
     onVisibleChanged: {
@@ -45,6 +51,7 @@ PopupWindow {
     }
 
     Component.onCompleted: {
+        root.windowHeight = root.wantedHeight;
         root.syncVisibility();
         UiState.popupHeight = card.height;
     }
@@ -88,28 +95,44 @@ PopupWindow {
     readonly property real menuRoom: Math.max(contextMenu.open ? contextMenu.maxCardHeight : 0,
                                               bluetoothContextMenu.open ? bluetoothContextMenu.maxCardHeight : 0)
 
-    implicitHeight: Math.min((panelItem.gestureSizing
-        ? panelItem.gestureRoom
-        : panelItem.contentHeight) + Theme.quickPadding * 2, root.maxHeight)
-        + root.menuRoom
-    // m3 container transform: контейнер меняет размер на emphasized.
-    Behavior on implicitWidth {
-        MotionNumber {
-            duration: Theme.motionMedium2
-            curve: Theme.curveEmphasized
+    // Высота, которую окно должно занимать по контенту.
+    readonly property real targetHeight: Math.min(panelItem.contentHeight
+        + Theme.quickPadding * 2, root.maxHeight) + root.menuRoom
+    // Во время жеста окно держит запас по высоте (зафиксированный на старте)
+    // и не меняется вовсе.
+    readonly property real wantedHeight: panelItem.gestureSizing
+        ? Math.min(panelItem.gestureRoom + Theme.quickPadding * 2, root.maxHeight) + root.menuRoom
+        : root.targetHeight
+
+    // Размер поверхности меняется одним шагом, а не по кадру за анимацией:
+    // каждый промежуточный размер — это новый буфер и пересборка поверхности
+    // в композиторе. Замер до правки: 18–34 таких смен на одно переключение
+    // панели, и каждое изменение высоты списка (поиск сетей) тянуло за собой
+    // ещё два десятка. Растём сразу — карточка дорастает внутри, ничего не
+    // срезается; сжимаемся, когда карточка уже доехала.
+    property real windowHeight: 0
+
+    function syncWindowHeight() {
+        if (root.wantedHeight > root.windowHeight) {
+            shrinkTimer.stop();
+            root.windowHeight = root.wantedHeight;
+        } else if (root.wantedHeight < root.windowHeight) {
+            shrinkTimer.restart();
         }
     }
-    Behavior on implicitHeight {
-        // Анимация всегда включена, а цель во время жеста постоянна, поэтому
-        // внутри жеста поверхность не меняется. Выключать её нельзя: запись
-        // проскакивает мимо ещё выключенного Behavior, и запас снимается
-        // одним прыжком — контент от этого и дёргался.
-        //
-        // Исключение — открытое контекстное меню: его карточка появляется
-        // сразу, и при анимированном росте окна её низ (вместе с кнопками
-        // подтверждения) успевал обрезаться. Пока меню открыто, высота окна
-        // меняется мгновенно.
-        enabled: !(contextMenu.open || bluetoothContextMenu.open)
+
+    onWantedHeightChanged: root.syncWindowHeight()
+    implicitHeight: root.windowHeight
+
+    Timer {
+        id: shrinkTimer
+        // Ждём, пока карточка доедет (её анимация — 300 мс), и сжимаем окно
+        // одним шагом.
+        interval: Theme.motionMedium2 + 60
+        onTriggered: root.windowHeight = root.wantedHeight
+    }
+    // m3 container transform: контейнер меняет размер на emphasized.
+    Behavior on implicitWidth {
         MotionNumber {
             duration: Theme.motionMedium2
             curve: Theme.curveEmphasized
