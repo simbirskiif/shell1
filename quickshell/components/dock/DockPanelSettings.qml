@@ -50,11 +50,15 @@ Item {
 
                         Text {
                             text: DockSearch.probing ? "Проверяем Elephant…"
+                                : DockSearch.serviceStarting ? "Запускаем Elephant…"
                                 : (DockSearch.elephantEnabled
-                                   ? (DockSearch.elephantAvailable ? "Elephant подключён" : "Elephant недоступен")
+                                   ? (DockSearch.elephantAvailable ? "Elephant подключён"
+                                      : (DockSearch.installed ? "Elephant установлен, сервис не запущен"
+                                                              : "Elephant не найден"))
                                    : "Встроенный поиск")
                             color: DockSearch.elephantEnabled && !DockSearch.elephantAvailable
-                                   && !DockSearch.probing ? Theme.warningColor : Theme.quickTextDim
+                                   && !DockSearch.probing && !DockSearch.serviceStarting
+                                   ? Theme.warningColor : Theme.quickTextDim
                             font.family: Theme.fontFamily
                             font.pixelSize: 10
                         }
@@ -74,6 +78,7 @@ Item {
                     height: warningText.implicitHeight + 16
                     radius: 10
                     visible: DockSearch.elephantEnabled && !DockSearch.probing
+                             && !DockSearch.serviceStarting
                              && (!DockSearch.elephantAvailable
                                  || DockSearch.enabledProviders.length === 0)
                     color: Theme.withAlpha(Theme.warningColor, 0.12)
@@ -88,11 +93,41 @@ Item {
                         anchors.margins: 8
                         wrapMode: Text.WordWrap
                         text: !DockSearch.elephantAvailable
-                              ? "Elephant недоступен — используется встроенный поиск."
+                              ? (DockSearch.installed
+                                 ? "Elephant установлен, но сервис не запущен — используется встроенный поиск."
+                                 : "Elephant не найден — используется встроенный поиск.")
                               : "Не выбран ни один провайдер — используется встроенный поиск."
                         color: Theme.warningColor
                         font.family: Theme.fontFamily
                         font.pixelSize: 11
+                    }
+                }
+
+                Rectangle {
+                    width: 108
+                    height: 28
+                    radius: 14
+                    visible: DockSearch.elephantEnabled && DockSearch.installed
+                             && !DockSearch.elephantAvailable
+                             && !DockSearch.probing && !DockSearch.serviceStarting
+                    color: startHover.containsMouse ? Theme.quickTileHover : Theme.quickTile
+                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Запустить"
+                        color: Theme.accent
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 11
+                    }
+
+                    MouseArea {
+                        id: startHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onContainsMouseChanged: if (containsMouse) DockState.keepAlive()
+                        onClicked: DockSearch.startService()
                     }
                 }
 

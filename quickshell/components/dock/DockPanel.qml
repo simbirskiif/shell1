@@ -61,8 +61,11 @@ Item {
 
         function onQueryChanged() {
             searchField.setText(DockState.query);
-            appList.currentIndex = -1;
             DockState.mouseGuardUntil = Date.now() + 300;
+            if (DockState.query === "")
+                appList.currentIndex = -1;
+            else
+                Qt.callLater(root.selectFirst);
         }
 
         function onExpandedChanged() {
@@ -92,8 +95,10 @@ Item {
             DockState.mouseGuardUntil = Date.now() + 300;
             if (appList.count === 0)
                 appList.currentIndex = -1;
+            else if (DockState.query !== "")
+                appList.currentIndex = 0; // поиск всегда стартует с первого
             else if (appList.currentIndex >= appList.count)
-                appList.currentIndex = appList.count - 1;
+                appList.currentIndex = -1;
         }
     }
 
@@ -188,6 +193,11 @@ Item {
         onEdited: value => DockState.query = value
         onNavigate: delta => root.moveSelection(delta)
         onSubmitted: root.activateCurrent()
+    }
+
+    function selectFirst() {
+        if (DockState.query !== "" && appList.count > 0)
+            appList.currentIndex = 0;
     }
 
     function moveSelection(delta) {

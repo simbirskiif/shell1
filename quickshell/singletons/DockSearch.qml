@@ -19,7 +19,12 @@ Singleton {
     // --- состояние Elephant ----------------------------------------------
     property var providers: []
     property bool elephantAvailable: false
+    // listproviders отвечает и без запущенного сервиса: так мы отличаем
+    // «не установлен» от «установлен, но сервис не запущен».
+    property bool installed: false
     property bool probing: false
+    property bool serviceStarting: false
+    property bool autoStartTried: false
     property bool loading: false
     property string lastError: ""
     property int lastQid: 0
@@ -34,7 +39,9 @@ Singleton {
                                       || root.enabledProviders.length === 0
     readonly property string summary: "elephant=" + (root.elephantEnabled ? "on" : "off")
         + " available=" + root.elephantAvailable
+        + " installed=" + root.installed
         + " probing=" + root.probing
+        + " starting=" + root.serviceStarting
         + " providers=" + (root.providers.length > 0 ? root.providers.join("|") : "-")
         + " enabled=" + (root.enabledProviders.length > 0 ? root.enabledProviders.join("|") : "-")
         + " builtin=" + root.useBuiltin
@@ -52,12 +59,16 @@ Singleton {
         stderr: StdioCollector {}
         onExited: (code, status) => {
             listWatchdog.stop();
-            if (code !== 0)
+            if (code !== 0) {
+                root.installed = false;
                 root.elephantLost("listproviders: " + code);
-            else if (root.providers.length === 0)
-                root.elephantLost("нет провайдеров");
-            else
-                root.probe();
+            } else {
+                root.installed = true;
+                if (root.providers.length === 0)
+                    root.elephantLost("нет провайдеров");
+                else
+                    root.probe();
+            }
         }
     }
 
@@ -82,6 +93,7 @@ Singleton {
                 return;
             }
             root.elephantAvailable = true;
+            root.serviceStarting = false;
             root.lastError = "";
             root.requestSearch();
         }
@@ -181,6 +193,52 @@ Singleton {
             root.loading = true;
             queryProc.running = true;
         }
+    }
+
+    // --- Elephant: сервис -------------------------------------------------
+    // Если пакет Elephant установлен, а сервис не запущен, поднимаем его
+    // сами: иначе «elephant есть» и «elephant доступен» расходятся.
+    Process {
+        id: serviceProc
+        command: ["elephant"]
+        running: false
+        stdout: SplitParser {
+            onRead: line => {}
+        }
+        stderr: SplitParser {
+            onRead: line => {
+                if (line !== "")
+                    root.lastError = line;
+            }
+        }
+        onExited: (code, status) => {
+            root.serviceStarting = false;
+            if (!root.elephantAvailable && code !== 0)
+                root.elephantLost(root.lastError || ("elephant: " + code));
+        }
+    }
+
+    Timer {
+        id: serviceRetry
+        interval: 900
+        onTriggered: {
+            root.serviceStarting = false;
+            root.probe();
+        }
+    }
+
+    function startService() {
+        if (root.serviceStarting || root.elephantAvailable)
+            return;
+        root.autoStartTried = true;
+        root.lastError = "";
+        if (serviceProc.running) {
+            root.probe();
+            return;
+        }
+        root.serviceStarting = true;
+        serviceProc.running = true;
+        serviceRetry.restart();
     }
 
     // --- Elephant: activate -----------------------------------------------
@@ -320,6 +378,12 @@ Singleton {
         root.lastError = reason;
         root.loading = false;
         root.results = root.builtinResults();
+
+        // Установленный, но не запущенный сервис поднимаем один раз сами.
+        if (root.installed && root.elephantEnabled
+                && !root.autoStartTried && !root.serviceStarting) {
+            root.startService();
+        }
     }
 
     function applyProviders(text) {
