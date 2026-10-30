@@ -28,7 +28,8 @@ Singleton {
     // выезжает компактная карточка, затем она плавно растёт.
     property bool pendingExpand: false
 
-    // Док открыт командой или кликом: по уходу курсора не прячем.
+    // Док закреплён программно (IPC): по уходу курсора не прячем.
+    // Клик по доку закрепления не даёт — панель остаётся временной.
     property bool holdOpen: false
 
     // Курсор над зоной активации или карточкой (пишет DockWindow).
@@ -76,10 +77,13 @@ Singleton {
     // Большая панель. Из скрытого состояния раскрытие ждёт, пока карточка
     // выедет: иначе размер и появление стартовали бы в одном кадре и панель
     // «прыгала» бы вверх из-под края экрана.
-    function expand(screenName) {
+    // pin=true — программное раскрытие (IPC): не прятать по уходу курсора.
+    // Клик по доку оставляет панель «временной»: ушёл курсор — через
+    // dockLingerExpanded она плавно уедет вниз.
+    function expand(screenName, pin) {
         if (screenName !== undefined && screenName !== "")
             root.screenName = screenName;
-        root.holdOpen = true;
+        root.holdOpen = pin === true;
         autoHide.stop();
         if (!root.shown) {
             root.shown = true;
@@ -134,11 +138,11 @@ Singleton {
     }
 
     // Переключение «панель/скрыть» для IPC и биндов.
-    function toggle(screenName) {
+    function toggle(screenName, pin) {
         if (root.shown && root.expanded)
             root.hide();
         else
-            root.expand(screenName);
+            root.expand(screenName, pin);
     }
 
     // --- курсор -----------------------------------------------------------
@@ -196,8 +200,10 @@ Singleton {
             return;
         }
         root.phase = root.expanded ? "expanded" : "compact";
-        if (!root.expanded)
-            root.maybeAutoHide();
+        // Большая панель тоже может быть временной (клик по доку): если
+        // курсор уже ушёл, запускаем долгий, но всё же уход. Для
+        // программного раскрытия holdOpen=true отменяет таймер.
+        root.maybeAutoHide();
     }
 
     function maybeAutoHide() {

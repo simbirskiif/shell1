@@ -179,7 +179,7 @@ ShellRoot {
         }
 
         function expand(): string {
-            DockState.expand(UiState.defaultScreen());
+            DockState.expand(UiState.defaultScreen(), true);
             return state();
         }
 
@@ -189,7 +189,7 @@ ShellRoot {
         }
 
         function toggle(): string {
-            DockState.toggle(UiState.defaultScreen());
+            DockState.toggle(UiState.defaultScreen(), true);
             return state();
         }
 

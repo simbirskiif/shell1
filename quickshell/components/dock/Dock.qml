@@ -161,7 +161,7 @@ Item {
                 icon: "\uf077"
                 accented: true
 
-                onClicked: DockState.expand(root.screenName)
+                onClicked: DockState.expand(root.screenName, false)
             }
         }
 
