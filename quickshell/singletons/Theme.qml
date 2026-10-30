@@ -73,6 +73,9 @@ Singleton {
     readonly property int dockLingerExpanded: 1400
     // Порог свайпа вверх по компактной полосе (px суммарной дельты).
     readonly property int dockSwipeThreshold: 48
+    // Оверскролл вверх в сетке приложений: сколько пикселей нужно
+    // протянуть за верхний край, чтобы закрыть панель.
+    readonly property int dockOverscrollClose: 96
 
     // --- Material 3 Expressive: док --------------------------------------
     // Быстрее общего motion-набора панелей: док — прямой манипулятор,

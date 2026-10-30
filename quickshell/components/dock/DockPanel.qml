@@ -17,6 +17,34 @@ Item {
     // переключалась по IPC.
     readonly property bool settingsOpen: DockState.settingsOpen
 
+    // Накопленный оверскролл за верхним краем сетки. Когда его достаточно,
+    // панель закрывается — как «потянуть меню вверх».
+    property real overscroll: 0
+
+    // Одна порция колеса/тачпада. Вынесено отдельной функцией, чтобы
+    // логика прокрутки и оверскролла не жила внутри обработчика события.
+    function applyWheelDelta(dy) {
+        // Верхний край + прокрутка вверх: дальше двигать нечего.
+        // Копим протяжку и закрываем панель.
+        if (grid.contentY <= 0.5 && dy > 0) {
+            root.overscroll += dy;
+            if (root.overscroll >= Theme.dockOverscrollClose) {
+                root.overscroll = 0;
+                overscrollReset.stop();
+                DockState.hide();
+            } else {
+                overscrollReset.restart();
+            }
+            return;
+        }
+
+        root.overscroll = 0;
+        overscrollReset.stop();
+        const maxY = Math.max(0, grid.contentHeight - grid.height);
+        grid.contentY = Math.max(0, Math.min(maxY,
+            grid.contentY - dy * DockSettings.scrollFactor));
+    }
+
     // Шапка остаётся на месте, содержимое прокручивается.
     Item {
         id: header
@@ -124,11 +152,15 @@ Item {
                     : event.angleDelta.y * 0.5;
                 if (dy === 0)
                     return;
-                const maxY = Math.max(0, grid.contentHeight - grid.height);
-                grid.contentY = Math.max(0, Math.min(maxY,
-                    grid.contentY - dy * DockSettings.scrollFactor));
+                root.applyWheelDelta(dy);
                 event.accepted = true;
             }
+        }
+
+        Timer {
+            id: overscrollReset
+            interval: 220
+            onTriggered: root.overscroll = 0
         }
     }
 
