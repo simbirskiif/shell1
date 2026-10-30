@@ -220,6 +220,12 @@ ShellRoot {
             return state();
         }
 
+        // Поисковый запрос в списке приложений.
+        function search(text: string): string {
+            DockState.query = text;
+            return state();
+        }
+
         function reset(): string {
             DockSettings.reset();
             return state();

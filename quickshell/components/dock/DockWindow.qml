@@ -65,7 +65,11 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "quickshell-dock"
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    // В раскрытой панели есть поиск: ей нужна клавиатура. В компактном
+    // доке и в скрытом состоянии фокус не забираем.
+    WlrLayershell.keyboardFocus: DockState.expanded ? WlrKeyboardFocus.Exclusive
+                                                    : WlrKeyboardFocus.None
+    WlrLayershell.focusable: DockState.expanded
 
     // Подсказка у нижней кромки, пока док спрятан: иначе зону активации
     // пришлось бы искать вслепую. Она не перехватывает клики.

@@ -134,7 +134,7 @@ Item {
             }
         }
 
-        // --- прокрутка сетки ---
+        // --- прокрутка списка ---
         Column {
             width: parent.width
             spacing: 6
@@ -171,7 +171,7 @@ Item {
 
             Text {
                 width: parent.width
-                text: "Шаг колеса и тачпада в сетке приложений"
+                text: "Шаг колеса и тачпада в списке приложений"
                 color: Theme.quickTextDim
                 font.family: Theme.fontFamily
                 font.pixelSize: 11

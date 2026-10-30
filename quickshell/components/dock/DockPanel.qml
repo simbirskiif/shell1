@@ -1,9 +1,11 @@
 import QtQuick
+import Quickshell
 import ".."
 import "../../singletons"
 
-// Содержимое раскрытого дока: список приложений и настройки дока. Это
-// «большая панель», в которую плавно превращается компактная полоса.
+// Содержимое раскрытого дока: поиск, анимированный список приложений и
+// настройки дока. Это «большая панель», в которую плавно превращается
+// компактная полоса.
 Item {
     id: root
 
@@ -11,22 +13,20 @@ Item {
 
     signal closeRequested()
 
-    // Настройки открываются поверх сетки, а не отдельным окном: панель уже
+    // Настройки открываются поверх списка, а не отдельным окном: панель уже
     // держит и маску ввода, и фокус-граб для закрытия по клику мимо.
     // Состояние в DockState, чтобы панель переживала пересоздание и
     // переключалась по IPC.
     readonly property bool settingsOpen: DockState.settingsOpen
 
-    // Накопленный оверскролл за верхним краем сетки. Когда его достаточно,
+    // Накопленный оверскролл за верхним краем списка. Когда его достаточно,
     // панель закрывается — как «потянуть меню вверх».
     property real overscroll: 0
 
-    // Одна порция колеса/тачпада. Вынесено отдельной функцией, чтобы
-    // логика прокрутки и оверскролла не жила внутри обработчика события.
+    // Одна порция колеса/тачпада: прокрутка списка и закрытие по
+    // оверскроллу. Вынесено функцией, чтобы обработчик оставался тонким.
     function applyWheelDelta(dy) {
-        // Верхний край + прокрутка вверх: дальше двигать нечего.
-        // Копим протяжку и закрываем панель.
-        if (grid.contentY <= 0.5 && dy > 0) {
+        if (appList.contentY <= 0.5 && dy > 0) {
             root.overscroll += dy;
             if (root.overscroll >= Theme.dockOverscrollClose) {
                 root.overscroll = 0;
@@ -40,9 +40,66 @@ Item {
 
         root.overscroll = 0;
         overscrollReset.stop();
-        const maxY = Math.max(0, grid.contentHeight - grid.height);
-        grid.contentY = Math.max(0, Math.min(maxY,
-            grid.contentY - dy * DockSettings.scrollFactor));
+        const maxY = Math.max(0, appList.contentHeight - appList.height);
+        appList.contentY = Math.max(0, Math.min(maxY,
+            appList.contentY - dy * DockSettings.scrollFactor));
+    }
+
+    // Отфильтрованный список. ScriptModel сравнивает старый и новый массивы
+    // и отправляет ListView точечные insert/remove/move, поэтому уцелевшие
+    // делегаты не пересоздаются и переезжают анимацией displaced.
+    ScriptModel {
+        id: filtered
+        objectProp: "id"
+        values: {
+            const query = DockState.query.trim().toLowerCase();
+            if (query === "")
+                return DockApps.all;
+            return DockApps.all.filter(entry =>
+                String(entry.name).toLowerCase().includes(query));
+        }
+    }
+
+    // Синхронизация поля с внешним запросом (IPC/сброс при закрытии) и
+    // фокус при раскрытии панели.
+    Connections {
+        target: DockState
+
+        function onQueryChanged() {
+            searchField.setText(DockState.query);
+        }
+
+        function onExpandedChanged() {
+            if (DockState.expanded && !DockState.settingsOpen)
+                searchField.focusInput();
+        }
+
+        function onSettingsOpenChanged() {
+            if (DockState.expanded && !DockState.settingsOpen)
+                searchField.focusInput();
+        }
+
+        function onShownChanged() {
+            if (!DockState.shown)
+                searchField.setText("");
+        }
+    }
+
+    Shortcut {
+        sequence: "Escape"
+        enabled: DockState.expanded
+
+        onActivated: {
+            if (DockState.settingsOpen) {
+                DockState.settingsOpen = false;
+                return;
+            }
+            if (DockState.query !== "") {
+                DockState.query = "";
+                return;
+            }
+            DockState.hide();
+        }
     }
 
     // Шапка остаётся на месте, содержимое прокручивается.
@@ -68,8 +125,8 @@ Item {
             anchors.left: titleText.right
             anchors.leftMargin: 8
             anchors.verticalCenter: parent.verticalCenter
-            visible: !root.settingsOpen && DockApps.all.length > 0
-            text: "· " + DockApps.all.length
+            visible: !root.settingsOpen
+            text: "· " + appList.count
             color: Theme.quickTextDim
             font.family: Theme.fontFamily
             font.pixelSize: 12
@@ -100,23 +157,15 @@ Item {
         }
     }
 
-    // --- сетка приложений -------------------------------------------------
-    GridView {
-        id: grid
+    // --- строка поиска ----------------------------------------------------
+    DockSearchField {
+        id: searchField
         anchors.top: header.bottom
-        anchors.topMargin: 10
+        anchors.topMargin: 8
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
-        cellWidth: width / Theme.dockGridColumns
-        cellHeight: Theme.dockGridCellHeight
-        model: DockApps.all
-        enabled: !root.settingsOpen
         opacity: root.settingsOpen ? 0 : 1
         visible: opacity > 0.001
-        // Быстрый fade-through, как у смены видов в остальных панелях.
         Behavior on opacity {
             MotionNumber {
                 duration: Theme.dockFadeDuration
@@ -124,22 +173,107 @@ Item {
             }
         }
 
-        delegate: DockGridApp {
+        onEdited: value => DockState.query = value
+    }
+
+    // --- список приложений ------------------------------------------------
+    ListView {
+        id: appList
+        anchors.top: searchField.bottom
+        anchors.topMargin: 8
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        clip: true
+        spacing: 2
+        boundsBehavior: Flickable.StopAtBounds
+        model: filtered
+        enabled: !root.settingsOpen
+        opacity: root.settingsOpen ? 0 : 1
+        visible: opacity > 0.001
+        Behavior on opacity {
+            MotionNumber {
+                duration: Theme.dockFadeDuration
+                curve: Theme.curveEmphasized
+            }
+        }
+
+        delegate: DockListItem {
             required property var modelData
 
-            width: grid.cellWidth
-            height: grid.cellHeight
             entry: modelData
-            iconSize: Math.max(32, Math.min(56, Math.round(DockSettings.iconSize * 1.6)))
-            onActivated: DockState.hide()
+        }
+
+        // Удаляемый элемент остаётся видимым до конца перехода: ListView
+        // сам держит его в сцене, поэтому opacity/scale анимируем явно.
+        remove: Transition {
+            ParallelAnimation {
+                NumberAnimation {
+                    property: "opacity"
+                    to: 0
+                    duration: 200
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    property: "scale"
+                    to: 0.8
+                    duration: 200
+                    easing.type: Easing.OutCubic
+                }
+            }
+        }
+
+        add: Transition {
+            ParallelAnimation {
+                NumberAnimation {
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 200
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    property: "scale"
+                    from: 0.8
+                    to: 1
+                    duration: 200
+                    easing.type: Easing.OutCubic
+                }
+            }
+        }
+
+        // Соседи переезжают на освободившиеся места; add/removeDisplaced
+        // заданы явно, чтобы не полагаться на наследование.
+        displaced: Transition {
+            NumberAnimation {
+                properties: "x,y"
+                duration: 250
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        addDisplaced: Transition {
+            NumberAnimation {
+                properties: "x,y"
+                duration: 250
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        removeDisplaced: Transition {
+            NumberAnimation {
+                properties: "x,y"
+                duration: 250
+                easing.type: Easing.OutCubic
+            }
         }
     }
 
-    // Свой обработчик колеса: у GridView нет настройки чувствительности.
-    // Слой прозрачен для кликов и касаний — они уходят кнопкам под ним;
-    // перехватывается только вертикальное колесо.
+    // Свой обработчик колеса: у ListView нет настройки чувствительности,
+    // а оверскролл вверх должен закрывать панель. Слой прозрачен для кликов
+    // и касаний — они уходят строкам под ним.
     Item {
-        anchors.fill: grid
+        anchors.fill: appList
         visible: !root.settingsOpen
 
         WheelHandler {
@@ -164,6 +298,15 @@ Item {
         }
     }
 
+    Text {
+        anchors.centerIn: appList
+        visible: !root.settingsOpen && appList.count === 0
+        text: DockState.query !== "" ? "Ничего не найдено" : "Список приложений пуст"
+        color: Theme.quickTextDim
+        font.family: Theme.fontFamily
+        font.pixelSize: 12
+    }
+
     // --- настройки дока ---------------------------------------------------
     DockPanelSettings {
         anchors.top: header.bottom
@@ -180,14 +323,5 @@ Item {
                 curve: Theme.curveEmphasized
             }
         }
-    }
-
-    Text {
-        anchors.centerIn: parent
-        visible: DockApps.all.length === 0 && !root.settingsOpen
-        text: "Список приложений пуст"
-        color: Theme.quickTextDim
-        font.family: Theme.fontFamily
-        font.pixelSize: 12
     }
 }

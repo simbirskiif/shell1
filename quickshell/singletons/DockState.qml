@@ -39,6 +39,10 @@ Singleton {
     // Живёт здесь, чтобы переключаться из панели и по IPC.
     property bool settingsOpen: false
 
+    // Поисковый запрос в списке приложений. В DockState, а не в панели,
+    // чтобы его можно было менять снаружи и сбрасывать при закрытии.
+    property string query: ""
+
     readonly property bool transitioning: root.phase === "showing"
                                         || root.phase === "expanding"
                                         || root.phase === "collapsing"
@@ -57,6 +61,7 @@ Singleton {
         + " hold=" + root.holdOpen
         + " hover=" + root.hovered
         + " settings=" + root.settingsOpen
+        + " query=" + (root.query === "" ? "-" : root.query)
 
     // --- команды ----------------------------------------------------------
 
@@ -115,6 +120,7 @@ Singleton {
         autoHide.stop();
         root.pendingExpand = false;
         root.settingsOpen = false;
+        root.query = "";
         if (!root.expanded) {
             if (root.shown && !root.transitioning)
                 root.maybeAutoHide();
@@ -133,6 +139,7 @@ Singleton {
         root.holdOpen = false;
         root.pendingExpand = false;
         root.settingsOpen = false;
+        root.query = "";
         autoHide.stop();
         if (!root.shown) {
             root.expanded = false;
