@@ -220,7 +220,7 @@ ShellRoot {
         }
 
         // Переключить содержимое раскрытой панели: приложения/настройки.
-        function dockSettings(): string {
+        function toggleSettings(): string {
             DockState.settingsOpen = !DockState.settingsOpen;
             return state();
         }
