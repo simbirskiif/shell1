@@ -82,6 +82,58 @@ Item {
             }
         }
 
+        // --- сторона кнопки раскрытия ---
+        Column {
+            width: parent.width
+            spacing: 8
+
+            Text {
+                text: "Кнопка раскрытия"
+                color: Theme.quickText
+                font.family: Theme.fontFamily
+                font.pixelSize: 13
+            }
+
+            Row {
+                spacing: 8
+
+                Repeater {
+                    model: [
+                        { key: "left", label: "Слева" },
+                        { key: "right", label: "Справа" }
+                    ]
+
+                    delegate: Rectangle {
+                        required property var modelData
+
+                        width: 92
+                        height: 30
+                        radius: 15
+                        color: DockSettings.buttonSide === modelData.key
+                               ? Theme.quickTileActive : Theme.quickTile
+                        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: modelData.label
+                            color: DockSettings.buttonSide === modelData.key
+                                   ? Theme.accent : Theme.quickText
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 12
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onContainsMouseChanged: if (containsMouse) DockState.keepAlive()
+                            onClicked: DockSettings.setButtonSide(modelData.key)
+                        }
+                    }
+                }
+            }
+        }
+
         // --- прокрутка сетки ---
         Column {
             width: parent.width

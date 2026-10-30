@@ -214,6 +214,12 @@ ShellRoot {
             return state();
         }
 
+        // Сторона кнопки раскрытия: left | right.
+        function buttonSide(side: string): string {
+            DockSettings.setButtonSide(side);
+            return state();
+        }
+
         function reset(): string {
             DockSettings.reset();
             return state();
@@ -228,7 +234,8 @@ ShellRoot {
         function state(): string {
             return DockState.summary
                 + " icon=" + DockSettings.iconSize
-                + " scroll=" + DockSettings.scrollFactor.toFixed(2);
+                + " scroll=" + DockSettings.scrollFactor.toFixed(2)
+                + " button=" + DockSettings.buttonSide;
         }
     }
 

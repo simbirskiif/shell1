@@ -25,7 +25,14 @@ Item {
     // Сетку приложений не создаём, пока док ни разу не показали: иначе
     // оболочка на старте грузила бы десятки иконок ради скрытой панели.
     property bool panelLoaded: false
-    onShownChanged: if (root.shown) root.panelLoaded = true
+    onShownChanged: {
+        root.openSwipe = 0;
+        if (root.shown)
+            root.panelLoaded = true;
+    }
+
+    // Накопленная дельта свайпа вверх по компактной полосе.
+    property real openSwipe: 0
     onExpandedChanged: {
         panelDelay.stop();
         if (root.expanded)
@@ -53,10 +60,9 @@ Item {
     // число избранных приложений, а панель ограничена экраном.
     readonly property int favoriteCount: DockApps.favorites.length
     readonly property real baseButtonSize: DockSettings.iconSize + 18
-    // Ширина ряда без шкалирования: n кнопок + разделитель + кнопка панели
-    // и промежутки между ними.
-    readonly property real rowBaseWidth: root.favoriteCount * root.baseButtonSize
-        + 1 + 40 + (root.favoriteCount + 1) * Theme.dockSpacing
+    // Ширина ряда без шкалирования; её считает DockCompactRow, чтобы
+    // положение кнопки (слева/справа) не дублировало арифметику здесь.
+    readonly property real rowBaseWidth: compactRow.implicitWidth
     readonly property real maxCompactWidth: {
         const available = root.parent && root.parent.width > 0
             ? root.parent.width - 24 : Theme.dockMaxWidth;
@@ -130,10 +136,13 @@ Item {
         border.color: Theme.quickBorder
         clip: true
 
-        Row {
+        DockCompactRow {
             id: compactRow
             anchors.centerIn: parent
-            spacing: Theme.dockSpacing
+            buttonFirst: DockSettings.buttonOnLeft
+            buttonSize: root.baseButtonSize
+            iconSize: DockSettings.iconSize
+            glyphSize: Math.max(15, Math.round(DockSettings.iconSize * 0.6))
             enabled: !root.expanded
             opacity: root.expanded ? 0 : 1
             // Уход полосы быстрее прихода: панель должна проявиться раньше,
@@ -153,41 +162,65 @@ Item {
                 }
             }
 
-            Repeater {
-                model: DockApps.favorites
+            onExpandRequested: DockState.expand(root.screenName, false)
+        }
 
-                delegate: DockAppButton {
-                    required property var modelData
+        // Свайп вверх по компактной полосе открывает панель. На тачпаде
+        // это две пальца (pixelDelta), на тачскрине/мыши — DragHandler.
+        // Физический свайп вверх даёт отрицательную дельту прокрутки.
+        WheelHandler {
+            id: openWheel
+            enabled: root.shown && !DockState.expanded
+            acceptedDevices: PointerDevice.TouchPad
+            orientation: Qt.Vertical
 
-                    size: root.baseButtonSize
-                    iconSize: DockSettings.iconSize
-                    entry: modelData
-                    onActivated: DockState.hide()
+            onWheel: (event) => {
+                const dy = event.pixelDelta.y;
+                if (dy === 0)
+                    return;
+                // inverted приходит от natural scrolling: приводим дельту
+                // к физическому направлению пальцев, иначе «вверх» зависел
+                // бы от системной настройки прокрутки.
+                const physical = event.inverted ? -dy : dy;
+                root.openSwipe += physical;
+                if (root.openSwipe <= -Theme.dockSwipeThreshold) {
+                    root.openSwipe = 0;
+                    swipeReset.stop();
+                    DockState.expand(root.screenName, false);
+                } else {
+                    swipeReset.restart();
                 }
+                event.accepted = true;
             }
+        }
 
-            // Разделитель между приложениями и управляющей кнопкой.
-            Item {
-                width: 1
-                height: root.baseButtonSize
+        DragHandler {
+            id: openDrag
+            enabled: root.shown && !DockState.expanded
+            acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Mouse
+            xAxis.enabled: false
+            yAxis.enabled: true
+            dragThreshold: 10
 
-                Rectangle {
-                    anchors.centerIn: parent
-                    width: 1
-                    height: 26
-                    radius: 0.5
-                    color: Theme.quickSeparator
+            property real distance: 0
+
+            onActiveChanged: {
+                if (active) {
+                    distance = 0;
+                    return;
                 }
+                if (distance <= -Theme.dockSwipeThreshold)
+                    DockState.expand(root.screenName, false);
+                distance = 0;
             }
 
-            DockIconButton {
-                size: 40
-                glyphSize: 15
-                icon: "\uf077"
-                accented: true
+            onTranslationChanged: if (active) distance = translation.y
+        }
 
-                onClicked: DockState.expand(root.screenName, false)
-            }
+        Timer {
+            id: swipeReset
+            interval: 180
+            onTriggered: root.openSwipe = 0
         }
 
         Loader {

@@ -71,6 +71,8 @@ Singleton {
     // Сколько док ждёт после ухода курсора, прежде чем спрятаться.
     readonly property int dockLingerCompact: 220
     readonly property int dockLingerExpanded: 1400
+    // Порог свайпа вверх по компактной полосе (px суммарной дельты).
+    readonly property int dockSwipeThreshold: 48
 
     // --- Material 3 Expressive: док --------------------------------------
     // Быстрее общего motion-набора панелей: док — прямой манипулятор,
