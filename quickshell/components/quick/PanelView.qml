@@ -88,17 +88,18 @@ Item {
 
     Component.onCompleted: root.reveal = root.active ? 1 : 0
 
-    // m3 fade through: уходящий гаснет первым, приходящий — в оставшиеся 70%.
-    SequentialAnimation {
+    // Переход — встречное растворение: уходящий гаснет, приходящий
+    // проявляется всё это время. Раньше приходящий ждал 30% времени
+    // (как в m3 fade through), и в середине перехода карточка стояла
+    // пустой — визуально это читается как рывок: контент пропал, потом
+    // появился и доехал. С перекрытием пустого кадра нет.
+    MotionNumber {
         id: appear
-        PauseAnimation { duration: Theme.motionMedium2 * Theme.motionFadeOutShare }
-        MotionNumber {
-            target: root
-            property: "reveal"
-            to: 1
-            duration: Theme.motionMedium2 * (1 - Theme.motionFadeOutShare)
-            curve: Theme.curveEmphasizedDecelerate
-        }
+        target: root
+        property: "reveal"
+        to: 1
+        duration: Theme.motionMedium2
+        curve: Theme.curveEmphasizedDecelerate
     }
 
     MotionNumber {
@@ -106,7 +107,7 @@ Item {
         target: root
         property: "reveal"
         to: 0
-        duration: Theme.motionMedium2 * Theme.motionFadeOutShare
+        duration: Theme.motionMedium2
         curve: Theme.curveEmphasizedAccelerate
     }
 

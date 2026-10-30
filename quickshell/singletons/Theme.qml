@@ -154,10 +154,6 @@ Singleton {
     readonly property var curveStandardDecelerate: [0.0, 0.0, 0.0, 1.0]
     readonly property var curveStandardAccelerate: [0.3, 0.0, 1.0, 1.0]
 
-    // Fade through: уходящий вид гаснет за первые 30% времени,
-    // приходящий проявляется в оставшиеся 70% (m3 transition patterns).
-    readonly property real motionFadeOutShare: 0.3
-
     // Масштабы входа/выхода: 92% у видов (fade through) и 80% у элементов
     // списков (m3 enter/exit), чтобы переходы читались одинаково.
     readonly property real motionFadeThroughScale: 0.92
