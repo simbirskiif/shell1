@@ -92,9 +92,13 @@ Singleton {
                 root.elephantLost(root.lastError || ("probe: " + code));
                 return;
             }
+            root.installed = true;
             root.elephantAvailable = true;
             root.serviceStarting = false;
             root.lastError = "";
+            if (root.enabledProviders.length === 0) {
+                root.enabledProviders = ["desktopapplications"];
+            }
             root.requestSearch();
         }
     }
@@ -235,7 +239,10 @@ Singleton {
     // сами: иначе «elephant есть» и «elephant доступен» расходятся.
     Process {
         id: serviceProc
-        command: ["elephant"]
+        // Отделяем сервис от процесса оболочки: иначе hot reload убивает
+        // Elephant, и следующее открытие панели на пару секунд остаётся
+        // без него. Вывод в /dev/null, чтобы не держать каналы.
+        command: ["sh", "-c", "setsid -f elephant >/dev/null 2>&1"]
         running: false
         stdout: SplitParser {
             onRead: line => {}
@@ -385,6 +392,10 @@ Singleton {
         if (Settings.loaded)
             root.restore();
         root.refresh();
+        // Не ждём listproviders, чтобы не показывать встроенный поиск
+        // первые секунды: сервис проверяем сразу по известному провайдеру.
+        if (root.elephantEnabled)
+            root.probe();
     }
 
     // --- жизненный цикл ---------------------------------------------------
@@ -404,6 +415,12 @@ Singleton {
     }
 
     function probe() {
+        if (root.elephantAvailable) {
+            root.requestSearch();
+            return;
+        }
+        if (probeProc.running)
+            return;
         root.probing = true;
         root.lastError = "";
         probeWatchdog.restart();
