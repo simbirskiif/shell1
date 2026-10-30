@@ -10,6 +10,8 @@ Rectangle {
     property alias text: input.text
 
     signal edited(string value)
+    signal navigate(int delta)
+    signal submitted()
 
     implicitHeight: 36
     radius: 12
@@ -77,6 +79,16 @@ Rectangle {
         focus: DockState.expanded && !DockState.settingsOpen
 
         onTextChanged: root.edited(input.text)
+        onAccepted: root.submitted()
+
+        Keys.onUpPressed: {
+            root.navigate(-1);
+            event.accepted = true;
+        }
+        Keys.onDownPressed: {
+            root.navigate(1);
+            event.accepted = true;
+        }
     }
 
     Item {

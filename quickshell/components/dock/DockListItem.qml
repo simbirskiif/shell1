@@ -2,12 +2,14 @@ import QtQuick
 import Quickshell
 import "../../singletons"
 
-// Строка списка приложений. Высота постоянная: ListView анимирует
+// Строка списка результатов. Высота постоянная: ListView анимирует
 // смещение соседей через y, а не через изменение высоты.
+// Мышь выбирает строку только при реальном движении указателя: если она
+// просто стоит над списком, подсветка с клавиатуры не перебивается.
 Item {
     id: root
 
-    required property var entry
+    required property var item
 
     signal activated()
 
@@ -17,22 +19,15 @@ Item {
     opacity: 1
 
     readonly property string iconSource: {
-        if (!root.entry || !root.entry.icon)
+        if (!root.item || !root.item.icon)
             return "";
-        return Quickshell.iconPath(root.entry.icon, true);
+        return Quickshell.iconPath(root.item.icon, true);
     }
 
     function activate() {
         root.activated();
-        if (root.entry)
-            root.entry.execute();
-    }
-
-    Rectangle {
-        anchors.fill: parent
-        radius: 12
-        color: hover.containsMouse ? Theme.quickTileHover : "transparent"
-        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+        if (root.item)
+            DockSearch.activate(root.item);
     }
 
     Image {
@@ -53,25 +48,40 @@ Item {
     Text {
         anchors.centerIn: iconImage
         visible: iconImage.status !== Image.Ready
-        text: root.entry && root.entry.name
-              ? String(root.entry.name).charAt(0).toUpperCase() : "?"
+        text: root.item && root.item.title
+              ? String(root.item.title).charAt(0).toUpperCase() : "?"
         color: Theme.quickText
         font.family: Theme.fontFamily
         font.pixelSize: 14
         font.weight: Font.DemiBold
     }
 
-    Text {
+    Column {
         anchors.left: iconImage.right
         anchors.leftMargin: 10
         anchors.right: parent.right
         anchors.rightMargin: 10
         anchors.verticalCenter: parent.verticalCenter
-        text: root.entry ? root.entry.name : ""
-        color: Theme.quickText
-        font.family: Theme.fontFamily
-        font.pixelSize: 13
-        elide: Text.ElideRight
+        spacing: 1
+
+        Text {
+            width: parent.width
+            text: root.item ? root.item.title : ""
+            color: Theme.quickText
+            font.family: Theme.fontFamily
+            font.pixelSize: 13
+            elide: Text.ElideRight
+        }
+
+        Text {
+            width: parent.width
+            visible: root.item && root.item.subtitle !== ""
+            text: root.item ? root.item.subtitle : ""
+            color: Theme.quickTextDim
+            font.family: Theme.fontFamily
+            font.pixelSize: 10
+            elide: Text.ElideRight
+        }
     }
 
     MouseArea {
@@ -79,8 +89,31 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
+
         onContainsMouseChanged: if (containsMouse) DockState.keepAlive()
+
+        // Мышь — второй приоритет: наведение меняет выделение только
+        // после реального появления курсора на строке. Неподвижный
+        // указатель, под которым появилась панель, ничего не выбирает.
+        onEntered: {
+            if (Date.now() < DockState.mouseGuardUntil)
+                return;
+            if (ListView.view && ListView.view.currentIndex !== index)
+                ListView.view.currentIndex = index;
+        }
+
+        // Движение внутри уже выбранной строки тоже обновляет выбор
+        // (на случай, если панель появилась под неподвижным курсором).
+        onPositionChanged: {
+            if (Date.now() < DockState.mouseGuardUntil)
+                return;
+            if (ListView.view && ListView.view.currentIndex !== index)
+                ListView.view.currentIndex = index;
+        }
+
         onClicked: {
+            if (ListView.view)
+                ListView.view.currentIndex = index;
             root.activate();
             DockState.hide();
         }

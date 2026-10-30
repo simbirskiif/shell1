@@ -13,13 +13,140 @@ Item {
     readonly property real scrollNorm: (DockSettings.scrollFactor - DockSettings.minScrollFactor)
         / (DockSettings.maxScrollFactor - DockSettings.minScrollFactor)
 
-    Column {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        spacing: 18
+    Flickable {
+        id: scroller
+        anchors.fill: parent
+        clip: true
+        contentWidth: width
+        contentHeight: column.implicitHeight
+        boundsBehavior: Flickable.StopAtBounds
+        interactive: contentHeight > height
 
-        // --- размер иконок ---
+        Column {
+            id: column
+            width: scroller.width
+            spacing: 18
+
+            // --- поиск ---
+            Column {
+                width: parent.width
+                spacing: 8
+
+                Item {
+                    width: parent.width
+                    height: 26
+
+                    Column {
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 1
+
+                        Text {
+                            text: "Поиск"
+                            color: Theme.quickText
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 13
+                        }
+
+                        Text {
+                            text: DockSearch.probing ? "Проверяем Elephant…"
+                                : (DockSearch.elephantEnabled
+                                   ? (DockSearch.elephantAvailable ? "Elephant подключён" : "Elephant недоступен")
+                                   : "Встроенный поиск")
+                            color: DockSearch.elephantEnabled && !DockSearch.elephantAvailable
+                                   && !DockSearch.probing ? Theme.warningColor : Theme.quickTextDim
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 10
+                        }
+                    }
+
+                    ToggleSwitch {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        checked: DockSearch.elephantEnabled
+                        onToggled: DockSearch.setElephantEnabled(!DockSearch.elephantEnabled)
+                    }
+                }
+
+                // Предупреждение и одновременно объяснение fallback-а.
+                Rectangle {
+                    width: parent.width
+                    height: warningText.implicitHeight + 16
+                    radius: 10
+                    visible: DockSearch.elephantEnabled && !DockSearch.probing
+                             && (!DockSearch.elephantAvailable
+                                 || DockSearch.enabledProviders.length === 0)
+                    color: Theme.withAlpha(Theme.warningColor, 0.12)
+                    border.width: 1
+                    border.color: Theme.withAlpha(Theme.warningColor, 0.35)
+
+                    Text {
+                        id: warningText
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 8
+                        wrapMode: Text.WordWrap
+                        text: !DockSearch.elephantAvailable
+                              ? "Elephant недоступен — используется встроенный поиск."
+                              : "Не выбран ни один провайдер — используется встроенный поиск."
+                        color: Theme.warningColor
+                        font.family: Theme.fontFamily
+                        font.pixelSize: 11
+                    }
+                }
+
+                Text {
+                    visible: DockSearch.elephantEnabled && DockSearch.providers.length > 0
+                    text: "Провайдеры Elephant"
+                    color: Theme.quickText
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 12
+                }
+
+                Flow {
+                    width: parent.width
+                    spacing: 8
+                    visible: DockSearch.elephantEnabled
+
+                    Repeater {
+                        model: DockSearch.providers
+
+                        delegate: Rectangle {
+                            required property var modelData
+
+                            readonly property bool selected: DockSearch.hasProvider(modelData)
+
+                            width: providerLabel.implicitWidth + 24
+                            height: 28
+                            radius: 14
+                            color: selected ? Theme.quickTileActive : Theme.quickTile
+                            border.width: 1
+                            border.color: selected ? Theme.accent : Theme.quickBorder
+                            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+
+                            Text {
+                                id: providerLabel
+                                anchors.centerIn: parent
+                                text: DockSearch.providerLabel(modelData)
+                                color: selected ? Theme.accent : Theme.quickText
+                                font.family: Theme.fontFamily
+                                font.pixelSize: 11
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onContainsMouseChanged: if (containsMouse) DockState.keepAlive()
+                                onClicked: DockSearch.toggleProvider(modelData)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // --- размер иконок ---
         Column {
             width: parent.width
             spacing: 8
@@ -205,5 +332,22 @@ Item {
                 onClicked: DockSettings.reset()
             }
         }
+        }
+    }
+
+    // Тонкий индикатор прокрутки: настройки теперь длиннее панели.
+    Rectangle {
+        id: scrollThumb
+        anchors.right: parent.right
+        anchors.rightMargin: 1
+        width: 3
+        radius: 1.5
+        color: Theme.quickTextDim
+        opacity: 0.55
+        visible: scroller.contentHeight > scroller.height
+        height: Math.max(20, scroller.height * scroller.height
+                         / Math.max(1, scroller.contentHeight))
+        y: (scroller.height - height) * (scroller.contentY
+            / Math.max(1, scroller.contentHeight - scroller.height))
     }
 }

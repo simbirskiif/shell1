@@ -4,6 +4,7 @@ singleton UiState 1.0 UiState.qml
 singleton DockState 1.0 DockState.qml
 singleton DockApps 1.0 DockApps.qml
 singleton DockSettings 1.0 DockSettings.qml
+singleton DockSearch 1.0 DockSearch.qml
 singleton MockState 1.0 MockState.qml
 singleton AudioService 1.0 AudioService.qml
 singleton BrightnessService 1.0 BrightnessService.qml

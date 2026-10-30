@@ -226,6 +226,22 @@ ShellRoot {
             return state();
         }
 
+        // Elephant: включить/выключить и переключить провайдера.
+        function elephant(enabled: bool): string {
+            DockSearch.setElephantEnabled(enabled);
+            return state();
+        }
+
+        function provider(name: string): string {
+            DockSearch.toggleProvider(name);
+            return state();
+        }
+
+        function probe(): string {
+            DockSearch.refresh();
+            return state();
+        }
+
         function reset(): string {
             DockSettings.reset();
             return state();
@@ -241,7 +257,8 @@ ShellRoot {
             return DockState.summary
                 + " icon=" + DockSettings.iconSize
                 + " scroll=" + DockSettings.scrollFactor.toFixed(2)
-                + " button=" + DockSettings.buttonSide;
+                + " button=" + DockSettings.buttonSide
+                + " " + DockSearch.summary;
         }
     }
 

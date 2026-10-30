@@ -50,14 +50,8 @@ Item {
     // делегаты не пересоздаются и переезжают анимацией displaced.
     ScriptModel {
         id: filtered
-        objectProp: "id"
-        values: {
-            const query = DockState.query.trim().toLowerCase();
-            if (query === "")
-                return DockApps.all;
-            return DockApps.all.filter(entry =>
-                String(entry.name).toLowerCase().includes(query));
-        }
+        objectProp: "key"
+        values: DockSearch.results
     }
 
     // Синхронизация поля с внешним запросом (IPC/сброс при закрытии) и
@@ -67,11 +61,16 @@ Item {
 
         function onQueryChanged() {
             searchField.setText(DockState.query);
+            appList.currentIndex = -1;
+            DockState.mouseGuardUntil = Date.now() + 300;
         }
 
         function onExpandedChanged() {
-            if (DockState.expanded && !DockState.settingsOpen)
-                searchField.focusInput();
+            if (DockState.expanded) {
+                DockState.mouseGuardUntil = Date.now() + 360;
+                if (!DockState.settingsOpen)
+                    searchField.focusInput();
+            }
         }
 
         function onSettingsOpenChanged() {
@@ -82,6 +81,19 @@ Item {
         function onShownChanged() {
             if (!DockState.shown)
                 searchField.setText("");
+        }
+
+    }
+
+    Connections {
+        target: DockSearch
+
+        function onResultsChanged() {
+            DockState.mouseGuardUntil = Date.now() + 300;
+            if (appList.count === 0)
+                appList.currentIndex = -1;
+            else if (appList.currentIndex >= appList.count)
+                appList.currentIndex = appList.count - 1;
         }
     }
 
@@ -174,6 +186,30 @@ Item {
         }
 
         onEdited: value => DockState.query = value
+        onNavigate: delta => root.moveSelection(delta)
+        onSubmitted: root.activateCurrent()
+    }
+
+    function moveSelection(delta) {
+        if (appList.count === 0)
+            return;
+        if (appList.currentIndex < 0) {
+            appList.currentIndex = delta > 0 ? 0 : appList.count - 1;
+        } else if (delta > 0) {
+            appList.incrementCurrentIndex();
+        } else {
+            appList.decrementCurrentIndex();
+        }
+        appList.positionViewAtIndex(appList.currentIndex, ListView.Contain);
+    }
+
+    function activateCurrent() {
+        const current = appList.currentItem;
+        const item = current ? current : appList.itemAtIndex(0);
+        if (!item)
+            return;
+        item.activate();
+        DockState.hide();
     }
 
     // --- список приложений ------------------------------------------------
@@ -188,6 +224,15 @@ Item {
         spacing: 2
         boundsBehavior: Flickable.StopAtBounds
         model: filtered
+        currentIndex: -1
+        highlightMoveDuration: 120
+        highlightResizeDuration: 120
+        highlight: Rectangle {
+            width: appList.width
+            height: 44
+            radius: 12
+            color: Theme.quickTileActive
+        }
         enabled: !root.settingsOpen
         opacity: root.settingsOpen ? 0 : 1
         visible: opacity > 0.001
@@ -201,7 +246,7 @@ Item {
         delegate: DockListItem {
             required property var modelData
 
-            entry: modelData
+            item: modelData
         }
 
         // Удаляемый элемент остаётся видимым до конца перехода: ListView
@@ -273,9 +318,13 @@ Item {
     // а оверскролл вверх должен закрывать панель. Слой прозрачен для кликов
     // и касаний — они уходят строкам под ним.
     Item {
+        id: listOverlay
         anchors.fill: appList
         visible: !root.settingsOpen
 
+        // «Мышь — второй приоритет»: выделение от указателя включается
+        // только после реального движения. Панель может появиться под
+        // неподвижным курсором — это не повод сбивать выбор с клавиатуры.
         WheelHandler {
             acceptedDevices: PointerDevice.TouchPad | PointerDevice.Mouse
             orientation: Qt.Vertical
