@@ -120,6 +120,17 @@ Singleton {
     }
 
     Timer {
+        id: recovery
+        interval: 2500
+        onTriggered: {
+            if (!DockState.expanded || root.elephantAvailable || !root.elephantEnabled
+                    || !root.installed || root.probing || root.serviceStarting)
+                return;
+            root.probe();
+        }
+    }
+
+    Timer {
         id: probeWatchdog
         interval: 3500
         onTriggered: {
@@ -133,9 +144,12 @@ Singleton {
     }
 
     // --- Elephant: запрос -------------------------------------------------
+    // Один процесс за раз: если запрос устарел, его результат просто не
+    // коммитим, а после выхода запускаем актуальный. Это убирает гонки
+    // abort/restart при быстром наборе.
     Process {
         id: queryProc
-        command: ["elephant", "query", "--json", root.elephantArg]
+        command: ["elephant", "query", "--json", root.runningArg]
         running: false
         stdout: StdioCollector {
             id: queryOut
@@ -146,30 +160,36 @@ Singleton {
             onStreamFinished: root.lastError = (queryErr.text || "").trim()
         }
         onExited: (code, status) => {
-            if (root.aborting) {
-                root.aborting = false;
-                root.startElephant.restart();
-                return;
-            }
+            const arg = root.runningArg;
+            root.runningArg = "";
             if (code !== 0) {
-                root.pendingResults = [];
-                root.elephantLost(root.lastError || ("query: " + code));
+                if (!root.useBuiltin && arg === root.elephantArg)
+                    root.elephantLost(root.lastError || ("query: " + code));
+                else
+                    root.loading = false;
+                root.pumpQuery();
                 return;
             }
+
             root.elephantAvailable = true;
-            root.loading = false;
-            if (root.useBuiltin) {
+            if (!root.useBuiltin && arg === root.elephantArg) {
+                root.results = root.pendingResults;
+                root.lastQid = root.pendingQid;
+                root.lastResultArg = arg;
+                root.loading = false;
+            } else if (root.useBuiltin) {
+                root.loading = false;
                 root.results = root.builtinResults();
-                return;
+                root.lastResultArg = "";
             }
-            root.results = root.pendingResults;
-            root.lastQid = root.pendingQid;
+            root.pumpQuery();
         }
     }
 
     property var pendingResults: []
     property int pendingQid: 0
-    property bool aborting: false
+    property string runningArg: ""
+    property string lastResultArg: ""
 
     readonly property string elephantArg: {
         const providerList = root.enabledProviders.join(",");
@@ -183,15 +203,30 @@ Singleton {
         onTriggered: root.runElephant()
     }
 
-    Timer {
-        id: startElephant
-        interval: 0
-        onTriggered: {
-            if (root.useBuiltin || !DockState.expanded)
-                return;
-            root.aborting = false;
+    function runElephant() {
+        if (root.useBuiltin || !DockState.expanded)
+            return;
+        if (queryProc.running)
+            return; // актуальный запрос уйдёт после выхода текущего
+        if (root.lastResultArg === root.elephantArg)
+            return;
+        root.runQueryNow();
+    }
+
+    function runQueryNow() {
+        if (root.useBuiltin || !DockState.expanded || queryProc.running)
+            return;
+        root.runningArg = root.elephantArg;
+        root.loading = true;
+        queryProc.running = true;
+    }
+
+    function pumpQuery() {
+        if (root.useBuiltin || !DockState.expanded || queryProc.running)
+            return;
+        if (root.lastResultArg !== root.elephantArg) {
             root.loading = true;
-            queryProc.running = true;
+            debounce.restart();
         }
     }
 
@@ -313,6 +348,9 @@ Singleton {
         const saved = Settings.value("dock.providers", []);
         root.enabledProviders = Array.isArray(saved) ? saved.map(String) : [];
         root.restoring = false;
+        // Настройки могли прийти уже после открытия панели — перезапускаем
+        // текущий запрос, чтобы выбранные провайдеры применились сразу.
+        root.requestSearch();
     }
 
     function validProviders(saved) {
@@ -378,11 +416,15 @@ Singleton {
         root.lastError = reason;
         root.loading = false;
         root.results = root.builtinResults();
+        root.lastResultArg = "";
 
         // Установленный, но не запущенный сервис поднимаем один раз сами.
         if (root.installed && root.elephantEnabled
+                && root.providers.length > 0
                 && !root.autoStartTried && !root.serviceStarting) {
             root.startService();
+        } else {
+            root.scheduleRecovery();
         }
     }
 
@@ -406,6 +448,7 @@ Singleton {
                 ? "desktopapplications" : list[0];
             root.enabledProviders = [preferred];
         }
+        root.requestSearch();
     }
 
     // --- поиск ------------------------------------------------------------
@@ -417,10 +460,13 @@ Singleton {
         }
 
         function onExpandedChanged() {
-            if (DockState.expanded) {
+            if (!DockState.expanded)
+                return;
+            if (root.providers.length === 0)
+                root.refresh();
+            else
                 root.probeIfNeeded();
-                root.requestSearch();
-            }
+            root.requestSearch();
         }
 
         function onSettingsOpenChanged() {
@@ -442,22 +488,21 @@ Singleton {
         if (root.useBuiltin || !DockState.expanded) {
             root.loading = false;
             root.results = root.builtinResults();
+            root.lastResultArg = "";
+            root.scheduleRecovery();
             return;
         }
         root.loading = true;
         debounce.restart();
     }
 
-    function runElephant() {
-        if (root.useBuiltin || !DockState.expanded)
+    // Если сервис был доступен, но запрос сорвался, не остаёмся на
+    // встроенном поиске до перезапуска панели: пробуем восстановиться.
+    function scheduleRecovery() {
+        if (!root.elephantEnabled || !root.installed || root.elephantAvailable
+                || root.probing || root.serviceStarting)
             return;
-        if (queryProc.running) {
-            root.aborting = true;
-            queryProc.running = false;
-            return;
-        }
-        root.loading = true;
-        queryProc.running = true;
+        recovery.restart();
     }
 
     function builtinResults() {
