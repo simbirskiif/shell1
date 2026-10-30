@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import ".."
 import "../../singletons"
@@ -35,11 +36,9 @@ PanelWindow {
             return Qt.rect(0, 0, 0, 0);
         if (DockState.phase === "hiding")
             return root.frozenCard;
-        if (DockState.phase === "showing"
-                || DockState.phase === "expanding"
-                || DockState.phase === "collapsing")
-            return root.targetCard;
-        return Qt.rect(dock.x, dock.y, dock.width, dock.height);
+        // Целевая геометрия, а не текущая: маска не должна меняться на
+        // каждом кадре анимации размера. В покое цель совпадает с фактом.
+        return root.targetCard;
     }
 
     // Раскрытие и сжатие делают размер карточки, а не окна: границы маски
@@ -108,6 +107,21 @@ PanelWindow {
             y: root.cardMask.y
             width: root.cardMask.width
             height: root.cardMask.height > 0 ? root.height - root.cardMask.y : 0
+        }
+    }
+
+    // Клик или касание мимо раскрытой панели закрывают её, но само событие
+    // не съедается: focus-grab Hyprland только снимает захват, а нажатие
+    // уходит в окно под курсором. Для свёрнутого дока это не нужно — он и
+    // так прячется по уходу курсора.
+    HyprlandFocusGrab {
+        id: dismissGrab
+        windows: [root]
+        active: root.active && DockState.expanded
+                         && DockState.phase !== "hiding"
+        onCleared: {
+            if (DockState.shown && DockState.expanded)
+                DockState.hide();
         }
     }
 

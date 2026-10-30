@@ -203,8 +203,32 @@ ShellRoot {
             return state();
         }
 
+        // Размер иконок (20..44) и множитель прокрутки (0.4..2.5).
+        function iconSize(value: real): string {
+            DockSettings.setIconSize(value);
+            return state();
+        }
+
+        function scroll(value: real): string {
+            DockSettings.setScrollFactor(value);
+            return state();
+        }
+
+        function reset(): string {
+            DockSettings.reset();
+            return state();
+        }
+
+        // Переключить содержимое раскрытой панели: приложения/настройки.
+        function dockSettings(): string {
+            DockState.settingsOpen = !DockState.settingsOpen;
+            return state();
+        }
+
         function state(): string {
-            return DockState.summary;
+            return DockState.summary
+                + " icon=" + DockSettings.iconSize
+                + " scroll=" + DockSettings.scrollFactor.toFixed(2);
         }
     }
 

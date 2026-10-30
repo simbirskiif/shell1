@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import ".."
 import "../../singletons"
 
 // Приложение в раскрытой панели: иконка и подпись. Сетка живёт в
@@ -8,6 +9,8 @@ Item {
     id: root
 
     required property var entry
+
+    property int iconSize: 42
 
     signal activated()
 
@@ -32,8 +35,8 @@ Item {
         spacing: 7
 
         Item {
-            width: 42
-            height: 42
+            width: root.iconSize
+            height: root.iconSize
             anchors.horizontalCenter: parent.horizontalCenter
 
             Text {
@@ -43,7 +46,7 @@ Item {
                       ? String(root.entry.name).charAt(0).toUpperCase() : "?"
                 color: Theme.quickText
                 font.family: Theme.fontFamily
-                font.pixelSize: 20
+                font.pixelSize: Math.round(root.iconSize * 0.48)
                 font.weight: Font.DemiBold
             }
 
@@ -68,6 +71,14 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             elide: Text.ElideRight
             maximumLineCount: 1
+        }
+    }
+
+    scale: hover.pressed ? 0.96 : 1
+    Behavior on scale {
+        MotionNumber {
+            duration: Theme.motionShort3
+            curve: Theme.curveDockExpressive
         }
     }
 

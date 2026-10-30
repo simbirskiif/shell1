@@ -20,11 +20,11 @@ Item {
     implicitWidth: root.size
     implicitHeight: root.size
 
-    scale: hover.containsMouse ? 1.08 : 1
+    scale: hover.pressed ? 0.92 : (hover.containsMouse ? 1.08 : 1)
     Behavior on scale {
         MotionNumber {
-            duration: Theme.motionShort4
-            curve: Theme.curveEmphasized
+            duration: Theme.motionShort3
+            curve: Theme.curveDockExpressive
         }
     }
 

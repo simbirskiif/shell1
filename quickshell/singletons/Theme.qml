@@ -48,8 +48,12 @@ Singleton {
     readonly property int dockHeight: 64
     readonly property int dockPadding: 12
     readonly property int dockSpacing: 6
+    // Базовые размеры; пользователь меняет их в DockSettings, а при
+    // переполнении ряд ужимается целиком.
     readonly property int dockButtonSize: 44
     readonly property int dockIconSize: 26
+    // Шире док не растёт: дальше уменьшаются иконки.
+    readonly property int dockMaxWidth: 520
     readonly property int dockRadius: 22
     readonly property int dockPanelWidth: 640
     readonly property int dockPanelHeight: 420
@@ -65,8 +69,19 @@ Singleton {
     readonly property int dockActivationHeight: 6
     readonly property int dockActivationWidth: 720
     // Сколько док ждёт после ухода курсора, прежде чем спрятаться.
-    readonly property int dockLingerCompact: 260
+    readonly property int dockLingerCompact: 220
     readonly property int dockLingerExpanded: 1400
+
+    // --- Material 3 Expressive: док --------------------------------------
+    // Быстрее общего motion-набора панелей: док — прямой манипулятор,
+    // он должен отвечать почти сразу. Overshoot в кривой даёт «пружинку»
+    // expressive, не превращая движение в цирк.
+    readonly property int dockRevealDuration: 220
+    readonly property int dockMorphDuration: 320
+    readonly property int dockFadeDuration: 160
+    readonly property int dockHideDuration: 340
+    readonly property var curveDockExpressive: [0.2, 1.18, 0.24, 1.0]
+    readonly property var curveDockExit: [0.3, 0.0, 0.8, 0.15]
 
     // Карточки уведомлений и Центр уведомлений.
     readonly property int notificationWidth: 360

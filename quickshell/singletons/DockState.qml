@@ -35,15 +35,19 @@ Singleton {
     // Курсор над зоной активации или карточкой (пишет DockWindow).
     property bool hovered: false
 
+    // Какое содержимое раскрытой панели показано: приложения или настройки.
+    // Живёт здесь, чтобы переключаться из панели и по IPC.
+    property bool settingsOpen: false
+
     readonly property bool transitioning: root.phase === "showing"
                                         || root.phase === "expanding"
                                         || root.phase === "collapsing"
                                         || root.phase === "hiding"
 
     // Длительности совпадают с Behavior'ами карточки.
-    readonly property int revealDuration: Theme.motionMedium2
-    readonly property int morphDuration: Theme.motionLong1
-    readonly property int hideDuration: Math.max(root.revealDuration, root.morphDuration)
+    readonly property int revealDuration: Theme.dockRevealDuration
+    readonly property int morphDuration: Theme.dockMorphDuration
+    readonly property int hideDuration: Theme.dockHideDuration
 
     readonly property string summary: "phase=" + root.phase
         + " screen=" + (root.screenName === "" ? "-" : root.screenName)
@@ -52,6 +56,7 @@ Singleton {
         + " pending=" + root.pendingExpand
         + " hold=" + root.holdOpen
         + " hover=" + root.hovered
+        + " settings=" + root.settingsOpen
 
     // --- команды ----------------------------------------------------------
 
@@ -109,6 +114,7 @@ Singleton {
         root.holdOpen = false;
         autoHide.stop();
         root.pendingExpand = false;
+        root.settingsOpen = false;
         if (!root.expanded) {
             if (root.shown && !root.transitioning)
                 root.maybeAutoHide();
@@ -126,6 +132,7 @@ Singleton {
     function hide() {
         root.holdOpen = false;
         root.pendingExpand = false;
+        root.settingsOpen = false;
         autoHide.stop();
         if (!root.shown) {
             root.expanded = false;

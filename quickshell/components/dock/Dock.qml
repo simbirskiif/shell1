@@ -36,7 +36,7 @@ Item {
 
     Timer {
         id: panelDelay
-        interval: 160
+        interval: 110
         onTriggered: root.panelShown = root.expanded
     }
 
@@ -44,25 +44,46 @@ Item {
     property real reveal: root.shown ? 1 : 0
     Behavior on reveal {
         MotionNumber {
-            duration: Theme.motionMedium2
-            curve: root.shown ? Theme.curveEmphasizedDecelerate
-                              : Theme.curveEmphasizedAccelerate
+            duration: Theme.dockRevealDuration
+            curve: root.shown ? Theme.curveDockExpressive : Theme.curveDockExit
         }
     }
 
     // Размеры считаются от содержимого, поэтому полоса подстраивается под
     // число избранных приложений, а панель ограничена экраном.
-    readonly property real compactWidth: Math.round(compactRow.implicitWidth
-                                                   + Theme.dockPadding * 2)
+    readonly property int favoriteCount: DockApps.favorites.length
+    readonly property real baseButtonSize: DockSettings.iconSize + 18
+    // Ширина ряда без шкалирования: n кнопок + разделитель + кнопка панели
+    // и промежутки между ними.
+    readonly property real rowBaseWidth: root.favoriteCount * root.baseButtonSize
+        + 1 + 40 + (root.favoriteCount + 1) * Theme.dockSpacing
+    readonly property real maxCompactWidth: {
+        const available = root.parent && root.parent.width > 0
+            ? root.parent.width - 24 : Theme.dockMaxWidth;
+        return Math.max(280, Math.min(Theme.dockMaxWidth, available));
+    }
+    // Переполнение: ряд ужимается целиком, пока не влезет в предел ширины.
+    // Иконки при этом уменьшаются вместе с промежутками, а не наезжают.
+    readonly property real compactFitScale: root.rowBaseWidth <= 0 ? 1
+        : Math.max(0.35, Math.min(1,
+            (root.maxCompactWidth - Theme.dockPadding * 2) / root.rowBaseWidth))
+    readonly property real compactWidth: Math.round(Math.min(root.maxCompactWidth,
+        root.rowBaseWidth * root.compactFitScale + Theme.dockPadding * 2))
+    // Высокий размер иконок требует чуть более высокой карточки, иначе
+    // увеличение при наведении обрезается сверху и снизу.
+    readonly property real compactHeight: Math.max(Theme.dockHeight,
+                                                   root.baseButtonSize + 14)
     readonly property real panelWidth: Math.max(root.compactWidth + 40,
         Math.min(Theme.dockPanelWidth,
-                 root.parent ? root.parent.width - 24 : Theme.dockPanelWidth))
+                 root.parent && root.parent.width > 0
+                     ? root.parent.width - 24 : Theme.dockPanelWidth))
     readonly property real targetWidth: root.expanded ? root.panelWidth : root.compactWidth
     readonly property real targetHeight: root.expanded
         ? Math.min(Theme.dockPanelHeight,
-                   root.parent ? root.parent.height - Theme.dockBottomMargin - 12
-                               : Theme.dockPanelHeight)
-        : Theme.dockHeight
+                   root.parent && root.parent.height > 0
+                       ? root.parent.height - Theme.dockBottomMargin - 12
+                       : Theme.dockPanelHeight)
+        : root.compactHeight
 
     width: root.targetWidth
     height: root.targetHeight
@@ -71,25 +92,26 @@ Item {
     transformOrigin: Item.Bottom
     visible: root.reveal > 0.001
 
-    // m3 container transform: размер и радиус меняются вместе.
+    // m3 container transform: размер и радиус меняются вместе. Кривая без
+    // overshoot: карточка не должна вылезать за маску ввода.
     Behavior on width {
         MotionNumber {
-            duration: Theme.motionLong1
-            curve: Theme.curveEmphasized
+            duration: Theme.dockMorphDuration
+            curve: Theme.curveEmphasizedDecelerate
         }
     }
 
     Behavior on height {
         MotionNumber {
-            duration: Theme.motionLong1
-            curve: Theme.curveEmphasized
+            duration: Theme.dockMorphDuration
+            curve: Theme.curveEmphasizedDecelerate
         }
     }
 
     property real cardRadius: root.expanded ? Theme.dockPanelRadius : Theme.dockRadius
     Behavior on cardRadius {
         MotionNumber {
-            duration: Theme.motionLong1
+            duration: Theme.dockMorphDuration
             curve: Theme.curveEmphasized
         }
     }
@@ -118,14 +140,15 @@ Item {
             // чем пустое место успеет броситься в глаза.
             Behavior on opacity {
                 MotionNumber {
-                    duration: root.expanded ? Theme.motionShort3 : Theme.motionMedium1
+                    duration: root.expanded ? Theme.dockFadeDuration : Theme.dockMorphDuration
                     curve: Theme.curveEmphasized
                 }
             }
-            scale: root.expanded ? 0.9 : 1
+            // Два множителя: уход при раскрытии и ужимание при переполнении.
+            scale: (root.expanded ? 0.9 : 1) * root.compactFitScale
             Behavior on scale {
                 MotionNumber {
-                    duration: Theme.motionMedium1
+                    duration: Theme.dockMorphDuration
                     curve: Theme.curveEmphasized
                 }
             }
@@ -136,6 +159,8 @@ Item {
                 delegate: DockAppButton {
                     required property var modelData
 
+                    size: root.baseButtonSize
+                    iconSize: DockSettings.iconSize
                     entry: modelData
                     onActivated: DockState.hide()
                 }
@@ -144,7 +169,7 @@ Item {
             // Разделитель между приложениями и управляющей кнопкой.
             Item {
                 width: 1
-                height: Theme.dockButtonSize
+                height: root.baseButtonSize
 
                 Rectangle {
                     anchors.centerIn: parent
@@ -176,7 +201,7 @@ Item {
             visible: opacity > 0.001
             Behavior on opacity {
                 MotionNumber {
-                    duration: root.panelShown ? Theme.motionMedium1 : Theme.motionShort3
+                    duration: Theme.dockFadeDuration
                     curve: Theme.curveEmphasized
                 }
             }
@@ -190,10 +215,6 @@ Item {
             screenName: root.screenName
 
             onCloseRequested: DockState.hide()
-            onQuickSettingsRequested: {
-                DockState.hide();
-                UiState.open(root.screenName, "");
-            }
         }
     }
 }

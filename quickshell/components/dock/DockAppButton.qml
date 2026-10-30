@@ -24,20 +24,20 @@ Item {
         return Quickshell.iconPath(root.entry.icon, true);
     }
 
-    scale: hover.containsMouse ? 1.12 : 1
+    scale: hover.pressed ? 0.94 : (hover.containsMouse ? 1.12 : 1)
     Behavior on scale {
         MotionNumber {
-            duration: Theme.motionShort4
-            curve: Theme.curveEmphasized
+            duration: Theme.motionShort3
+            curve: Theme.curveDockExpressive
         }
     }
 
     transform: Translate {
-        y: hover.containsMouse ? -3 : 0
+        y: hover.containsMouse && !hover.pressed ? -3 : 0
         Behavior on y {
             MotionNumber {
-                duration: Theme.motionShort4
-                curve: Theme.curveEmphasized
+                duration: Theme.motionShort3
+                curve: Theme.curveDockExpressive
             }
         }
     }

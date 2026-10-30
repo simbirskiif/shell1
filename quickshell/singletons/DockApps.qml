@@ -20,7 +20,10 @@ Singleton {
         "org.telegram.desktop",
         "kitty",
         "org.gnome.Nautilus",
-        "com.microsoft.VSCode"
+        "com.microsoft.VSCode",
+        "spotify",
+        "org.gnome.Calculator",
+        "org.gnome.Settings"
     ]
 
     function reload() {
