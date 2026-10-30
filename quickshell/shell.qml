@@ -6,6 +6,7 @@ import Quickshell.Io
 import Quickshell.Services.Notifications
 import Quickshell.Services.Polkit
 import "components"
+import "components/dock"
 import "singletons"
 import "widgets/desktop"
 import "widgets/core"
@@ -25,6 +26,17 @@ ShellRoot {
         delegate: Bar {
             required property var modelData
             screen: modelData
+        }
+    }
+
+    // Нижний док: по одному на экран, показывается при наведении на зону
+    // активации у нижней кромки. Состояние — в DockState, IPC target "dock".
+    Variants {
+        model: Quickshell.screens
+
+        delegate: DockWindow {
+            required property var modelData
+            dockScreen: modelData
         }
     }
 
@@ -150,6 +162,51 @@ ShellRoot {
     // Сервер отдаёт пережившие reload уведомления только после того, как
     // создан, поэтому связываем его с состоянием здесь.
     Component.onCompleted: NotificationService.attach(notificationServer)
+
+    // Нижний док снаружи: qs ipc -p ~/shell/quickshell call dock <функция>.
+    // enter/leave дублируют наведение для проверки анимаций без мыши.
+    IpcHandler {
+        target: "dock"
+
+        function show(): string {
+            DockState.show(UiState.defaultScreen());
+            return state();
+        }
+
+        function hide(): string {
+            DockState.hide();
+            return state();
+        }
+
+        function expand(): string {
+            DockState.expand(UiState.defaultScreen());
+            return state();
+        }
+
+        function collapse(): string {
+            DockState.collapse();
+            return state();
+        }
+
+        function toggle(): string {
+            DockState.toggle(UiState.defaultScreen());
+            return state();
+        }
+
+        function enter(): string {
+            DockState.pointerEntered(UiState.defaultScreen());
+            return state();
+        }
+
+        function leave(): string {
+            DockState.pointerExited();
+            return state();
+        }
+
+        function state(): string {
+            return DockState.summary;
+        }
+    }
 
     // Управление снаружи: qs ipc -p ~/shell/quickshell call bar <функция>.
     // Удобно повесить на бинд в Hyprland, например:
@@ -699,7 +756,8 @@ ShellRoot {
                 + " saved=" + NetworkService.savedWifiNetworks.count
                 + " ssid=" + (NetworkService.connectedSsid || "-")
                 + " paired=" + BluetoothBackend.pairedDevices.count
-                + " devices=" + BluetoothBackend.newDevices.count;
+                + " devices=" + BluetoothBackend.newDevices.count
+                + " dock=" + DockState.phase + "/" + (DockState.screenName || "-");
         }
     }
 }

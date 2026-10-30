@@ -41,6 +41,33 @@ Singleton {
     readonly property int quickRowHeight: 44
     readonly property int quickSectionHeight: 28
 
+    // --- нижний док -------------------------------------------------------
+    // Карточка живёт внутри окна постоянного размера: поверхность не меняет
+    // размер на кадр анимации (иначе композитор пересоздаёт буфер), поэтому
+    // «плавный размер» — это размеры карточки, а не окна.
+    readonly property int dockHeight: 64
+    readonly property int dockPadding: 12
+    readonly property int dockSpacing: 6
+    readonly property int dockButtonSize: 44
+    readonly property int dockIconSize: 26
+    readonly property int dockRadius: 22
+    readonly property int dockPanelWidth: 640
+    readonly property int dockPanelHeight: 420
+    readonly property int dockPanelPadding: 16
+    readonly property int dockPanelRadius: 26
+    readonly property int dockGridColumns: 6
+    readonly property int dockGridCellHeight: 92
+    // Запас окна под большую панель: выше неё карточка не растёт.
+    readonly property int dockSurfaceHeight: 520
+    readonly property int dockBottomMargin: 10
+    // Зона активации — узкая полоса у нижней кромки экрана. Ограничена по
+    // ширине, чтобы не перехватывать углы, где тянут границы окон.
+    readonly property int dockActivationHeight: 6
+    readonly property int dockActivationWidth: 720
+    // Сколько док ждёт после ухода курсора, прежде чем спрятаться.
+    readonly property int dockLingerCompact: 260
+    readonly property int dockLingerExpanded: 1400
+
     // Карточки уведомлений и Центр уведомлений.
     readonly property int notificationWidth: 360
     readonly property int notificationCenterWidth: 400
