@@ -76,12 +76,14 @@ Singleton {
 
     // --- Material 3 Expressive: док --------------------------------------
     // Быстрее общего motion-набора панелей: док — прямой манипулятор,
-    // он должен отвечать почти сразу. Overshoot в кривой даёт «пружинку»
-    // expressive, не превращая движение в цирк.
+    // он должен отвечать почти сразу. Появление (выезд/уход) чуть длиннее
+    // морфа контейнера, чтобы само движение из-за края читалось отдельно,
+    // а не сливалось с изменением размера. Overshoot в кривой даёт
+    // «пружинку» expressive, не превращая движение в цирк.
     readonly property int dockRevealDuration: 220
-    readonly property int dockMorphDuration: 320
-    readonly property int dockFadeDuration: 160
-    readonly property int dockHideDuration: 340
+    readonly property int dockMorphDuration: 160
+    readonly property int dockFadeDuration: 130
+    readonly property int dockHideDuration: 220
     readonly property var curveDockExpressive: [0.2, 1.18, 0.24, 1.0]
     readonly property var curveDockExit: [0.3, 0.0, 0.8, 0.15]
 

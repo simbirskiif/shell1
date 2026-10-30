@@ -43,7 +43,7 @@ Item {
 
     Timer {
         id: panelDelay
-        interval: 110
+        interval: 70
         onTriggered: root.panelShown = root.expanded
     }
 
