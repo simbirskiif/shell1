@@ -33,8 +33,9 @@ Item {
     // Высота, которую хочет содержимое. В режиме «по списку» её использует
     // Dock: карточка плавно подстраивается под число строк.
     readonly property real desiredHeight: {
-        if (root.settingsOpen)
-            return DockSettings.panelMaxHeight;
+        // Даже с открытыми настройками окно следует за размером списка:
+        // так включение режима «по списку» видно сразу, а не после
+        // закрытия настроек. Сам блок настроек при этом прокручивается.
         const listPart = Math.max(72, root.listContentHeight);
         return header.height + 8 + searchField.height + 8 + listPart;
     }

@@ -91,7 +91,7 @@ Item {
     readonly property real panelContentHeight: panelLoader.item
         ? panelLoader.item.desiredHeight + Theme.dockPanelPadding * 2 : 0
     readonly property real panelHeight: {
-        if (!DockSettings.fitPanelToContent || DockState.settingsOpen)
+        if (!DockSettings.fitPanelToContent)
             return root.panelMaxHeight;
         if (root.panelContentHeight <= 0)
             return root.panelMaxHeight;
