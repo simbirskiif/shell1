@@ -89,6 +89,9 @@ Singleton {
     readonly property int dockHideDuration: 220
     readonly property var curveDockExpressive: [0.2, 1.18, 0.24, 1.0]
     readonly property var curveDockExit: [0.3, 0.0, 0.8, 0.15]
+    // Критически задемпфированная пружина прокрутки (тик 16 мс).
+    readonly property real dockScrollOmega: 0.032
+    readonly property real dockScrollStop: 0.4
 
     // Карточки уведомлений и Центр уведомлений.
     readonly property int notificationWidth: 360

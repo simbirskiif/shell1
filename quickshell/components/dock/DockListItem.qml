@@ -2,19 +2,20 @@ import QtQuick
 import Quickshell
 import "../../singletons"
 
-// Строка списка результатов. Высота постоянная: ListView анимирует
-// смещение соседей через y, а не через изменение высоты.
-// Мышь выбирает строку только при реальном движении указателя: если она
-// просто стоит над списком, подсветка с клавиатуры не перебивается.
+// Результат поиска в двух видах: строка (иконка слева, текст справа)
+// и плитка (иконка сверху, подпись снизу). Высота задаётся GridView,
+// поэтому переходы add/remove/displaced работают в обоих видах.
+// Мышь выбирает элемент только при реальном входе/движении указателя.
 Item {
     id: root
 
     required property var item
+    property bool tile: false
 
     signal activated()
 
-    height: 44
-    width: ListView.view ? ListView.view.width : 0
+    width: GridView.view ? GridView.view.cellWidth : 0
+    height: GridView.view ? GridView.view.cellHeight : 44
     scale: 1
     opacity: 1
 
@@ -30,8 +31,10 @@ Item {
             DockSearch.activate(root.item);
     }
 
+    // --- строковый вид ----------------------------------------------------
     Image {
         id: iconImage
+        visible: !root.tile
         anchors.left: parent.left
         anchors.leftMargin: 8
         anchors.verticalCenter: parent.verticalCenter
@@ -47,7 +50,7 @@ Item {
 
     Text {
         anchors.centerIn: iconImage
-        visible: iconImage.status !== Image.Ready
+        visible: !root.tile && iconImage.status !== Image.Ready
         text: root.item && root.item.title
               ? String(root.item.title).charAt(0).toUpperCase() : "?"
         color: Theme.quickText
@@ -57,6 +60,7 @@ Item {
     }
 
     Column {
+        visible: !root.tile
         anchors.left: iconImage.right
         anchors.leftMargin: 10
         anchors.right: parent.right
@@ -84,6 +88,53 @@ Item {
         }
     }
 
+    // --- плиточный вид ----------------------------------------------------
+    Column {
+        visible: root.tile
+        anchors.centerIn: parent
+        width: Math.max(0, parent.width - 8)
+        spacing: 4
+
+        Item {
+            width: Math.max(34, Math.min(46, DockSettings.iconSize + 12))
+            height: width
+            anchors.horizontalCenter: parent.horizontalCenter
+
+            Image {
+                id: tileIcon
+                anchors.fill: parent
+                source: root.iconSource
+                sourceSize.width: 64
+                sourceSize.height: 64
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                asynchronous: true
+            }
+
+            Text {
+                anchors.centerIn: parent
+                visible: tileIcon.status !== Image.Ready
+                text: root.item && root.item.title
+                      ? String(root.item.title).charAt(0).toUpperCase() : "?"
+                color: Theme.quickText
+                font.family: Theme.fontFamily
+                font.pixelSize: 18
+                font.weight: Font.DemiBold
+            }
+        }
+
+        Text {
+            width: parent.width
+            text: root.item ? root.item.title : ""
+            color: Theme.quickText
+            font.family: Theme.fontFamily
+            font.pixelSize: 11
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            maximumLineCount: 1
+        }
+    }
+
     MouseArea {
         id: hover
         anchors.fill: parent
@@ -93,27 +144,25 @@ Item {
         onContainsMouseChanged: if (containsMouse) DockState.keepAlive()
 
         // Мышь — второй приоритет: наведение меняет выделение только
-        // после реального появления курсора на строке. Неподвижный
+        // после реального появления курсора на элементе. Неподвижный
         // указатель, под которым появилась панель, ничего не выбирает.
         onEntered: {
             if (Date.now() < DockState.mouseGuardUntil)
                 return;
-            if (ListView.view && ListView.view.currentIndex !== index)
-                ListView.view.currentIndex = index;
+            if (GridView.view && GridView.view.currentIndex !== index)
+                GridView.view.currentIndex = index;
         }
 
-        // Движение внутри уже выбранной строки тоже обновляет выбор
-        // (на случай, если панель появилась под неподвижным курсором).
         onPositionChanged: {
             if (Date.now() < DockState.mouseGuardUntil)
                 return;
-            if (ListView.view && ListView.view.currentIndex !== index)
-                ListView.view.currentIndex = index;
+            if (GridView.view && GridView.view.currentIndex !== index)
+                GridView.view.currentIndex = index;
         }
 
         onClicked: {
-            if (ListView.view)
-                ListView.view.currentIndex = index;
+            if (GridView.view)
+                GridView.view.currentIndex = index;
             root.activate();
             DockState.hide();
         }

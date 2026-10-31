@@ -242,6 +242,32 @@ ShellRoot {
             return state();
         }
 
+        // Вид списка и геометрия панели для проверки без мыши.
+        function tile(enabled: bool): string {
+            DockSettings.setTileLayout(enabled);
+            return state();
+        }
+
+        function searchSize(value: int): string {
+            DockSettings.setSearchHeight(value);
+            return state();
+        }
+
+        function searchPos(where: string): string {
+            DockSettings.setSearchAtBottom(where === "bottom");
+            return state();
+        }
+
+        function panelHeight(value: int): string {
+            DockSettings.setPanelMaxHeight(value);
+            return state();
+        }
+
+        function fit(enabled: bool): string {
+            DockSettings.setFitPanelToContent(enabled);
+            return state();
+        }
+
         function reset(): string {
             DockSettings.reset();
             return state();
@@ -258,6 +284,11 @@ ShellRoot {
                 + " icon=" + DockSettings.iconSize
                 + " scroll=" + DockSettings.scrollFactor.toFixed(2)
                 + " button=" + DockSettings.buttonSide
+                + " tile=" + (DockSettings.tileLayout ? "on" : "off")
+                + " search=" + DockSettings.searchHeight + "/"
+                             + (DockSettings.searchAtBottom ? "bottom" : "top")
+                + " panelMax=" + DockSettings.panelMaxHeight
+                + " fit=" + (DockSettings.fitPanelToContent ? "on" : "off")
                 + " " + DockSearch.summary;
         }
     }

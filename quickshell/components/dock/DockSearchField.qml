@@ -44,7 +44,7 @@ Rectangle {
         text: "\uf002"
         color: input.activeFocus ? Theme.accent : Theme.quickTextDim
         font.family: Theme.iconFontFamily
-        font.pixelSize: 14
+        font.pixelSize: Math.max(12, Math.min(18, Math.round(root.height * 0.39)))
     }
 
     Text {
@@ -56,7 +56,7 @@ Rectangle {
         text: root.placeholder
         color: Theme.quickTextDim
         font.family: Theme.fontFamily
-        font.pixelSize: 12
+        font.pixelSize: Math.max(11, Math.min(16, Math.round(root.height * 0.34)))
         elide: Text.ElideRight
     }
 
@@ -73,7 +73,7 @@ Rectangle {
         selectionColor: Theme.accent
         selectedTextColor: Theme.quickIconOn
         font.family: Theme.fontFamily
-        font.pixelSize: 12
+        font.pixelSize: Math.max(11, Math.min(16, Math.round(root.height * 0.34)))
         selectByMouse: true
         clip: true
         focus: DockState.expanded && !DockState.settingsOpen

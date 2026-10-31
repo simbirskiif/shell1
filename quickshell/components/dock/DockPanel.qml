@@ -19,14 +19,67 @@ Item {
     // переключалась по IPC.
     readonly property bool settingsOpen: DockState.settingsOpen
 
+    // Вид списка и его геометрия. Плитки — тот же ScriptModel, просто
+    // другая сетка, поэтому фильтрация и переходы продолжают работать.
+    readonly property bool tiles: DockSettings.tileLayout
+    readonly property int columns: root.tiles ? Theme.dockGridColumns : 1
+    readonly property real cellHeight: root.tiles ? Theme.dockGridCellHeight : 46
+    readonly property real listContentHeight: {
+        if (appList.count === 0)
+            return 0;
+        const rows = Math.ceil(appList.count / root.columns);
+        return rows * root.cellHeight;
+    }
+    // Высота, которую хочет содержимое. В режиме «по списку» её использует
+    // Dock: карточка плавно подстраивается под число строк.
+    readonly property real desiredHeight: {
+        if (root.settingsOpen)
+            return DockSettings.panelMaxHeight;
+        const listPart = Math.max(72, root.listContentHeight);
+        return header.height + 8 + searchField.height + 8 + listPart;
+    }
+
     // Накопленный оверскролл за верхним краем списка. Когда его достаточно,
     // панель закрывается — как «потянуть меню вверх».
     property real overscroll: 0
 
-    // Одна порция колеса/тачпада: прокрутка списка и закрытие по
-    // оверскроллу. Вынесено функцией, чтобы обработчик оставался тонким.
+    // Физика колеса: колесо двигает цель, а contentY догоняет её
+    // критически задемпфированной пружиной. Так шаг прокрутки плавный,
+    // а не прыгает на N пикселей за кадр.
+    property real scrollTarget: 0
+    property real scrollVelocity: 0
+
+    function maxScroll() {
+        return Math.max(0, appList.contentHeight - appList.height);
+    }
+
+    function resetScroll() {
+        scrollPhysics.stop();
+        root.scrollTarget = 0;
+        root.scrollVelocity = 0;
+        if (appList.contentY !== 0)
+            appList.contentY = 0;
+    }
+
+    function clampScroll() {
+        const max = root.maxScroll();
+        if (root.scrollTarget > max)
+            root.scrollTarget = max;
+        if (appList.contentY > max) {
+            appList.contentY = max;
+            root.scrollVelocity = 0;
+        }
+    }
+
     function applyWheelDelta(dy) {
-        if (appList.contentY <= 0.5 && dy > 0) {
+        if (appList.moving) {
+            // Нативный флик/тач: не боремся с ним.
+            root.scrollTarget = appList.contentY;
+            root.scrollVelocity = 0;
+        }
+
+        let target = scrollPhysics.running ? root.scrollTarget : appList.contentY;
+        if (appList.contentY <= 0.5 && target <= 0.5 && dy > 0) {
             root.overscroll += dy;
             if (root.overscroll >= Theme.dockOverscrollClose) {
                 root.overscroll = 0;
@@ -40,13 +93,55 @@ Item {
 
         root.overscroll = 0;
         overscrollReset.stop();
-        const maxY = Math.max(0, appList.contentHeight - appList.height);
-        appList.contentY = Math.max(0, Math.min(maxY,
-            appList.contentY - dy * DockSettings.scrollFactor));
+        target = Math.max(0, Math.min(root.maxScroll(),
+            target - dy * DockSettings.scrollFactor));
+        root.scrollTarget = target;
+        if (!scrollPhysics.running)
+            scrollPhysics.start();
+    }
+
+    function stepScroll() {
+        if (appList.moving) {
+            root.scrollTarget = appList.contentY;
+            root.scrollVelocity = 0;
+            scrollPhysics.stop();
+            return;
+        }
+
+        root.scrollTarget = Math.max(0, Math.min(root.maxScroll(), root.scrollTarget));
+        const dt = scrollPhysics.interval;
+        const omega = Theme.dockScrollOmega;
+        const a = appList.contentY - root.scrollTarget;
+        const b = root.scrollVelocity + omega * a;
+        const decay = Math.exp(-omega * dt);
+        const path = a + b * dt;
+        appList.contentY = Math.max(0, Math.min(root.maxScroll(),
+            root.scrollTarget + path * decay));
+        root.scrollVelocity = (b - omega * path) * decay;
+
+        if (Math.abs(appList.contentY - root.scrollTarget) < Theme.dockScrollStop
+                && Math.abs(root.scrollVelocity) < 0.02) {
+            appList.contentY = root.scrollTarget;
+            root.scrollVelocity = 0;
+            scrollPhysics.stop();
+        }
+    }
+
+    Timer {
+        id: scrollPhysics
+        interval: 16
+        repeat: true
+        onTriggered: root.stepScroll()
+    }
+
+    onTilesChanged: {
+        root.resetScroll();
+        if (appList.currentIndex >= 0)
+            appList.positionViewAtIndex(appList.currentIndex, GridView.Contain);
     }
 
     // Отфильтрованный список. ScriptModel сравнивает старый и новый массивы
-    // и отправляет ListView точечные insert/remove/move, поэтому уцелевшие
+    // и отправляет GridView точечные insert/remove/move, поэтому уцелевшие
     // делегаты не пересоздаются и переезжают анимацией displaced.
     ScriptModel {
         id: filtered
@@ -61,6 +156,7 @@ Item {
 
         function onQueryChanged() {
             searchField.setText(DockState.query);
+            root.resetScroll();
             DockState.mouseGuardUntil = Date.now() + 300;
             if (DockState.query === "")
                 appList.currentIndex = -1;
@@ -177,10 +273,13 @@ Item {
     // --- строка поиска ----------------------------------------------------
     DockSearchField {
         id: searchField
-        anchors.top: header.bottom
-        anchors.topMargin: 8
         anchors.left: parent.left
-        anchors.right: parent.right
+        anchors.right: layoutButton.left
+        anchors.rightMargin: 8
+        anchors.top: DockSettings.searchAtBottom ? undefined : header.bottom
+        anchors.topMargin: 8
+        anchors.bottom: DockSettings.searchAtBottom ? parent.bottom : undefined
+        height: DockSettings.searchHeight
         opacity: root.settingsOpen ? 0 : 1
         visible: opacity > 0.001
         Behavior on opacity {
@@ -195,6 +294,21 @@ Item {
         onSubmitted: root.activateCurrent()
     }
 
+    // Переключатель вида: строки ⇄ плитки. Он справа от поля поиска,
+    // поэтому поле при смене позиции/размера остаётся в одной строке с ним.
+    DockIconButton {
+        id: layoutButton
+        anchors.right: parent.right
+        anchors.verticalCenter: searchField.verticalCenter
+        visible: !root.settingsOpen
+        size: Math.min(34, DockSettings.searchHeight)
+        glyphSize: 14
+        icon: DockSettings.tileLayout ? "\uf00b" : "\uf00a"
+        accented: DockSettings.tileLayout
+
+        onClicked: DockSettings.setTileLayout(!DockSettings.tileLayout)
+    }
+
     function selectFirst() {
         if (DockState.query !== "" && appList.count > 0)
             appList.currentIndex = 0;
@@ -205,12 +319,17 @@ Item {
             return;
         if (appList.currentIndex < 0) {
             appList.currentIndex = delta > 0 ? 0 : appList.count - 1;
+        } else if (root.tiles) {
+            // В плитках ↑/↓ ходят по строкам, а не по одному элементу.
+            const step = Theme.dockGridColumns;
+            appList.currentIndex = Math.max(0, Math.min(appList.count - 1,
+                appList.currentIndex + delta * step));
         } else if (delta > 0) {
             appList.incrementCurrentIndex();
         } else {
             appList.decrementCurrentIndex();
         }
-        appList.positionViewAtIndex(appList.currentIndex, ListView.Contain);
+        appList.positionViewAtIndex(appList.currentIndex, GridView.Contain);
     }
 
     function activateCurrent() {
@@ -223,23 +342,26 @@ Item {
     }
 
     // --- список приложений ------------------------------------------------
-    ListView {
+    GridView {
         id: appList
-        anchors.top: searchField.bottom
+        anchors.top: DockSettings.searchAtBottom ? header.bottom : searchField.bottom
         anchors.topMargin: 8
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        anchors.bottom: DockSettings.searchAtBottom ? searchField.top : parent.bottom
+        anchors.bottomMargin: DockSettings.searchAtBottom ? 8 : 0
         clip: true
-        spacing: 2
         boundsBehavior: Flickable.StopAtBounds
+        cellWidth: root.tiles ? width / Theme.dockGridColumns : width
+        cellHeight: root.cellHeight
         model: filtered
         currentIndex: -1
+        onHeightChanged: root.clampScroll()
+        onContentHeightChanged: root.clampScroll()
         highlightMoveDuration: 120
-        highlightResizeDuration: 120
         highlight: Rectangle {
-            width: appList.width
-            height: 44
+            width: root.tiles ? appList.cellWidth - 4 : appList.cellWidth
+            height: appList.cellHeight
             radius: 12
             color: Theme.quickTileActive
         }
@@ -257,9 +379,10 @@ Item {
             required property var modelData
 
             item: modelData
+            tile: root.tiles
         }
 
-        // Удаляемый элемент остаётся видимым до конца перехода: ListView
+        // Удаляемый элемент остаётся видимым до конца перехода: GridView
         // сам держит его в сцене, поэтому opacity/scale анимируем явно.
         remove: Transition {
             ParallelAnimation {
@@ -324,7 +447,7 @@ Item {
         }
     }
 
-    // Свой обработчик колеса: у ListView нет настройки чувствительности,
+    // Свой обработчик колеса: у GridView нет настройки чувствительности,
     // а оверскролл вверх должен закрывать панель. Слой прозрачен для кликов
     // и касаний — они уходят строкам под ним.
     Item {

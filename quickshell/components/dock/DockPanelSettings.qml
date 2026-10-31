@@ -12,6 +12,10 @@ Item {
         / (DockSettings.maxIconSize - DockSettings.minIconSize)
     readonly property real scrollNorm: (DockSettings.scrollFactor - DockSettings.minScrollFactor)
         / (DockSettings.maxScrollFactor - DockSettings.minScrollFactor)
+    readonly property real searchNorm: (DockSettings.searchHeight - DockSettings.minSearchHeight)
+        / (DockSettings.maxSearchHeight - DockSettings.minSearchHeight)
+    readonly property real panelNorm: (DockSettings.panelMaxHeight - DockSettings.minPanelHeight)
+        / (DockSettings.maxPanelHeightLimit - DockSettings.minPanelHeight)
 
     Flickable {
         id: scroller
@@ -240,6 +244,138 @@ Item {
                         smooth: true
                         asynchronous: true
                     }
+                }
+            }
+        }
+
+        // --- поле поиска ---
+        Column {
+            width: parent.width
+            spacing: 8
+
+            Item {
+                width: parent.width
+                height: 18
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Поле поиска"
+                    color: Theme.quickText
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 13
+                }
+
+                Text {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: DockSettings.searchHeight + " px"
+                    color: Theme.accent
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 12
+                }
+            }
+
+            PanelSlider {
+                width: parent.width
+                value: root.searchNorm
+                onMoved: v => DockSettings.setSearchHeight(
+                    DockSettings.minSearchHeight + v * (DockSettings.maxSearchHeight - DockSettings.minSearchHeight))
+            }
+
+            Row {
+                spacing: 8
+
+                Repeater {
+                    model: [
+                        { key: false, label: "Сверху" },
+                        { key: true, label: "Снизу" }
+                    ]
+
+                    delegate: Rectangle {
+                        required property var modelData
+
+                        width: 92
+                        height: 30
+                        radius: 15
+                        color: DockSettings.searchAtBottom === modelData.key
+                               ? Theme.quickTileActive : Theme.quickTile
+                        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: modelData.label
+                            color: DockSettings.searchAtBottom === modelData.key
+                                   ? Theme.accent : Theme.quickText
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 12
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onContainsMouseChanged: if (containsMouse) DockState.keepAlive()
+                            onClicked: DockSettings.setSearchAtBottom(modelData.key)
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- панель ---
+        Column {
+            width: parent.width
+            spacing: 8
+
+            Item {
+                width: parent.width
+                height: 18
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Макс. высота панели"
+                    color: Theme.quickText
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 13
+                }
+
+                Text {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: DockSettings.panelMaxHeight + " px"
+                    color: Theme.accent
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 12
+                }
+            }
+
+            PanelSlider {
+                width: parent.width
+                value: root.panelNorm
+                onMoved: v => DockSettings.setPanelMaxHeight(
+                    DockSettings.minPanelHeight + v * (DockSettings.maxPanelHeightLimit - DockSettings.minPanelHeight))
+            }
+
+            Item {
+                width: parent.width
+                height: 26
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "По размеру списка"
+                    color: Theme.quickText
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 13
+                }
+
+                ToggleSwitch {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    checked: DockSettings.fitPanelToContent
+                    onToggled: DockSettings.setFitPanelToContent(!DockSettings.fitPanelToContent)
                 }
             }
         }

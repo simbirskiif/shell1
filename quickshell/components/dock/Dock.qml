@@ -84,12 +84,21 @@ Item {
                  root.parent && root.parent.width > 0
                      ? root.parent.width - 24 : Theme.dockPanelWidth))
     readonly property real targetWidth: root.expanded ? root.panelWidth : root.compactWidth
-    readonly property real targetHeight: root.expanded
-        ? Math.min(Theme.dockPanelHeight,
-                   root.parent && root.parent.height > 0
-                       ? root.parent.height - Theme.dockBottomMargin - 12
-                       : Theme.dockPanelHeight)
-        : root.compactHeight
+    readonly property real panelMaxHeight: Math.min(DockSettings.panelMaxHeight,
+        root.parent && root.parent.height > 0
+            ? root.parent.height - Theme.dockBottomMargin - 12
+            : DockSettings.panelMaxHeight)
+    readonly property real panelContentHeight: panelLoader.item
+        ? panelLoader.item.desiredHeight + Theme.dockPanelPadding * 2 : 0
+    readonly property real panelHeight: {
+        if (!DockSettings.fitPanelToContent || DockState.settingsOpen)
+            return root.panelMaxHeight;
+        if (root.panelContentHeight <= 0)
+            return root.panelMaxHeight;
+        return Math.min(root.panelMaxHeight,
+                        Math.max(190, root.panelContentHeight));
+    }
+    readonly property real targetHeight: root.expanded ? root.panelHeight : root.compactHeight
 
     width: root.targetWidth
     height: root.targetHeight
