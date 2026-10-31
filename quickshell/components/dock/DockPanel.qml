@@ -276,9 +276,11 @@ Item {
         anchors.left: parent.left
         anchors.right: layoutButton.left
         anchors.rightMargin: 8
-        anchors.top: DockSettings.searchAtBottom ? undefined : header.bottom
-        anchors.topMargin: 8
-        anchors.bottom: DockSettings.searchAtBottom ? parent.bottom : undefined
+        // Позиция задаётся явно, а не парой top/bottom-якорей: смена
+        // положения не должна оставлять второй якорь активным и растягивать
+        // поле на всю панель.
+        y: DockSettings.searchAtBottom ? parent.height - height
+                                       : header.height + 8
         height: DockSettings.searchHeight
         opacity: root.settingsOpen ? 0 : 1
         visible: opacity > 0.001
@@ -344,12 +346,14 @@ Item {
     // --- список приложений ------------------------------------------------
     GridView {
         id: appList
-        anchors.top: DockSettings.searchAtBottom ? header.bottom : searchField.bottom
-        anchors.topMargin: 8
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: DockSettings.searchAtBottom ? searchField.top : parent.bottom
-        anchors.bottomMargin: DockSettings.searchAtBottom ? 8 : 0
+        y: DockSettings.searchAtBottom
+           ? header.height + 8
+           : searchField.y + searchField.height + 8
+        height: DockSettings.searchAtBottom
+                ? searchField.y - 8 - y
+                : parent.height - y
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         cellWidth: root.tiles ? width / Theme.dockGridColumns : width
