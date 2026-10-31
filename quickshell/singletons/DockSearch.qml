@@ -68,6 +68,10 @@ Singleton {
         stderr: StdioCollector {}
         onExited: (code, status) => {
             listWatchdog.stop();
+            // refresh() поднимает флаг probing; если сервис уже доступен,
+            // probe() не станет его сбрасывать, и refresh() навсегда
+            // перестанет работать. Снимаем здесь.
+            root.probing = false;
             if (code !== 0) {
                 root.installed = false;
                 root.elephantLost("listproviders: " + code);
@@ -444,6 +448,7 @@ Singleton {
 
     function probe() {
         if (root.elephantAvailable) {
+            root.probing = false;
             root.requestSearch();
             return;
         }
@@ -619,11 +624,15 @@ Singleton {
             item.entry.execute();
             return;
         }
-        if (item.qid <= 0 || item.provider === "")
+        if (item.provider === "" || item.identifier === "")
             return;
+        // Формат CLI: provider;identifier;action;query;arguments.
+        // Пятое поле обязательно — клиент Elephant индексирует его
+        // без проверки длины.
         const query = root.query.replace(/[;\n\r]/g, " ").trim();
-        root.activateArg = item.qid + ";" + item.provider + ";" + item.identifier
-            + ";" + item.action + ";" + query;
+        const action = item.action === "" ? "start" : item.action;
+        root.activateArg = item.provider + ";" + item.identifier + ";" + action
+            + ";" + query + ";";
         if (activateProc.running) {
             activateProc.running = false;
             startActivate.restart();
