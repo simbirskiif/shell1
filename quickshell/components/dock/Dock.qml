@@ -118,8 +118,10 @@ Item {
 
     Behavior on height {
         MotionNumber {
-            duration: Theme.dockMorphDuration
-            curve: Theme.curveEmphasizedDecelerate
+            duration: (DockSettings.fitPanelToContent && root.expanded)
+                      ? Theme.dockResizeDuration : Theme.dockMorphDuration
+            curve: (DockSettings.fitPanelToContent && root.expanded)
+                   ? Theme.curveDockResize : Theme.curveEmphasizedDecelerate
         }
     }
 

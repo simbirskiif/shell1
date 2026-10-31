@@ -92,6 +92,11 @@ Singleton {
     // Критически задемпфированная пружина прокрутки (тик 16 мс).
     readonly property real dockScrollOmega: 0.032
     readonly property real dockScrollStop: 0.4
+    // Изменение высоты панели в fit-режиме: медленный вход, быстрая
+    // середина и мягкое торможение — заметно нелинейно, без перелёта
+    // за маску ввода.
+    readonly property int dockResizeDuration: 240
+    readonly property var curveDockResize: [0.4, 0.0, 0.2, 1.0]
 
     // Карточки уведомлений и Центр уведомлений.
     readonly property int notificationWidth: 360
