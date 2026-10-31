@@ -305,6 +305,7 @@ Item {
 
         onEdited: value => DockState.query = value
         onNavigate: delta => root.moveSelection(delta)
+        onMoveHorizontal: delta => root.moveHorizontal(delta)
         onSubmitted: root.activateCurrent()
     }
 
@@ -350,6 +351,14 @@ Item {
             appList.currentIndex = Math.max(0, Math.min(appList.count - 1,
                 appList.currentIndex + delta));
         }
+        appList.positionViewAtIndex(appList.currentIndex, GridView.Contain);
+    }
+
+    function moveHorizontal(delta) {
+        if (appList.count === 0 || !root.tiles)
+            return;
+        appList.currentIndex = Math.max(0, Math.min(appList.count - 1,
+            (appList.currentIndex < 0 ? 0 : appList.currentIndex) + delta));
         appList.positionViewAtIndex(appList.currentIndex, GridView.Contain);
     }
 

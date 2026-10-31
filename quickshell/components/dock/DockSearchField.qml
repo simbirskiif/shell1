@@ -11,6 +11,7 @@ Rectangle {
 
     signal edited(string value)
     signal navigate(int delta)
+    signal moveHorizontal(int delta)
     signal submitted()
 
     implicitHeight: 36
@@ -88,6 +89,21 @@ Rectangle {
         }
         Keys.onDownPressed: {
             root.navigate(1);
+            event.accepted = true;
+        }
+
+        // В плиточном виде ←/→ листают иконки, а не каретку поля.
+        // В списке они остаются обычным перемещением по тексту.
+        Keys.onLeftPressed: {
+            if (!DockSettings.tileLayout)
+                return;
+            root.moveHorizontal(-1);
+            event.accepted = true;
+        }
+        Keys.onRightPressed: {
+            if (!DockSettings.tileLayout)
+                return;
+            root.moveHorizontal(1);
             event.accepted = true;
         }
     }
