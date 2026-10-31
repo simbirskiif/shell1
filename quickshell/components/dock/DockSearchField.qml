@@ -81,6 +81,7 @@ Rectangle {
         onTextChanged: root.edited(input.text)
         onAccepted: root.submitted()
 
+        // Поле не двигает каретку стрелками: они листают список.
         Keys.onUpPressed: {
             root.navigate(-1);
             event.accepted = true;

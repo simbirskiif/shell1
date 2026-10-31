@@ -19,6 +19,11 @@ Item {
     // переключалась по IPC.
     readonly property bool settingsOpen: DockState.settingsOpen
 
+    // Первый результат выбираем только на новом запросе, а не на каждом
+    // обновлении выдачи: иначе асинхронный Elephant сбрасывает выбор,
+    // сделанный стрелками.
+    property bool selectFirstPending: false
+
     // Вид списка и его геометрия. Плитки — тот же ScriptModel, просто
     // другая сетка, поэтому фильтрация и переходы продолжают работать.
     readonly property bool tiles: DockSettings.tileLayout
@@ -159,10 +164,13 @@ Item {
             searchField.setText(DockState.query);
             root.resetScroll();
             DockState.mouseGuardUntil = Date.now() + 300;
-            if (DockState.query === "")
+            if (DockState.query === "") {
+                root.selectFirstPending = false;
                 appList.currentIndex = -1;
-            else
+            } else {
+                root.selectFirstPending = true;
                 Qt.callLater(root.selectFirst);
+            }
         }
 
         function onExpandedChanged() {
@@ -190,12 +198,15 @@ Item {
 
         function onResultsChanged() {
             DockState.mouseGuardUntil = Date.now() + 300;
-            if (appList.count === 0)
+            if (appList.count === 0) {
                 appList.currentIndex = -1;
-            else if (DockState.query !== "")
-                appList.currentIndex = 0; // поиск всегда стартует с первого
-            else if (appList.currentIndex >= appList.count)
-                appList.currentIndex = -1;
+                root.selectFirstPending = false;
+            } else if (root.selectFirstPending) {
+                appList.currentIndex = 0;
+                root.selectFirstPending = false;
+            } else if (appList.currentIndex >= appList.count) {
+                appList.currentIndex = appList.count - 1;
+            }
         }
     }
 
@@ -309,10 +320,16 @@ Item {
         icon: DockSettings.tileLayout ? "\uf00b" : "\uf00a"
         accented: DockSettings.tileLayout
 
-        onClicked: DockSettings.setTileLayout(!DockSettings.tileLayout)
+        onClicked: {
+            DockSettings.setTileLayout(!DockSettings.tileLayout);
+            searchField.focusInput();
+        }
     }
 
     function selectFirst() {
+        if (!root.selectFirstPending)
+            return;
+        root.selectFirstPending = false;
         if (DockState.query !== "" && appList.count > 0)
             appList.currentIndex = 0;
     }
@@ -320,17 +337,18 @@ Item {
     function moveSelection(delta) {
         if (appList.count === 0)
             return;
+        // GridView не умеет incrementCurrentIndex/decrementCurrentIndex —
+        // индексы двигаем сами. В плитках шаг по строке, в списке по одному.
         if (appList.currentIndex < 0) {
             appList.currentIndex = delta > 0 ? 0 : appList.count - 1;
         } else if (root.tiles) {
-            // В плитках ↑/↓ ходят по строкам, а не по одному элементу.
             const step = Theme.dockGridColumns;
-            appList.currentIndex = Math.max(0, Math.min(appList.count - 1,
-                appList.currentIndex + delta * step));
-        } else if (delta > 0) {
-            appList.incrementCurrentIndex();
+            const target = appList.currentIndex + delta * step;
+            if (target >= 0 && target < appList.count)
+                appList.currentIndex = target;
         } else {
-            appList.decrementCurrentIndex();
+            appList.currentIndex = Math.max(0, Math.min(appList.count - 1,
+                appList.currentIndex + delta));
         }
         appList.positionViewAtIndex(appList.currentIndex, GridView.Contain);
     }
@@ -356,6 +374,8 @@ Item {
                 ? searchField.y - 8 - y
                 : parent.height - y
         clip: true
+        focus: false
+        activeFocusOnTab: false
         boundsBehavior: Flickable.StopAtBounds
         cellWidth: root.tiles ? width / Theme.dockGridColumns : width
         cellHeight: root.cellHeight
