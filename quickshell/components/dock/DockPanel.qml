@@ -27,6 +27,7 @@ Item {
     // Вид списка и его геометрия. Плитки — тот же ScriptModel, просто
     // другая сетка, поэтому фильтрация и переходы продолжают работать.
     readonly property bool tiles: DockSettings.tileLayout
+
     readonly property int columns: root.tiles ? Theme.dockGridColumns : 1
     readonly property real cellHeight: root.tiles ? Theme.dockGridCellHeight : 46
     readonly property real listContentHeight: {
@@ -43,6 +44,17 @@ Item {
         // закрытия настроек. Сам блок настроек при этом прокручивается.
         const listPart = Math.max(72, root.listContentHeight);
         return header.height + 8 + searchField.height + 8 + listPart;
+    }
+
+    // Фокус в поле ставим явно, как только доку понадобилась клавиатура:
+    // привязки focus мало, если поле ещё скрыто за кроссфейдом панели.
+    Connections {
+        target: DockState
+
+        function onKeyboardActiveChanged() {
+            if (DockState.keyboardActive)
+                Qt.callLater(() => searchField.focusInput());
+        }
     }
 
     // Накопленный оверскролл за верхним краем списка. Когда его достаточно,
@@ -328,10 +340,13 @@ Item {
     }
 
     function selectFirst() {
-        if (!root.selectFirstPending)
+        // Результаты приходят асинхронно: пока список пуст, заявку не
+        // снимаем, иначе Enter запускал случайное приложение из старого
+        // выделения.
+        if (!root.selectFirstPending || appList.count === 0)
             return;
         root.selectFirstPending = false;
-        if (DockState.query !== "" && appList.count > 0)
+        if (DockState.query !== "")
             appList.currentIndex = 0;
     }
 
@@ -390,6 +405,15 @@ Item {
         cellHeight: root.cellHeight
         model: filtered
         currentIndex: -1
+        // Первый элемент выбираем, как только модель наполнилась: выдача
+        // приходит после смены запроса, и один callLater может не успеть.
+        onCountChanged: {
+            if (root.selectFirstPending && count > 0) {
+                root.selectFirstPending = false;
+                currentIndex = 0;
+                positionViewAtIndex(0, GridView.Contain);
+            }
+        }
         onHeightChanged: root.clampScroll()
         onContentHeightChanged: root.clampScroll()
         highlightMoveDuration: 120

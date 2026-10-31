@@ -65,11 +65,13 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "quickshell-dock"
-    // В раскрытой панели есть поиск: ей нужна клавиатура. В компактном
-    // доке и в скрытом состоянии фокус не забираем.
-    WlrLayershell.keyboardFocus: DockState.expanded ? WlrKeyboardFocus.Exclusive
-                                                    : WlrKeyboardFocus.None
-    WlrLayershell.focusable: DockState.expanded
+    // В раскрытой панели есть поиск: ей нужна клавиатура. Забираем фокус
+    // уже в начале раскрытия (pendingExpand), иначе первые нажатия после
+    // бинда уходят в окно под доком, пока карточка доезжает.
+    readonly property bool keyboardWanted: root.active && DockState.keyboardActive
+    WlrLayershell.keyboardFocus: root.keyboardWanted ? WlrKeyboardFocus.Exclusive
+                                                     : WlrKeyboardFocus.None
+    WlrLayershell.focusable: root.keyboardWanted
 
     // Подсказка у нижней кромки, пока док спрятан: иначе зону активации
     // пришлось бы искать вслепую. Она не перехватывает клики.
@@ -121,8 +123,8 @@ PanelWindow {
     HyprlandFocusGrab {
         id: dismissGrab
         windows: [root]
-        active: root.active && DockState.expanded
-                         && DockState.phase !== "hiding"
+        active: root.active && DockState.keyboardActive
+                && DockState.phase !== "hiding"
         onCleared: {
             if (DockState.shown && DockState.expanded)
                 DockState.hide();
@@ -133,6 +135,17 @@ PanelWindow {
     // курсор в любой точке маски — и над зоной активации, и над карточкой.
     HoverHandler {
         id: pointer
+
+        // Позиция в координатах окна: меняется только от настоящего
+        // движения мыши, а не от переезда содержимого под курсором.
+        property point lastPoint: Qt.point(-1, -1)
+
+        onPointChanged: {
+            if (pointer.point.position === lastPoint)
+                return;
+            lastPoint = pointer.point.position;
+            DockState.pointerMovedAt = Date.now();
+        }
 
         onHoveredChanged: {
             if (pointer.hovered) {

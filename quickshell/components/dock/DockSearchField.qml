@@ -77,7 +77,7 @@ Rectangle {
         font.pixelSize: Math.max(11, Math.min(16, Math.round(root.height * 0.34)))
         selectByMouse: true
         clip: true
-        focus: DockState.expanded && !DockState.settingsOpen
+        focus: DockState.keyboardActive && !DockState.settingsOpen
 
         onTextChanged: root.edited(input.text)
         onAccepted: root.submitted()

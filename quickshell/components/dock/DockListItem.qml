@@ -149,12 +149,19 @@ Item {
         onEntered: {
             if (Date.now() < DockState.mouseGuardUntil)
                 return;
+            // Курсор не двигался — значит под ним просто переехал список.
+            if (Date.now() - DockState.pointerMovedAt > 150)
+                return;
             if (GridView.view && GridView.view.currentIndex !== index)
                 GridView.view.currentIndex = index;
         }
 
         onPositionChanged: {
             if (Date.now() < DockState.mouseGuardUntil)
+                return;
+            // Тот же фильтр, что и на входе: позиция могла измениться
+            // потому, что под неподвижным курсором переехал список.
+            if (Date.now() - DockState.pointerMovedAt > 150)
                 return;
             if (GridView.view && GridView.view.currentIndex !== index)
                 GridView.view.currentIndex = index;

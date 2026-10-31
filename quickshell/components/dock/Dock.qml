@@ -240,9 +240,12 @@ Item {
             anchors.margins: Theme.dockPanelPadding
             active: root.panelLoaded
             sourceComponent: panelComponent
-            enabled: root.panelShown
+            // Панель нужна видимой (хоть и прозрачной) уже во время
+            // появления: иначе поле поиска не может взять фокус и первые
+            // нажатия после бинда теряются.
+            enabled: root.panelShown || DockState.keyboardActive
             opacity: root.panelShown ? 1 : 0
-            visible: opacity > 0.001
+            visible: root.panelShown || DockState.keyboardActive || opacity > 0.001
             Behavior on opacity {
                 MotionNumber {
                     duration: Theme.dockFadeDuration

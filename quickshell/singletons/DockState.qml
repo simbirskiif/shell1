@@ -39,6 +39,11 @@ Singleton {
     // панель могла появиться под неподвижным курсором, это не движение.
     property double mouseGuardUntil: 0
 
+    // Когда курсор последний раз реально двигался. По списку под курсором
+    // элементы могут переехать без движения мыши (фильтр, анимация), и
+    // такие «наведения» не должны менять выделение.
+    property double pointerMovedAt: 0
+
     // Какое содержимое раскрытой панели показано: приложения или настройки.
     // Живёт здесь, чтобы переключаться из панели и по IPC.
     property bool settingsOpen: false
@@ -46,6 +51,10 @@ Singleton {
     // Поисковый запрос в списке приложений. В DockState, а не в панели,
     // чтобы его можно было менять снаружи и сбрасывать при закрытии.
     property string query: ""
+
+    // Клавиатура нужна уже в начале раскрытия, а не только в готовой панели:
+    // иначе первый ввод уходит в окно под доком, пока карточка доезжает.
+    readonly property bool keyboardActive: root.expanded || root.pendingExpand
 
     readonly property bool transitioning: root.phase === "showing"
                                         || root.phase === "expanding"
