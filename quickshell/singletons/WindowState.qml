@@ -27,6 +27,9 @@ Singleton {
     // true, когда список открыт именно через Alt+Tab; только тогда
     // отпускание Alt (опрос модификаторов) подтверждает выбор.
     property bool altMode: false
+    // commit мог прийти раньше, чем IPC-вызов cycle успел открыть панель
+    // (быстрый Alt+Tab). Запоминаем момент и дожимаем после открытия.
+    property double commitRequestedAt: 0
     // Защита от двойного шага: Tab может прийти и от compositor-бинда,
     // и из QML, когда оверлей забрал клавиатуру.
     property double lastStepAt: 0
@@ -49,7 +52,7 @@ Singleton {
             root.altMode = true;
             root.cursor = 0;
             root.pendingDelta = delta;
-            root.pendingCommit = false;
+            root.pendingCommit = Date.now() - root.commitRequestedAt < 500;
             root.lastError = "";
             root.refresh();
             return;
@@ -63,8 +66,10 @@ Singleton {
 
     // Отпускание Alt: перейти к выбранному окну и закрыть список.
     function commit() {
-        if (!root.open)
+        if (!root.open) {
+            root.commitRequestedAt = Date.now();
             return;
+        }
         if (root.windows.length === 0) {
             // Список ещё читается — решим после загрузки; если он уже пуст,
             // закрываемся, иначе оверлей останется без окон.
@@ -80,6 +85,7 @@ Singleton {
     function cancel() {
         root.open = false;
         root.altMode = false;
+        root.commitRequestedAt = 0;
         root.pendingDelta = 0;
         root.pendingCommit = false;
     }
@@ -97,6 +103,7 @@ Singleton {
         root.pendingCommit = false;
         root.lastError = "";
         root.altMode = false;
+        root.commitRequestedAt = 0;
         root.open = true;
         root.refresh();
     }
@@ -126,6 +133,7 @@ Singleton {
         return "open=" + (root.open ? "yes" : "no")
             + " windows=" + root.windows.length
             + " cursor=" + root.cursor
+
             + (root.busy ? " busy" : "")
             + (root.lastError !== "" ? " err=" + root.lastError : "");
     }

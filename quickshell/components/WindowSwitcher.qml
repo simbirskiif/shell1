@@ -49,18 +49,22 @@ PanelWindow {
         keys.forceActiveFocus();
     }
 
-    // Alt мог быть нажат до появления surface — тогда release в QML может
-    // не прийти. Опрашиваем модификаторы: как только Alt отпущен (после
-    // короткого grace-периода), подтверждаем выбор.
+    // Страховка: если Alt-release не дошёл (Alt нажат до фокуса панели),
+    // подтверждаем выбор после короткой паузы без перелистывания.
     Timer {
-        interval: 60
-        repeat: true
-        running: root.visible
-        onTriggered: {
-            if (!WindowState.altMode || Date.now() - root.shownAt < 250)
-                return;
-            if (!(Qt.queryKeyboardModifiers() & Qt.AltModifier))
-                WindowState.commit();
+        id: idleCommit
+        interval: 700
+        repeat: false
+        running: WindowState.open && WindowState.altMode
+        onTriggered: WindowState.commit()
+    }
+
+    Connections {
+        target: WindowState
+
+        function onCursorChanged() {
+            if (WindowState.open && WindowState.altMode)
+                idleCommit.restart();
         }
     }
 
