@@ -4,8 +4,8 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 import "../singletons"
 
-// Просмотр окон (SUPER+TAB): оверлей по центру экрана.
-// Список — WindowState, активация — hyprctl-диспетчер focus по адресу.
+// Alt+Tab: горизонтальная лента окон с иконками, как в Windows.
+// Список — WindowState (порядок MRU), активация — focus по адресу.
 PanelWindow {
     id: root
 
@@ -15,6 +15,14 @@ PanelWindow {
     readonly property string focusedScreenName: Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
     readonly property bool onFocusedScreen: focusedScreenName === ""
                                              || focusedScreenName === root.screenName
+
+    readonly property int cardWidth: 136
+    readonly property int cardHeight: 148
+    readonly property int cardSpacing: 10
+    readonly property int maxRowWidth: pickerScreen ? pickerScreen.width - 140 : 1000
+    readonly property int rowWidth: Math.min(root.maxRowWidth,
+        Math.max(1, WindowState.windows.length) * (root.cardWidth + root.cardSpacing)
+        - root.cardSpacing)
 
     screen: pickerScreen
     visible: WindowState.open && root.onFocusedScreen
@@ -32,10 +40,17 @@ PanelWindow {
     WlrLayershell.namespace: "quickshell-window-switcher"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
-    // Панель становится видимой после смены WindowState.open; фокус
-    // выставляем уже по факту видимости, иначе он уйдёт в никуда.
     onVisibleChanged: if (root.visible)
         keys.forceActiveFocus()
+
+    function iconFor(appClass, title) {
+        let entry = DesktopEntries.heuristicLookup(appClass);
+        if (!entry && title)
+            entry = DesktopEntries.heuristicLookup(title);
+        const iconName = entry && entry.icon ? entry.icon : appClass;
+        const found = Quickshell.iconPath(iconName, true);
+        return found !== "" ? found : Quickshell.iconPath("application-x-executable", true);
+    }
 
     function accept() {
         WindowState.activate();
@@ -53,22 +68,22 @@ PanelWindow {
     Shortcut {
         sequence: "Escape"
         enabled: root.visible
-        onActivated: WindowState.close()
+        onActivated: WindowState.cancel()
     }
 
     MouseArea {
         anchors.fill: parent
-        onClicked: WindowState.close()
+        onClicked: WindowState.cancel()
     }
 
     Rectangle {
-        id: card
+        id: panel
 
         anchors.centerIn: parent
-        width: 460
-        height: column.implicitHeight + Theme.notificationPadding * 2
+        width: root.rowWidth + 28
+        height: list.height + 54
         radius: Theme.notificationRadius
-        color: Theme.quickBackground
+        color: Theme.withAlpha(Theme.quickBackground, 0.96)
         border.width: 1
         border.color: Theme.quickBorder
 
@@ -77,52 +92,39 @@ PanelWindow {
         }
 
         Column {
-            id: column
-
             anchors.fill: parent
-            anchors.margins: Theme.notificationPadding
-            spacing: Theme.notificationSpacing
-
-            Text {
-                text: "Окна"
-                color: Theme.quickText
-                font.family: Theme.fontFamily
-                font.pixelSize: 15
-                font.weight: Font.DemiBold
-            }
-
-            Text {
-                width: parent.width
-                visible: WindowState.windows.length === 0 && WindowState.lastError === ""
-                text: "Нет открытых окон"
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
-            }
+            anchors.margins: 14
+            spacing: 8
 
             ListView {
                 id: list
 
                 width: parent.width
-                height: Math.min(contentHeight, 360)
+                height: root.cardHeight
+                orientation: ListView.Horizontal
+                spacing: root.cardSpacing
                 model: WindowState.windows
                 currentIndex: WindowState.cursor
-                onCurrentIndexChanged: if (currentIndex >= 0)
-                    positionViewAtIndex(currentIndex, ListView.Contain)
                 boundsBehavior: Flickable.StopAtBounds
                 clip: true
 
+                onCurrentIndexChanged: if (currentIndex >= 0)
+                    positionViewAtIndex(currentIndex, ListView.Contain)
+
                 delegate: Rectangle {
-                    id: row
+                    id: tile
 
                     required property var modelData
                     required property int index
 
-                    width: list.width
-                    height: 46
-                    radius: 8
-                    color: row.index === WindowState.cursor ? Theme.quickTileActive
+                    width: root.cardWidth
+                    height: root.cardHeight
+                    radius: 10
+                    color: tile.index === WindowState.cursor ? Theme.quickTileActive
                          : hover.hovered ? Theme.quickTileHover : "transparent"
+                    border.width: tile.index === WindowState.cursor ? 2 : 1
+                    border.color: tile.index === WindowState.cursor ? Theme.accent
+                                  : Theme.withAlpha(Theme.quickText, 0.06)
 
                     HoverHandler {
                         id: hover
@@ -131,39 +133,66 @@ PanelWindow {
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            WindowState.cursor = row.index;
+                            WindowState.cursor = tile.index;
                             WindowState.activate();
                         }
                     }
 
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 10
-                        anchors.right: parent.right
-                        anchors.rightMargin: 10
-                        anchors.top: parent.top
-                        anchors.topMargin: 5
-                        text: row.modelData.appClass + "  ·  " + row.modelData.workspace
-                        color: Theme.quickTextDim
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 10
-                        elide: Text.ElideRight
-                    }
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        spacing: 6
 
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 10
-                        anchors.right: parent.right
-                        anchors.rightMargin: 10
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: 5
-                        text: row.modelData.title
-                        color: Theme.quickText
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 13
-                        elide: Text.ElideRight
+                        Item {
+                            width: 52
+                            height: 52
+                            anchors.horizontalCenter: parent.horizontalCenter
+
+                            Image {
+                                anchors.fill: parent
+                                source: root.iconFor(tile.modelData.appClass, tile.modelData.title)
+                                sourceSize: Qt.size(52, 52)
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                            }
+                        }
+
+                        Text {
+                            width: parent.width
+                            height: 38
+                            text: tile.modelData.title
+                            color: Theme.quickText
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 11
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: tile.modelData.appClass
+                            color: Theme.quickTextDim
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 9
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideRight
+                        }
                     }
                 }
+            }
+
+            Text {
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                text: WindowState.windows.length === 0
+                      ? "Нет открытых окон"
+                      : "Tab — дальше · Shift+Tab — назад · отпустите Alt — перейти · Esc — отмена"
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
+                font.pixelSize: 10
+                elide: Text.ElideRight
             }
 
             Text {
@@ -172,17 +201,8 @@ PanelWindow {
                 text: WindowState.lastError
                 color: Theme.lowColor
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 10
                 wrapMode: Text.Wrap
-            }
-
-            Text {
-                width: parent.width
-                visible: WindowState.windows.length > 0
-                text: "Tab / ↑↓ — дальше, Shift+Tab — назад, отпустите Alt — перейти, Esc — отмена"
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
             }
         }
     }
@@ -194,14 +214,14 @@ PanelWindow {
         focus: root.visible
 
         Keys.onPressed: event => {
-            if (event.key === Qt.Key_Down) {
-                WindowState.move(1);
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Up) {
-                WindowState.move(-1);
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Tab) {
+            if (event.key === Qt.Key_Tab) {
                 WindowState.cycle(event.modifiers & Qt.ShiftModifier ? -1 : 1);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Right) {
+                WindowState.cycle(1);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Left) {
+                WindowState.cycle(-1);
                 event.accepted = true;
             } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                 root.accept();
