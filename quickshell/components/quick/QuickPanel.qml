@@ -704,8 +704,8 @@ Item {
         }
     }
 
-    // Профиль Hyprland: scrolling ↔ default. Клик по кружку или по всей
-    // плитке переключает через hypr-profile, подпись идёт из состояния.
+    // Layout: кружок и вся площадь листают tiling-layout:
+    // scrolling → dwindle → master.
     QtObject {
         id: layoutEntry
 
@@ -713,26 +713,16 @@ Item {
         readonly property string key: "layout"
         readonly property string title: "Layout"
         readonly property string icon: ""
-        readonly property bool active: ProfileState.current === "scrolling"
-        readonly property string subtitle: {
-            if (ProfileState.current === "scrolling")
-                return "Scrolling";
-            if (ProfileState.current === "default" || ProfileState.current === "")
-                return "Default";
-            return ProfileState.current;
-        }
+        readonly property bool active: LayoutService.current !== "dwindle"
+        readonly property string subtitle: LayoutService.label
         readonly property Component view: null
 
-        function toggleProfile() {
-            ProfileState.switchTo(ProfileState.current === "scrolling" ? "default" : "scrolling");
-        }
-
         function open() {
-            toggleProfile();
+            LayoutService.cycle();
         }
 
         function toggle() {
-            toggleProfile();
+            LayoutService.cycle();
         }
     }
 
