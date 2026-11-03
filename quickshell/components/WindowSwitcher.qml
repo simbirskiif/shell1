@@ -61,7 +61,7 @@ PanelWindow {
 
         anchors.centerIn: parent
         width: root.rowWidth + 28
-        height: list.height + 54
+        height: column.implicitHeight + 28
         radius: Theme.notificationRadius
         color: Theme.withAlpha(Theme.quickBackground, 0.96)
         border.width: 1
@@ -166,9 +166,8 @@ PanelWindow {
             Text {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
-                text: WindowState.snapshot.length === 0
-                      ? "Нет открытых окон"
-                      : "Tab — дальше · Shift+Tab — назад · отпустите Alt — перейти · Esc — отмена"
+                visible: WindowState.snapshot.length === 0
+                text: "Нет открытых окон"
                 color: Theme.quickTextDim
                 font.family: Theme.fontFamily
                 font.pixelSize: 10
