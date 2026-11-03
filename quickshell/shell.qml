@@ -117,6 +117,59 @@ ShellRoot {
         }
     }
 
+    // Выбор профиля Hyprland — оверлей по центру экрана с фокусом.
+    // Список и текущий профиль читает ProfileState (файл состояния +
+    // каталог профилей), переключение — через hypr-profile.
+    Variants {
+        model: Quickshell.screens
+
+        delegate: ProfileSwitcher {
+            required property var modelData
+            pickerScreen: modelData
+        }
+    }
+
+    // Профили Hyprland снаружи (в том числе из бинда в профиле):
+    //   qs ipc -p ~/shell/quickshell call profiles toggle
+    //   qs ipc -p ~/shell/quickshell call profiles switchTo work
+    IpcHandler {
+        target: "profiles"
+
+        function toggle(): string {
+            ProfileState.toggle();
+            return state();
+        }
+
+        function open(): string {
+            ProfileState.setOpen(true);
+            return state();
+        }
+
+        function close(): string {
+            ProfileState.close();
+            return state();
+        }
+
+        function switchTo(name: string): string {
+            ProfileState.switchTo(name);
+            return state();
+        }
+
+        function next(): string {
+            ProfileState.next();
+            return state();
+        }
+
+        function list(): string {
+            ProfileState.refresh();
+            return ProfileState.profiles.join(" ");
+        }
+
+        function state(): string {
+            return ProfileState.summary();
+        }
+    }
+
     // Управление уведомлениями снаружи:
     //   qs ipc -p ~/shell/quickshell call notifications toggle
     IpcHandler {
