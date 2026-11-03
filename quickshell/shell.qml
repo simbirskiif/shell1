@@ -236,25 +236,6 @@ ShellRoot {
         }
     }
 
-    // Tiling-layout: плитка в быстрых настройках и IPC для биндов.
-    IpcHandler {
-        target: "layout"
-
-        function cycle(): string {
-            LayoutService.cycle();
-            return state();
-        }
-
-        function set(name: string): string {
-            LayoutService.setLayout(name);
-            return state();
-        }
-
-        function state(): string {
-            return LayoutService.current;
-        }
-    }
-
     // Профили Hyprland снаружи (в том числе из бинда в профиле):
     //   qs ipc -p ~/shell/quickshell call profiles toggle
     //   qs ipc -p ~/shell/quickshell call profiles switchTo work

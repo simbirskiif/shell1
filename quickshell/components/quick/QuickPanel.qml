@@ -704,25 +704,31 @@ Item {
         }
     }
 
-    // Layout: кружок и вся площадь листают tiling-layout:
-    // scrolling → dwindle → master.
+    // Layout: переключает профиль Hyprland — scrolling, default и все,
+    // что появится в ~/.config/hypr/profiles. Порядок берётся из каталога.
     QtObject {
         id: layoutEntry
 
         readonly property bool inGrid: true
         readonly property string key: "layout"
         readonly property string title: "Layout"
-        readonly property string icon: ""
-        readonly property bool active: LayoutService.current !== "dwindle"
-        readonly property string subtitle: LayoutService.label
+        readonly property string icon: "\uf00a"
+        readonly property bool active: ProfileState.current !== ""
+                                          && ProfileState.current !== "default"
+        readonly property string subtitle: {
+            const name = ProfileState.current;
+            if (name === "")
+                return "—";
+            return name.charAt(0).toUpperCase() + name.slice(1);
+        }
         readonly property Component view: null
 
         function open() {
-            LayoutService.cycle();
+            ProfileState.next();
         }
 
         function toggle() {
-            LayoutService.cycle();
+            ProfileState.next();
         }
     }
 
