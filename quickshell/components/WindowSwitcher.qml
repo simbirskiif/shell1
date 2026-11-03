@@ -72,6 +72,8 @@ PanelWindow {
         }
 
         Column {
+            id: column
+
             anchors.fill: parent
             anchors.margins: 14
             spacing: 8
