@@ -4,148 +4,129 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Список открытых окон Hyprland для Alt+Tab.
+// Alt+Tab state, driven by Hyprland global shortcuts (Quickshell.Hyprland).
 //
-// Окна читаются из `hyprctl clients -j` и сортируются по focusHistoryID:
-// индекс 0 — активное окно, дальше — в порядке недавнего фокуса, как в
-// Windows Alt+Tab. Фокус ставится Lua-диспетчером
-// `hl.dsp.focus({ window = "address:..." })`.
+// Binds send altTabNext/altTabPrev on press and altTabRelease on Alt release.
+// The overlay never takes keyboard focus, so the compositor keeps delivering
+// the chord; no Keys.onReleased hacks or modifier polling.
 Singleton {
     id: root
 
-    property bool open: false
-    property int cursor: 0
-    // Сколько шагов накопить, пока список окон ещё читается.
-    property int pendingDelta: 0
-    // Alt отпустили раньше, чем пришёл список: активировать после загрузки.
-    property bool pendingCommit: false
+    property bool active: false      // chord is held
+    property bool shown: false       // overlay visible
+    property int index: 0
+    property var snapshot: []        // frozen window list for this chord
+    property var windows: []         // MRU cache
 
-    property var windows: []
+    property int pendingDir: 0       // first chord step while list is loading
+    property bool pendingRelease: false
+
     property bool busy: false
     property string lastError: ""
     property string pendingAddress: ""
-    // true, когда список открыт именно через Alt+Tab; только тогда
-    // отпускание Alt (опрос модификаторов) подтверждает выбор.
-    property bool altMode: false
-    // commit мог прийти раньше, чем IPC-вызов cycle успел открыть панель
-    // (быстрый Alt+Tab). Запоминаем момент и дожимаем после открытия.
-    property double commitRequestedAt: 0
-    // Защита от двойного шага: Tab может прийти и от compositor-бинда,
-    // и из QML, когда оверлей забрал клавиатуру.
-    property double lastStepAt: 0
+
+    readonly property int showDelay: 120
+
+    function step(dir) {
+        if (!root.active) {
+            if (root.windows.length < 2) {
+                root.pendingDir = dir;
+                root.refresh();
+                return;
+            }
+            root.begin(root.windows.slice(), dir);
+            return;
+        }
+
+        if (root.snapshot.length === 0)
+            return;
+
+        root.index = (root.index + dir + root.snapshot.length) % root.snapshot.length;
+        showTimer.stop();
+        root.shown = true;
+    }
+
+    function begin(list, dir) {
+        root.snapshot = list;
+        root.active = true;
+        root.shown = false;
+        root.index = dir > 0 ? 1 : list.length - 1;
+        root.pendingDir = 0;
+        root.pendingRelease = false;
+        showTimer.restart();
+    }
+
+    // Alt released: focus snapshot[index]. If the release came before the
+    // window list finished loading, switch as soon as it arrives — without
+    // ever showing the overlay (quick Alt+Tab).
+    function release() {
+        if (!root.active) {
+            if (root.pendingDir !== 0)
+                root.pendingRelease = true;
+            return;
+        }
+
+        showTimer.stop();
+        const target = root.snapshot[root.index];
+        root.active = false;
+        root.shown = false;
+        if (target)
+            root.focusAddress(target.address);
+        root.scheduleRefresh();
+    }
+
+    function cancel() {
+        showTimer.stop();
+        root.active = false;
+        root.shown = false;
+        root.index = 0;
+        root.pendingDir = 0;
+        root.pendingRelease = false;
+    }
 
     function refresh() {
         if (!listProcess.running)
             listProcess.running = true;
     }
 
-    // Alt+Tab: первый шаг открывает список и сразу выделяет следующее окно,
-    // последующие шаги листают. Shift+Tab идёт назад.
-    function cycle(delta) {
-        const now = Date.now();
-        if (root.open && now - root.lastStepAt < 60)
-            return;
-        root.lastStepAt = now;
-
-        if (!root.open) {
-            root.open = true;
-            root.altMode = true;
-            root.cursor = 0;
-            root.pendingDelta = delta;
-            root.pendingCommit = Date.now() - root.commitRequestedAt < 500;
-            root.lastError = "";
-            root.refresh();
-            return;
-        }
-        if (root.windows.length === 0) {
-            root.pendingDelta += delta;
-            return;
-        }
-        root.move(delta);
+    function scheduleRefresh() {
+        refreshLater.restart();
     }
 
-    // Отпускание Alt: перейти к выбранному окну и закрыть список.
-    function commit() {
-        if (!root.open) {
-            root.commitRequestedAt = Date.now();
+    function focusAddress(address) {
+        if (!address || root.busy)
             return;
-        }
-        if (root.windows.length === 0) {
-            // Список ещё читается — решим после загрузки; если он уже пуст,
-            // закрываемся, иначе оверлей останется без окон.
-            root.pendingCommit = listProcess.running;
-            if (!root.pendingCommit)
-                root.cancel();
-            return;
-        }
-        root.activate();
-    }
-
-    // Esc или клик мимо: закрыть без смены фокуса.
-    function cancel() {
-        root.open = false;
-        root.altMode = false;
-        root.commitRequestedAt = 0;
-        root.pendingDelta = 0;
-        root.pendingCommit = false;
-    }
-
-    function toggle() {
-        if (root.open)
-            root.cancel();
-        else
-            root.cycle(1);
-    }
-
-    function show() {
-        root.cursor = 0;
-        root.pendingDelta = 0;
-        root.pendingCommit = false;
-        root.lastError = "";
-        root.altMode = false;
-        root.commitRequestedAt = 0;
-        root.open = true;
-        root.refresh();
-    }
-
-    function close() {
-        root.cancel();
-    }
-
-    function move(delta) {
-        if (root.windows.length === 0)
-            return;
-        root.cursor = (root.cursor + delta + root.windows.length) % root.windows.length;
-    }
-
-    function activate() {
-        if (root.busy || root.cursor < 0 || root.cursor >= root.windows.length)
-            return;
-        root.pendingAddress = root.windows[root.cursor].address;
         root.busy = true;
-        // Сначала отпускаем клавиатурный захват оверлея: иначе Hyprland
-        // возвращает фокус прежнему окну уже после dispatcher'а.
-        root.open = false;
+        root.pendingAddress = address;
         focusTimer.restart();
     }
 
     function summary() {
-        return "open=" + (root.open ? "yes" : "no")
+        return "active=" + (root.active ? "yes" : "no")
+            + " shown=" + (root.shown ? "yes" : "no")
+            + " index=" + root.index
             + " windows=" + root.windows.length
-            + " cursor=" + root.cursor
-
+            + " snapshot=" + root.snapshot.length
             + (root.busy ? " busy" : "")
             + (root.lastError !== "" ? " err=" + root.lastError : "");
     }
 
-    // Небольшая пауза, чтобы layer-shell поверхность успела скрыться
-    // и не вернуть фокус прежнему окну после dispatcher'а.
+    Timer {
+        id: showTimer
+
+        interval: root.showDelay
+        repeat: false
+        onTriggered: if (root.active)
+            root.shown = true
+    }
+
+    // Сначала прячем оверлей, затем ставим фокус: иначе layer-shell
+    // возвращает фокус прежнему окну после dispatcher'а.
     Timer {
         id: focusTimer
 
         interval: 60
         repeat: false
-
         onTriggered: {
             focusProcess.command = ["hyprctl", "dispatch",
                                     "hl.dsp.focus({ window = \"address:" + root.pendingAddress + "\" })"];
@@ -153,11 +134,29 @@ Singleton {
         }
     }
 
+    Timer {
+        id: refreshLater
+
+        interval: 350
+        repeat: false
+        onTriggered: root.refresh()
+    }
+
+    // Держим MRU-кэш свежим, пока chord не активен.
+    Timer {
+        id: idleRefresh
+
+        interval: 1200
+        repeat: true
+        running: !root.active
+        onTriggered: root.refresh()
+    }
+
     Process {
         id: listProcess
 
         command: ["hyprctl", "clients", "-j"]
-        running: false
+        running: true
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -179,20 +178,20 @@ Singleton {
                     list.sort((a, b) => a.history - b.history);
                     root.windows = list;
 
-                    if (list.length > 0 && root.pendingDelta !== 0) {
-                        const index = (root.pendingDelta % list.length + list.length) % list.length;
-                        root.cursor = index;
-                        root.pendingDelta = 0;
-                    } else if (root.cursor >= list.length) {
-                        root.cursor = 0;
+                    if (!root.active && root.pendingRelease && root.pendingDir !== 0) {
+                        const dir = root.pendingDir;
+                        root.pendingDir = 0;
+                        root.pendingRelease = false;
+                        if (list.length >= 2) {
+                            root.snapshot = list;
+                            root.index = dir > 0 ? 1 : list.length - 1;
+                            root.focusAddress(list[root.index].address);
+                        }
+                        return;
                     }
 
-                    if (root.pendingCommit) {
-                        root.pendingCommit = false;
-                        if (list.length > 0)
-                            root.activate();
-                        else
-                            root.cancel();
+                    if (!root.active && root.pendingDir !== 0 && list.length >= 2) {
+                        root.begin(list, root.pendingDir);
                     }
                 } catch (error) {
                     root.windows = [];
@@ -220,8 +219,6 @@ Singleton {
                 return;
             }
             root.lastError = "";
-            root.open = false;
-            root.altMode = false;
         }
     }
 }

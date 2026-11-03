@@ -5,7 +5,9 @@ import Quickshell.Wayland
 import "../singletons"
 
 // Alt+Tab: горизонтальная лента окон с иконками, как в Windows.
-// Список — WindowState (порядок MRU), активация — focus по адресу.
+// Состояние и ввод — WindowState + GlobalShortcut (shell.qml).
+// Клавиатурный фокус не забираем: иначе compositor перестанет
+// присылать release Alt и chord развалится.
 PanelWindow {
     id: root
 
@@ -21,11 +23,11 @@ PanelWindow {
     readonly property int cardSpacing: 10
     readonly property int maxRowWidth: pickerScreen ? pickerScreen.width - 140 : 1000
     readonly property int rowWidth: Math.min(root.maxRowWidth,
-        Math.max(1, WindowState.windows.length) * (root.cardWidth + root.cardSpacing)
+        Math.max(1, WindowState.snapshot.length) * (root.cardWidth + root.cardSpacing)
         - root.cardSpacing)
 
     screen: pickerScreen
-    visible: WindowState.open && root.onFocusedScreen
+    visible: WindowState.shown && root.onFocusedScreen
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
 
@@ -38,19 +40,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-window-switcher"
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-
-    property double shownAt: 0
-
-    onVisibleChanged: {
-        if (!root.visible)
-            return;
-        root.shownAt = Date.now();
-        keys.forceActiveFocus();
-    }
-
-    // Подтверждение — только по реальному отпусканию Alt (QML key release
-    // или compositor-бинд). Таймера нет: пока Alt зажат, панель не исчезает.
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
     function iconFor(appClass, title) {
         let entry = DesktopEntries.heuristicLookup(appClass);
@@ -59,25 +49,6 @@ PanelWindow {
         const iconName = entry && entry.icon ? entry.icon : appClass;
         const found = Quickshell.iconPath(iconName, true);
         return found !== "" ? found : Quickshell.iconPath("application-x-executable", true);
-    }
-
-    function accept() {
-        WindowState.activate();
-    }
-
-    Connections {
-        target: WindowState
-
-        function onOpenChanged() {
-            if (WindowState.open)
-                keys.forceActiveFocus();
-        }
-    }
-
-    Shortcut {
-        sequence: "Escape"
-        enabled: root.visible
-        onActivated: WindowState.cancel()
     }
 
     MouseArea {
@@ -112,8 +83,8 @@ PanelWindow {
                 height: root.cardHeight
                 orientation: ListView.Horizontal
                 spacing: root.cardSpacing
-                model: WindowState.windows
-                currentIndex: WindowState.cursor
+                model: WindowState.snapshot
+                currentIndex: WindowState.index
                 boundsBehavior: Flickable.StopAtBounds
                 clip: true
 
@@ -129,10 +100,10 @@ PanelWindow {
                     width: root.cardWidth
                     height: root.cardHeight
                     radius: 10
-                    color: tile.index === WindowState.cursor ? Theme.quickTileActive
+                    color: tile.index === WindowState.index ? Theme.quickTileActive
                          : hover.hovered ? Theme.quickTileHover : "transparent"
-                    border.width: tile.index === WindowState.cursor ? 2 : 1
-                    border.color: tile.index === WindowState.cursor ? Theme.accent
+                    border.width: tile.index === WindowState.index ? 2 : 1
+                    border.color: tile.index === WindowState.index ? Theme.accent
                                   : Theme.withAlpha(Theme.quickText, 0.06)
 
                     HoverHandler {
@@ -142,8 +113,8 @@ PanelWindow {
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            WindowState.cursor = tile.index;
-                            WindowState.activate();
+                            WindowState.index = tile.index;
+                            WindowState.release();
                         }
                     }
 
@@ -195,7 +166,7 @@ PanelWindow {
             Text {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
-                text: WindowState.windows.length === 0
+                text: WindowState.snapshot.length === 0
                       ? "Нет открытых окон"
                       : "Tab — дальше · Shift+Tab — назад · отпустите Alt — перейти · Esc — отмена"
                 color: Theme.quickTextDim
@@ -212,40 +183,6 @@ PanelWindow {
                 font.family: Theme.fontFamily
                 font.pixelSize: 10
                 wrapMode: Text.Wrap
-            }
-        }
-    }
-
-    Item {
-        id: keys
-
-        anchors.fill: parent
-        focus: root.visible
-
-        Keys.onPressed: event => {
-            if (event.key === Qt.Key_Tab) {
-                WindowState.cycle(event.modifiers & Qt.ShiftModifier ? -1 : 1);
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Right) {
-                WindowState.cycle(1);
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Left) {
-                WindowState.cycle(-1);
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                root.accept();
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Escape) {
-                WindowState.cancel();
-                event.accepted = true;
-            }
-        }
-
-        // Отпускание Alt подтверждает выбор, как в Windows Alt+Tab.
-        Keys.onReleased: event => {
-            if (event.key === Qt.Key_Alt || event.key === Qt.Key_AltGr) {
-                WindowState.commit();
-                event.accepted = true;
             }
         }
     }

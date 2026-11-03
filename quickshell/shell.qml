@@ -3,6 +3,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 import Quickshell.Services.Notifications
 import Quickshell.Services.Polkit
 import "components"
@@ -139,35 +140,64 @@ ShellRoot {
         }
     }
 
+    // Alt+Tab приходит из Hyprland как global shortcuts: пресает бинд,
+    // отпускание Alt — release-бинд. Оверлей клавиатуру не забирает.
+    GlobalShortcut {
+        appid: "quickshell"
+        name: "altTabNext"
+        onPressed: WindowState.step(1)
+    }
+
+    GlobalShortcut {
+        appid: "quickshell"
+        name: "altTabPrev"
+        onPressed: WindowState.step(-1)
+    }
+
+    GlobalShortcut {
+        appid: "quickshell"
+        name: "altTabRelease"
+        onReleased: WindowState.release()
+    }
+
+    GlobalShortcut {
+        appid: "quickshell"
+        name: "altTabCancel"
+        onPressed: WindowState.cancel()
+    }
+
     // Окна снаружи:
     //   qs ipc -p ~/shell/quickshell call windows toggle
     IpcHandler {
         target: "windows"
 
         function toggle(): string {
-            WindowState.toggle();
+            if (WindowState.active)
+                WindowState.release();
+            else
+                WindowState.step(1);
             return state();
         }
 
         function open(): string {
-            WindowState.show();
+            WindowState.step(1);
             return state();
         }
 
         function close(): string {
-            WindowState.close();
+            WindowState.cancel();
             return state();
         }
 
-        // Alt+Tab: шаг по списку (1 вперёд, -1 назад).
+        // Шаг по списку (1 вперёд, -1 назад).
         function cycle(delta: int): string {
-            WindowState.cycle(delta);
+            WindowState.step(delta);
             return state();
         }
 
         // Отпускание Alt: перейти к выбранному окну.
         function commit(): string {
-            WindowState.commit();
+            WindowState.release();
             return state();
         }
 
@@ -177,17 +207,17 @@ ShellRoot {
         }
 
         function next(): string {
-            WindowState.cycle(1);
+            WindowState.step(1);
             return state();
         }
 
         function prev(): string {
-            WindowState.cycle(-1);
+            WindowState.step(-1);
             return state();
         }
 
         function activate(): string {
-            WindowState.activate();
+            WindowState.release();
             return state();
         }
 
