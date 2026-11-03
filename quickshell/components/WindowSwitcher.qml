@@ -49,24 +49,8 @@ PanelWindow {
         keys.forceActiveFocus();
     }
 
-    // Страховка: если Alt-release не дошёл (Alt нажат до фокуса панели),
-    // подтверждаем выбор после короткой паузы без перелистывания.
-    Timer {
-        id: idleCommit
-        interval: 700
-        repeat: false
-        running: WindowState.open && WindowState.altMode
-        onTriggered: WindowState.commit()
-    }
-
-    Connections {
-        target: WindowState
-
-        function onCursorChanged() {
-            if (WindowState.open && WindowState.altMode)
-                idleCommit.restart();
-        }
-    }
+    // Подтверждение — только по реальному отпусканию Alt (QML key release
+    // или compositor-бинд). Таймера нет: пока Alt зажат, панель не исчезает.
 
     function iconFor(appClass, title) {
         let entry = DesktopEntries.heuristicLookup(appClass);
