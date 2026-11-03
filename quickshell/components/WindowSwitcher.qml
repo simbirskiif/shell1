@@ -30,14 +30,13 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-window-switcher"
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+    WlrLayershell.keyboardFocus: root.visible ? WlrKeyboardFocus.Exclusive
+                                              : WlrKeyboardFocus.None
 
-    // Клик мимо или потеря фокуса закрывают список, чтобы он не залипал.
-    HyprlandFocusGrab {
-        active: root.visible
-        windows: [root]
-        onCleared: WindowState.cancel()
-    }
+    // Панель становится видимой после смены WindowState.open; фокус
+    // выставляем уже по факту видимости, иначе он уйдёт в никуда.
+    onVisibleChanged: if (root.visible)
+        keys.forceActiveFocus()
 
     function accept() {
         WindowState.activate();
@@ -109,6 +108,8 @@ PanelWindow {
                 height: Math.min(contentHeight, 360)
                 model: WindowState.windows
                 currentIndex: WindowState.cursor
+                onCurrentIndexChanged: if (currentIndex >= 0)
+                    positionViewAtIndex(currentIndex, ListView.Contain)
                 boundsBehavior: Flickable.StopAtBounds
                 clip: true
 
@@ -179,7 +180,7 @@ PanelWindow {
             Text {
                 width: parent.width
                 visible: WindowState.windows.length > 0
-                text: "↑/↓ — выбор, Enter — перейти, Esc — закрыть"
+                text: "Tab / ↑↓ — дальше, Shift+Tab — назад, отпустите Alt — перейти, Esc — отмена"
                 color: Theme.quickTextDim
                 font.family: Theme.fontFamily
                 font.pixelSize: 11
@@ -199,6 +200,9 @@ PanelWindow {
                 event.accepted = true;
             } else if (event.key === Qt.Key_Up) {
                 WindowState.move(-1);
+                event.accepted = true;
+            } else if (event.key === Qt.Key_Tab) {
+                WindowState.cycle(event.modifiers & Qt.ShiftModifier ? -1 : 1);
                 event.accepted = true;
             } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
                 root.accept();

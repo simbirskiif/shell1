@@ -24,6 +24,9 @@ Singleton {
     property bool busy: false
     property string lastError: ""
     property string pendingAddress: ""
+    // Защита от двойного шага: Tab может прийти и от compositor-бинда,
+    // и из QML, когда оверлей забрал клавиатуру.
+    property double lastStepAt: 0
 
     function refresh() {
         if (!listProcess.running)
@@ -33,6 +36,11 @@ Singleton {
     // Alt+Tab: первый шаг открывает список и сразу выделяет следующее окно,
     // последующие шаги листают. Shift+Tab идёт назад.
     function cycle(delta) {
+        const now = Date.now();
+        if (root.open && now - root.lastStepAt < 60)
+            return;
+        root.lastStepAt = now;
+
         if (!root.open) {
             root.open = true;
             root.cursor = 0;
