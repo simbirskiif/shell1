@@ -20,6 +20,9 @@ Singleton {
 
     property int pendingDir: 0       // first chord step while list is loading
     property bool pendingRelease: false
+    // Alt отпустили до того, как шаг успел открыть chord: запоминаем,
+    // чтобы быстрый Alt+Tab не оставил панель висеть.
+    property double releaseAt: 0
 
     property bool busy: false
     property string lastError: ""
@@ -29,6 +32,13 @@ Singleton {
 
     function step(dir) {
         if (!root.active) {
+            if (root.windows.length >= 2 && Date.now() - root.releaseAt < 400) {
+                const quick = root.windows.slice();
+                root.snapshot = quick;
+                root.index = dir > 0 ? 1 : quick.length - 1;
+                root.focusAddress(quick[root.index].address);
+                return;
+            }
             if (root.windows.length < 2) {
                 root.pendingDir = dir;
                 root.refresh();
@@ -53,6 +63,7 @@ Singleton {
         root.index = dir > 0 ? 1 : list.length - 1;
         root.pendingDir = 0;
         root.pendingRelease = false;
+        root.releaseAt = 0;
         showTimer.restart();
     }
 

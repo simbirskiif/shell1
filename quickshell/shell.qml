@@ -201,6 +201,11 @@ ShellRoot {
             return state();
         }
 
+        function release(): string {
+            WindowState.release();
+            return state();
+        }
+
         function cancel(): string {
             WindowState.cancel();
             return state();
