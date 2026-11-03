@@ -236,6 +236,25 @@ ShellRoot {
         }
     }
 
+    // Плитка Layout в быстрых настройках и IPC для проверки.
+    IpcHandler {
+        target: "layout"
+
+        function open(): string {
+            UiState.openDetail("layout");
+            return state();
+        }
+
+        function cycle(): string {
+            ProfileState.next();
+            return state();
+        }
+
+        function state(): string {
+            return ProfileState.current;
+        }
+    }
+
     // Профили Hyprland снаружи (в том числе из бинда в профиле):
     //   qs ipc -p ~/shell/quickshell call profiles toggle
     //   qs ipc -p ~/shell/quickshell call profiles switchTo work
