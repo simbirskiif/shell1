@@ -12,10 +12,10 @@ Item {
     readonly property string panel: UiState.panel
     readonly property bool editing: UiState.editing
 
-    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, dndEntry, caffeineEntry, batteryEntry, settingsEntry, soundOutputEntry, soundInputEntry]
+    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, layoutEntry, dndEntry, caffeineEntry, batteryEntry, settingsEntry, soundOutputEntry, soundInputEntry]
 
     // Плитки, которыми управляет редактор.
-    readonly property var tileEntries: [bluetoothEntry, internetEntry, soundEntry, dndEntry, caffeineEntry, brightnessEntry]
+    readonly property var tileEntries: [bluetoothEntry, internetEntry, soundEntry, dndEntry, caffeineEntry, brightnessEntry, layoutEntry]
 
     readonly property var shownKeys: root.editing ? UiState.draftVisible : MockState.visibleTiles
     readonly property var poolKeys: root.editing ? UiState.draftAvailable : MockState.availableTiles
@@ -701,6 +701,28 @@ Item {
 
         function toggle() {
             // У яркости кружок ничего не переключает.
+        }
+    }
+
+    // Layout: кружок и вся площадь листают tiling-layout по кругу.
+    // Меняется на лету через hyprctl eval + hl.config.
+    QtObject {
+        id: layoutEntry
+
+        readonly property bool inGrid: true
+        readonly property string key: "layout"
+        readonly property string title: "Layout"
+        readonly property string icon: ""
+        readonly property bool active: LayoutService.current !== "dwindle"
+        readonly property string subtitle: LayoutService.label
+        readonly property Component view: null
+
+        function open() {
+            LayoutService.cycle();
+        }
+
+        function toggle() {
+            LayoutService.cycle();
         }
     }
 

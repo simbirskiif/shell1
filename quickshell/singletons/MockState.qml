@@ -18,7 +18,7 @@ Singleton {
 
     // Набор плиток основной панели: видимые (в порядке) и доступные.
     // Меняется только кнопкой «Сохранить» в режиме редактирования.
-    property var visibleTiles: ["bluetooth", "internet", "sound", "dnd", "caffeine", "brightness"]
+    property var visibleTiles: ["bluetooth", "internet", "sound", "dnd", "caffeine", "brightness", "layout"]
     property var availableTiles: []
 
     // Порядок элементов в баре: порядок в модели = слева-направо.
