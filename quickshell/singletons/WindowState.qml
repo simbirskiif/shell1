@@ -24,6 +24,9 @@ Singleton {
     property bool busy: false
     property string lastError: ""
     property string pendingAddress: ""
+    // true, когда список открыт именно через Alt+Tab; только тогда
+    // отпускание Alt (опрос модификаторов) подтверждает выбор.
+    property bool altMode: false
     // Защита от двойного шага: Tab может прийти и от compositor-бинда,
     // и из QML, когда оверлей забрал клавиатуру.
     property double lastStepAt: 0
@@ -43,6 +46,7 @@ Singleton {
 
         if (!root.open) {
             root.open = true;
+            root.altMode = true;
             root.cursor = 0;
             root.pendingDelta = delta;
             root.pendingCommit = false;
@@ -75,6 +79,7 @@ Singleton {
     // Esc или клик мимо: закрыть без смены фокуса.
     function cancel() {
         root.open = false;
+        root.altMode = false;
         root.pendingDelta = 0;
         root.pendingCommit = false;
     }
@@ -91,6 +96,7 @@ Singleton {
         root.pendingDelta = 0;
         root.pendingCommit = false;
         root.lastError = "";
+        root.altMode = false;
         root.open = true;
         root.refresh();
     }
@@ -207,6 +213,7 @@ Singleton {
             }
             root.lastError = "";
             root.open = false;
+            root.altMode = false;
         }
     }
 }

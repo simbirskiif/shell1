@@ -40,8 +40,29 @@ PanelWindow {
     WlrLayershell.namespace: "quickshell-window-switcher"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
-    onVisibleChanged: if (root.visible)
-        keys.forceActiveFocus()
+    property double shownAt: 0
+
+    onVisibleChanged: {
+        if (!root.visible)
+            return;
+        root.shownAt = Date.now();
+        keys.forceActiveFocus();
+    }
+
+    // Alt мог быть нажат до появления surface — тогда release в QML может
+    // не прийти. Опрашиваем модификаторы: как только Alt отпущен (после
+    // короткого grace-периода), подтверждаем выбор.
+    Timer {
+        interval: 60
+        repeat: true
+        running: root.visible
+        onTriggered: {
+            if (!WindowState.altMode || Date.now() - root.shownAt < 250)
+                return;
+            if (!(Qt.queryKeyboardModifiers() & Qt.AltModifier))
+                WindowState.commit();
+        }
+    }
 
     function iconFor(appClass, title) {
         let entry = DesktopEntries.heuristicLookup(appClass);
