@@ -129,6 +129,78 @@ ShellRoot {
         }
     }
 
+    // Просмотр окон — оверлей со списком (SUPER+TAB).
+    Variants {
+        model: Quickshell.screens
+
+        delegate: WindowSwitcher {
+            required property var modelData
+            pickerScreen: modelData
+        }
+    }
+
+    // Окна снаружи:
+    //   qs ipc -p ~/shell/quickshell call windows toggle
+    IpcHandler {
+        target: "windows"
+
+        function toggle(): string {
+            WindowState.toggle();
+            return state();
+        }
+
+        function open(): string {
+            WindowState.show();
+            return state();
+        }
+
+        function close(): string {
+            WindowState.close();
+            return state();
+        }
+
+        // Alt+Tab: шаг по списку (1 вперёд, -1 назад).
+        function cycle(delta: int): string {
+            WindowState.cycle(delta);
+            return state();
+        }
+
+        // Отпускание Alt: перейти к выбранному окну.
+        function commit(): string {
+            WindowState.commit();
+            return state();
+        }
+
+        function cancel(): string {
+            WindowState.cancel();
+            return state();
+        }
+
+        function next(): string {
+            WindowState.cycle(1);
+            return state();
+        }
+
+        function prev(): string {
+            WindowState.cycle(-1);
+            return state();
+        }
+
+        function activate(): string {
+            WindowState.activate();
+            return state();
+        }
+
+        function list(): string {
+            WindowState.refresh();
+            return state();
+        }
+
+        function state(): string {
+            return WindowState.summary();
+        }
+    }
+
     // Профили Hyprland снаружи (в том числе из бинда в профиле):
     //   qs ipc -p ~/shell/quickshell call profiles toggle
     //   qs ipc -p ~/shell/quickshell call profiles switchTo work
