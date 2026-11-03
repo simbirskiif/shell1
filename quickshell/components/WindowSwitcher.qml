@@ -30,8 +30,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-window-switcher"
-    WlrLayershell.keyboardFocus: root.visible ? WlrKeyboardFocus.Exclusive
-                                              : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
     // Панель становится видимой после смены WindowState.open; фокус
     // выставляем уже по факту видимости, иначе он уйдёт в никуда.

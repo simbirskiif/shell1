@@ -62,7 +62,11 @@ Singleton {
         if (!root.open)
             return;
         if (root.windows.length === 0) {
-            root.pendingCommit = true;
+            // Список ещё читается — решим после загрузки; если он уже пуст,
+            // закрываемся, иначе оверлей останется без окон.
+            root.pendingCommit = listProcess.running;
+            if (!root.pendingCommit)
+                root.cancel();
             return;
         }
         root.activate();
@@ -171,7 +175,10 @@ Singleton {
 
                     if (root.pendingCommit) {
                         root.pendingCommit = false;
-                        root.activate();
+                        if (list.length > 0)
+                            root.activate();
+                        else
+                            root.cancel();
                     }
                 } catch (error) {
                     root.windows = [];
