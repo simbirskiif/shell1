@@ -63,7 +63,7 @@ PanelWindow {
         width: root.rowWidth + 28
         height: column.implicitHeight + 28
         radius: Theme.notificationRadius
-        color: Theme.withAlpha(Theme.quickBackground, 0.96)
+        color: Theme.withAlpha(Theme.quickBackground, 1.0)
         border.width: 1
         border.color: Theme.quickBorder
 
