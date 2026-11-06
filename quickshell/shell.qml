@@ -11,6 +11,7 @@ import "components/dock"
 import "singletons"
 import "widgets/desktop"
 import "widgets/core"
+import "components/lock"
 
 ShellRoot {
     id: shellRoot
@@ -53,6 +54,17 @@ ShellRoot {
     }
 
     WidgetIpc {}
+
+    // Экран блокировки: состояние в LockState, процессы аутентификации
+    // (PAM и fprintd) — в LockAuth, сами поверхности — в LockSession.
+    // Оба объекта обязаны быть в дереве оболочки ровно в одном экземпляре.
+    LockAuth {
+        id: lockAuth
+    }
+
+    LockSession {
+        id: lockSession
+    }
 
     // Всплывающие индикаторы громкости и яркости — по одному на экран;
     // показывается только тот, что на экране с фокусом.
@@ -293,6 +305,30 @@ ShellRoot {
 
         function state(): string {
             return ProfileState.summary();
+        }
+    }
+
+    // Экран блокировки снаружи:
+    //   qs ipc -p ~/shell/quickshell call lock lock
+    // Блокировка снимается только после успешного пароля или отпечатка —
+    // метода unlock здесь намеренно нет.
+    IpcHandler {
+        target: "lock"
+
+        function lock(): string {
+            LockState.lock();
+            return state();
+        }
+
+        function state(): string {
+            return "locked=" + (LockState.locked ? "yes" : "no")
+                + " secure=" + (LockState.secure ? "yes" : "no")
+                + " auth=" + (LockState.authenticating ? "checking" : "idle")
+                + " fp=" + LockState.fingerprintState
+                + " fpDevice=" + (LockState.fingerprintDevice === "" ? "-" : LockState.fingerprintDevice)
+                + " attempts=" + LockState.failedAttempts
+                + " caps=" + (LockState.capsLock ? "on" : "off")
+                + " status=" + (LockState.statusText === "" ? "-" : LockState.statusText);
         }
     }
 

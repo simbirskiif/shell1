@@ -19,3 +19,4 @@ singleton PowerService 1.0 PowerService.qml
 singleton BluetoothBackend 1.0 BluetoothBackend.qml
 BluetoothDeviceList 1.0 BluetoothDeviceList.qml
 BluetoothHelperHost 1.0 BluetoothHelperHost.qml
+singleton LockState 1.0 LockState.qml
