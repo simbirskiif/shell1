@@ -224,10 +224,17 @@ Singleton {
     property string runningArg: ""
     property string lastResultArg: ""
 
+    // Сколько результатов просить у Elephant. Раньше здесь стояло 32, и в
+    // меню запуска при пустом запросе виднелась лишь первая треть программ:
+    // Elephant обрезает выдачу по этому числу. Для приложений 256 — это
+    // заведомо больше любого разумного списка, но всё ещё защита от
+    // гигантских выдач файловых провайдеров.
+    readonly property int resultLimit: 256
+
     readonly property string elephantArg: {
         const providerList = root.enabledProviders.join(",");
         const clean = root.query.replace(/[;\n\r]/g, " ").trim();
-        return providerList + ";" + clean + ";32";
+        return providerList + ";" + clean + ";" + root.resultLimit;
     }
 
     Timer {
