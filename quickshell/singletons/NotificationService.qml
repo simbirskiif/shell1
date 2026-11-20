@@ -89,8 +89,13 @@ Singleton {
         const carried = model ? model.values : null;
         if (!carried)
             return;
-        for (let i = 0; i < carried.length; ++i)
+        for (let i = 0; i < carried.length; ++i) {
+            // transient после перезагрузки заново не показываем и в историю
+            // не кладём: он живёт только тостом.
+            if (carried[i].transient)
+                continue;
             root.remember(carried[i]);
+        }
     }
 
     // Новое уведомление от сервера.
@@ -107,17 +112,26 @@ Singleton {
             return;
         }
 
-        // transient (громкость, яркость) в истории не оставляем, поэтому и
-        // не просим сервер его удерживать.
+        // Центр открыт — уведомление уходит прямо в него, без тоста.
+        // «Не беспокоить»: тостов нет, но critical показываем всё равно.
+        const showPopup = !root.centerOpen
+                          && (!root.doNotDisturb
+                              || notification.urgency === NotificationUrgency.Critical);
+
+        // transient (громкость, яркость) в историю не кладём, но tracked
+        // включаем, пока показываем тост: Quickshell присылает сигнал closed
+        // (а с ним и повод убрать тост) только для удерживаемых уведомлений.
+        // Раньше отозванный приложением transient-тост висел на экране, пока
+        // его не уберёт таймаут.
         if (!notification.transient) {
             notification.tracked = true;
             root.remember(notification);
+        } else if (showPopup) {
+            root.watch(notification);
+            notification.tracked = true;
         }
 
-        // Центр открыт — уведомление уходит прямо в него, без тоста.
-        // «Не беспокоить»: тостов нет, но critical показываем всё равно.
-        if (!root.centerOpen
-            && (!root.doNotDisturb || notification.urgency === NotificationUrgency.Critical)) {
+        if (showPopup) {
             root.popups.insert(0, { entry: notification });
             root.unseen += 1;
         }
@@ -132,10 +146,20 @@ Singleton {
         return -1;
     }
 
+    // Один обработчик «уведомление закрыто» на уведомление: удаляем его и из
+    // тостов, и из истории. Раньше connect стоял только в remember(), поэтому
+    // transient-тосты (их в историю не кладут) оставались на экране, если
+    // приложение отзывало уведомление через CloseNotification.
+    function watch(notification) {
+        if (!notification)
+            return;
+        notification.closed.connect(() => root.forget(notification));
+    }
+
     function remember(notification) {
         if (root.indexOf(root.history, notification) !== -1)
             return;
-        notification.closed.connect(() => root.forget(notification));
+        root.watch(notification);
         root.history.insert(0, { entry: notification });
     }
 
