@@ -19,7 +19,7 @@ Item {
         id: background
         anchors.fill: parent
         radius: width / 2
-        color: root.connected ? Theme.quickTileActive : Theme.quickCircleOff
+        color: root.connected ? Theme.primaryContainer : Theme.surfaceContainerHighest
         Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
     }
 
@@ -28,8 +28,8 @@ Item {
         radius: width / 2
         color: "transparent"
         border.width: 2
-        border.color: Theme.accent
-        opacity: root.connected ? 1 : 0
+        border.color: Theme.primary
+        opacity: 0
         Behavior on opacity {
             MotionNumber {
                 duration: Theme.motionShort3
@@ -41,7 +41,7 @@ Item {
     Text {
         anchors.centerIn: parent
         text: root.icon
-        color: root.connected ? Theme.accent : Theme.quickText
+        color: root.connected ? Theme.scheme.onPrimaryContainer : Theme.scheme.onSurfaceVariant
         opacity: root.strength > 0 ? 0.45 + 0.55 * (root.strength / 4) : 1
         font.family: Theme.iconFontFamily
         font.pixelSize: 15

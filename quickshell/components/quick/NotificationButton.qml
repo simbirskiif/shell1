@@ -10,11 +10,12 @@ Rectangle {
 
     signal clicked()
 
-    implicitWidth: 30
-    implicitHeight: Theme.controlHeight
+    implicitWidth: Theme.iconButtonSize
+    implicitHeight: Theme.iconButtonSize
     radius: Theme.controlRadius
-    color: root.opened ? Theme.quickTileActive
-                       : (hover.hovered ? Theme.quickTileHover : "transparent")
+    color: root.opened ? Theme.secondaryContainer
+                       : (hover.hovered ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                                        : "transparent")
     Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
 
     Text {
@@ -22,9 +23,9 @@ Rectangle {
         anchors.verticalCenterOffset: 1
         text: "\uf0f3"
         // Колокольчик не подсвечиваем: о непрочитанном говорит точка.
-        color: Theme.quickText
+        color: root.opened ? Theme.scheme.onSecondaryContainer : Theme.scheme.onSurface
         font.family: Theme.iconFontFamily
-        font.pixelSize: 14
+        font.pixelSize: Theme.iconSize.sm
     }
 
     // Точка непрочитанного.
@@ -33,11 +34,13 @@ Rectangle {
         anchors.rightMargin: 5
         anchors.top: parent.top
         anchors.topMargin: 5
-        width: 7
-        height: 7
+        width: 8
+        height: 8
         radius: width / 2
         visible: NotificationService.hasUnread
-        color: Theme.lowColor
+        color: Theme.error
+        border.width: 1.5
+        border.color: Theme.barBackground
     }
 
     MouseArea {

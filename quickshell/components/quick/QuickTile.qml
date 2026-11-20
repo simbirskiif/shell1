@@ -2,8 +2,9 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Плитка быстрых настроек: кружок слева переключает состояние,
-// остальная площадь раскрывает панель управления.
+// Плитка быстрых настроек в духе Material 3: тональный контейнер,
+// круглая иконка-переключатель слева, двухстрочная подпись справа.
+// Кружок переключает состояние, остальная площадь раскрывает панель.
 // В режиме редактирования плитка чуть уменьшается (визуально, размеры в
 // раскладке не меняются), сверху справа появляется «минус», а перетаскивание
 // меняет порядок плиток.
@@ -34,8 +35,7 @@ Rectangle {
     implicitWidth: Theme.quickWidth / 2
     implicitHeight: Theme.quickTileHeight
     radius: Theme.quickTileRadius
-    color: root.active ? Theme.quickTileActive
-                       : (hover.hovered && !root.editable ? Theme.quickTileHover : Theme.quickTile)
+    color: root.active ? Theme.secondaryContainer : Theme.surfaceContainerHigh
     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
     // В редакторе плитка выглядит меньше, но место занимает то же.
@@ -69,6 +69,16 @@ Rectangle {
         }
     }
 
+    // Слой состояния M3: наведение подсвечивает плитку поверх тона.
+    Rectangle {
+        anchors.fill: parent
+        radius: parent.radius
+        color: Theme.stateLayer(root.active ? Theme.scheme.onSecondaryContainer
+                                            : Theme.scheme.onSurface, Theme.stateHover)
+        opacity: hover.containsMouse && !root.editable ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+    }
+
     MouseArea {
         id: hover
         anchors.fill: parent
@@ -81,7 +91,7 @@ Rectangle {
     StatusCircle {
         id: circle
         anchors.left: parent.left
-        anchors.leftMargin: 10
+        anchors.leftMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
         interactive: !root.editable
         icon: root.icon
@@ -90,42 +100,34 @@ Rectangle {
         onToggled: root.toggled()
     }
 
-    Row {
-        id: titleRow
+    Column {
+        id: texts
         anchors.left: circle.right
-        anchors.leftMargin: 10
-        anchors.verticalCenter: parent.verticalCenter
-        spacing: 6
-
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: root.title
-            color: Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 12
-        }
-
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.subtitle !== ""
-            text: "·"
-            color: Theme.quickTextDim
-            font.family: Theme.fontFamily
-            font.pixelSize: 12
-        }
-    }
-
-    Text {
-        anchors.left: titleRow.right
-        anchors.leftMargin: titleRow.spacing
+        anchors.leftMargin: Theme.space.md
         anchors.right: parent.right
-        anchors.rightMargin: 10
+        anchors.rightMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
-        text: root.subtitle
-        elide: Text.ElideRight
-        color: Theme.quickTextDim
-        font.family: Theme.fontFamily
-        font.pixelSize: 11
+        spacing: 0
+
+        Text {
+            width: parent.width
+            text: root.title
+            color: root.active ? Theme.scheme.onSecondaryContainer : Theme.scheme.onSurface
+            font: Theme.typeLabelLarge
+            elide: Text.ElideRight
+            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+        }
+
+        Text {
+            width: parent.width
+            visible: root.subtitle !== ""
+            text: root.subtitle
+            color: root.active ? Theme.withAlpha(Theme.scheme.onSecondaryContainer, 0.8)
+                               : Theme.scheme.onSurfaceVariant
+            font: Theme.typeLabelMedium
+            elide: Text.ElideRight
+            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+        }
     }
 
     // Перетаскивание в редакторе: меняем порядок, когда курсор уходит
@@ -161,14 +163,16 @@ Rectangle {
         width: 26
         height: 26
         radius: width / 2
-        color: removeHover.hovered ? Theme.lowColor : Theme.withAlpha(Theme.quickText, 0.18)
+        color: removeHover.hovered ? Theme.error : Theme.errorContainer
+        border.width: 2
+        border.color: Theme.surface
         z: 3
         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
         Text {
             anchors.centerIn: parent
             text: "\uf068"
-            color: "#ffffff"
+            color: removeHover.hovered ? Theme.scheme.onError : Theme.scheme.onErrorContainer
             font.family: Theme.iconFontFamily
             font.pixelSize: 10
         }

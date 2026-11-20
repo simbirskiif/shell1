@@ -16,9 +16,7 @@ Item {
         anchors.leftMargin: 16
         anchors.verticalCenter: parent.verticalCenter
         text: root.text
-        color: Theme.quickTextDim
-        font.family: Theme.fontFamily
-        font.pixelSize: 11
-        font.weight: Font.Medium
+        color: Theme.primary
+        font: Theme.typeLabelLarge
     }
 }

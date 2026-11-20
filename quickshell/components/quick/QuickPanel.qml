@@ -226,28 +226,30 @@ Item {
             anchors.top: parent.top
             spacing: Theme.quickTileSpacing
 
-            // Шапка: настройки слева, батарея справа.
+            // Шапка в духе M3 top app bar: настройки слева, заголовок,
+            // батарея справа.
             Item {
                 width: parent.width
-                height: 36
+                height: Theme.appBarHeight
 
                 Rectangle {
                     id: settingsButton
                     anchors.left: parent.left
-                    anchors.leftMargin: 4
+                    anchors.leftMargin: 0
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 30
-                    height: 30
+                    width: Theme.iconButtonSize
+                    height: Theme.iconButtonSize
                     radius: width / 2
-                    color: settingsHover.hovered ? Theme.quickTileHover : "transparent"
+                    color: settingsHover.hovered ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                                                 : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
                     Text {
                         anchors.centerIn: parent
                         text: "\uf013"
-                        color: Theme.quickText
+                        color: Theme.scheme.onSurface
                         font.family: Theme.iconFontFamily
-                        font.pixelSize: 14
+                        font.pixelSize: Theme.iconSize.md
                     }
 
                     MouseArea {
@@ -259,9 +261,22 @@ Item {
                     }
                 }
 
+                Text {
+                    anchors.left: settingsButton.right
+                    anchors.leftMargin: Theme.space.sm
+                    anchors.right: battery.right
+                    anchors.rightMargin: Theme.space.sm
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Быстрые настройки"
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeTitleMedium
+                    elide: Text.ElideRight
+                }
+
                 BatteryButton {
+                    id: battery
                     anchors.right: parent.right
-                    anchors.rightMargin: 4
+                    anchors.rightMargin: 0
                     anchors.verticalCenter: parent.verticalCenter
                     visible: PowerService.present
                     level: PowerService.level

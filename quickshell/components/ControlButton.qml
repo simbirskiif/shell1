@@ -16,11 +16,13 @@ Rectangle {
 
     signal clicked()
 
-    implicitWidth: content.implicitWidth + 22
-    implicitHeight: Theme.controlHeight
+    // M3: кнопка-пилюля 40dp высотой, состояние — filled tonal.
+    implicitWidth: content.implicitWidth + 24
+    implicitHeight: Theme.iconButtonSize
     radius: Theme.controlRadius
-    color: root.opened ? Theme.quickTileActive
-                       : (hover.hovered ? Theme.quickTileHover : "transparent")
+    color: root.opened ? Theme.secondaryContainer
+                       : (hover.hovered ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                                        : "transparent")
     Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
 
     Row {
@@ -32,9 +34,11 @@ Rectangle {
 
         Text {
             text: "\uf293"
-            color: root.bluetoothEnabled ? Theme.quickText : Theme.quickTextDim
+            color: root.bluetoothEnabled ? (root.opened ? Theme.scheme.onSecondaryContainer
+                                                       : Theme.scheme.onSurface)
+                                        : Theme.quickTextDim
             font.family: Theme.iconFontFamily
-            font.pixelSize: 14
+            font.pixelSize: Theme.iconSize.sm
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
 
@@ -52,9 +56,11 @@ Rectangle {
 
         Text {
             text: root.soundEnabled ? "\uf028" : "\uf026"
-            color: root.soundEnabled ? Theme.quickText : Theme.quickTextDim
+            color: root.soundEnabled ? (root.opened ? Theme.scheme.onSecondaryContainer
+                                                   : Theme.scheme.onSurface)
+                                    : Theme.quickTextDim
             font.family: Theme.iconFontFamily
-            font.pixelSize: 14
+            font.pixelSize: Theme.iconSize.sm
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
     }

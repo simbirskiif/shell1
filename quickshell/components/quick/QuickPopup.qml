@@ -161,8 +161,6 @@ PopupWindow {
         clip: true
         radius: Theme.quickRadius
         color: Theme.quickBackground
-        border.width: 1
-        border.color: Theme.quickBorder
 
         // Появление: лёгкий рост из угла кнопки.
         // m3 enter: проявление с 92% и ростом из угла кнопки.

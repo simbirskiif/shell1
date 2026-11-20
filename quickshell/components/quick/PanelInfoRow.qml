@@ -22,9 +22,8 @@ Item {
         anchors.leftMargin: 16
         anchors.verticalCenter: parent.verticalCenter
         text: root.label
-        color: Theme.quickTextDim
-        font.family: Theme.fontFamily
-        font.pixelSize: 12
+        color: Theme.scheme.onSurfaceVariant
+        font: Theme.typeBodyMedium
     }
 
     Text {
@@ -32,9 +31,7 @@ Item {
         anchors.rightMargin: 16
         anchors.verticalCenter: parent.verticalCenter
         text: root.value
-        color: Theme.quickText
-        font.family: Theme.fontFamily
-        font.pixelSize: 12
-        font.weight: Font.Medium
+        color: Theme.scheme.onSurface
+        font: Theme.typeTitleSmall
     }
 }

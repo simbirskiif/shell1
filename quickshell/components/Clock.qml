@@ -27,8 +27,7 @@ MouseArea {
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         color: Theme.barForeground
-        font.family: Theme.fontFamily
-        font.pixelSize: Theme.clockFontSize
+        font: Theme.typeTitleMedium
         text: clock.date.toLocaleTimeString(root.enLocale, "HH:mm") + " " +
               clock.date.toLocaleDateString(root.enLocale, "dd MMM yyyy")
     }

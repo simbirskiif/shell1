@@ -25,14 +25,14 @@ Item {
         id: circle
         anchors.fill: parent
         radius: width / 2
-        color: root.active ? Theme.accent : Theme.quickCircleOff
+        color: root.active ? Theme.primary : Theme.surfaceContainerHighest
         Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
 
         Text {
             anchors.centerIn: parent
             visible: !root.wifiStatus
             text: root.icon
-            color: root.active ? Theme.quickIconOn : Theme.quickTextDim
+            color: root.active ? Theme.scheme.onPrimary : Theme.scheme.onSurfaceVariant
             font.family: Theme.iconFontFamily
             font.pixelSize: 16
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }

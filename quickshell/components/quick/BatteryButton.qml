@@ -15,8 +15,9 @@ Item {
 
     signal clicked()
 
-    implicitWidth: content.implicitWidth + 18
-    implicitHeight: 34
+    // M3: кнопка-пилюля, как соседние действия в баре.
+    implicitWidth: content.implicitWidth + 20
+    implicitHeight: Theme.iconButtonSize
 
     Row {
         id: content
@@ -36,9 +37,7 @@ Item {
             visible: root.showPercent
             text: root.level + "%"
             color: Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 13
-            font.weight: Font.Medium
+            font: Theme.typeLabelLarge
         }
 
     }
@@ -46,7 +45,8 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: height / 2
-        color: hover.hovered ? Theme.quickTileHover : "transparent"
+        color: hover.hovered ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                             : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
     }
 

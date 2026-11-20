@@ -2,8 +2,8 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Шапка внутренней панели: кнопка «назад», название, при необходимости
-// кнопка обновления списка и переключатель.
+// Шапка внутренней панели в духе M3 top app bar: кнопка «назад», заголовок
+// titleLarge, справа — действия-иконки и переключатель.
 Item {
     id: root
 
@@ -25,26 +25,28 @@ Item {
     signal actionRequested()
 
     implicitWidth: parent ? parent.width : 0
-    implicitHeight: Theme.quickHeaderHeight
+    implicitHeight: Theme.appBarHeight
     height: implicitHeight
 
+    // Кнопка «назад» — M3 icon button 40dp.
     Rectangle {
         id: backButton
         anchors.left: parent.left
-        anchors.leftMargin: 8
+        anchors.leftMargin: 4
         anchors.verticalCenter: parent.verticalCenter
-        width: 28
-        height: 28
+        width: Theme.iconButtonSize
+        height: Theme.iconButtonSize
         radius: width / 2
-        color: backHover.hovered ? Theme.quickTileHover : "transparent"
+        color: backHover.hovered ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                                 : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
         Text {
             anchors.centerIn: parent
             text: "\uf053"
-            color: Theme.quickText
+            color: Theme.scheme.onSurface
             font.family: Theme.iconFontFamily
-            font.pixelSize: 12
+            font.pixelSize: Theme.iconSize.md
         }
 
         MouseArea {
@@ -56,59 +58,69 @@ Item {
         }
     }
 
-    Text {
-        id: titleText
+    Row {
+        id: titleRow
         anchors.left: backButton.right
-        anchors.leftMargin: 10
+        anchors.leftMargin: Theme.space.sm
+        anchors.right: rightGroup.left
+        anchors.rightMargin: Theme.space.sm
         anchors.verticalCenter: parent.verticalCenter
-        text: root.title
-        color: Theme.quickText
-        font.family: Theme.fontFamily
-        font.pixelSize: 14
-        font.weight: Font.DemiBold
-    }
+        spacing: Theme.space.sm
 
-    // Состояние Wi-Fi в шапке панели «Интернет».
-    WifiStatusIcon {
-        anchors.left: titleText.right
-        anchors.leftMargin: 8
-        anchors.verticalCenter: parent.verticalCenter
-        width: 20
-        height: 20
-        glyphSize: 15
-        visible: root.wifiStatus
-        offMode: !NetworkService.wifiEnabled
-        signal: NetworkService.connectedSignal
-        dim: !NetworkService.wifiEnabled
+        Text {
+            id: titleText
+            width: Math.min(implicitWidth, titleRow.width
+                            - (wifiIcon.visible ? wifiIcon.width + titleRow.spacing : 0))
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.title
+            color: Theme.scheme.onSurface
+            font: Theme.typeTitleLarge
+            elide: Text.ElideRight
+        }
+
+        // Состояние Wi-Fi в шапке панели «Интернет».
+        WifiStatusIcon {
+            id: wifiIcon
+            anchors.verticalCenter: parent.verticalCenter
+            width: 20
+            height: 20
+            glyphSize: 15
+            visible: root.wifiStatus
+            offMode: !NetworkService.wifiEnabled
+            signal: NetworkService.connectedSignal
+            dim: !NetworkService.wifiEnabled
+        }
     }
 
     // Правая группа: действие, обновление, переключатель.
     Row {
+        id: rightGroup
         anchors.right: parent.right
-        anchors.rightMargin: 8
+        anchors.rightMargin: 4
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 4
+        spacing: 2
 
         Item {
             id: actionButton
-            width: root.actionIcon !== "" ? 30 : 0
-            height: 30
+            width: root.actionIcon !== "" ? Theme.iconButtonSize : 0
+            height: Theme.iconButtonSize
             visible: width > 0
 
             Rectangle {
                 anchors.fill: parent
                 radius: width / 2
-                color: root.actionChecked ? Theme.quickTileActive
-                                          : (actionHover.hovered ? Theme.quickTileHover : "transparent")
+                color: root.actionChecked ? Theme.secondaryContainer
+                                          : (actionHover.hovered ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                                                                 : "transparent")
                 Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
             }
 
             Text {
                 anchors.centerIn: parent
                 text: root.actionIcon
-                color: root.actionChecked ? Theme.accent : Theme.quickText
+                color: root.actionChecked ? Theme.scheme.onSecondaryContainer : Theme.scheme.onSurface
                 font.family: Theme.iconFontFamily
-                font.pixelSize: 13
+                font.pixelSize: Theme.iconSize.md
                 Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
             }
 
@@ -123,14 +135,15 @@ Item {
 
         Item {
             id: refreshButton
-            width: root.refreshable ? 30 : 0
-            height: 30
+            width: root.refreshable ? Theme.iconButtonSize : 0
+            height: Theme.iconButtonSize
             visible: width > 0
 
             Rectangle {
                 anchors.fill: parent
                 radius: width / 2
-                color: refreshHover.hovered && !root.refreshing ? Theme.quickTileHover : "transparent"
+                color: refreshHover.hovered && !root.refreshing
+                       ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover) : "transparent"
                 Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
             }
 
@@ -140,9 +153,9 @@ Item {
                 anchors.centerIn: parent
                 visible: !root.refreshing
                 text: "\uf021"
-                color: Theme.quickText
+                color: Theme.scheme.onSurface
                 font.family: Theme.iconFontFamily
-                font.pixelSize: 13
+                font.pixelSize: Theme.iconSize.md
             }
 
             LoadingIndicator {
@@ -164,8 +177,7 @@ Item {
 
         ToggleSwitch {
             id: toggle
-            width: root.switchable ? 42 : 0
-            visible: width > 0
+            visible: root.switchable
             anchors.verticalCenter: parent.verticalCenter
             checked: root.checked
             onToggled: root.toggled()

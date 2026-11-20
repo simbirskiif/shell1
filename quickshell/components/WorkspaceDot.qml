@@ -1,8 +1,9 @@
 import QtQuick
 import "../singletons"
 
-// Точка одного рабочего стола. Активный больше и ярче;
-// смена размера, цвета и позиции анимируется.
+// Индикатор рабочего стола в духе M3: активный — вытянутая пилюля
+// primary, остальные — точки на outline-variant. Смена формы и цвета
+// анимируется, соседние точки разъезжаются.
 Rectangle {
     id: root
 
@@ -11,9 +12,10 @@ Rectangle {
     readonly property bool active: workspace.active
 
     width: active ? Theme.workspaceActiveDotSize : Theme.workspaceDotSize
-    height: width
-    radius: width / 2
-    color: active ? Theme.workspaceActiveColor : Theme.workspaceInactiveColor
+    height: Theme.workspaceDotSize
+    radius: height / 2
+    color: active ? Theme.workspaceActiveColor
+                  : Theme.withAlpha(Theme.workspaceInactiveColor, 0.85)
 
     Behavior on width {
         MotionNumber {

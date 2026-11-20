@@ -2,11 +2,10 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Компактная плашка-предупреждение внутри панели: иконка, заголовок,
-// пояснение и необязательная кнопка действия. Занимает всю ширину панели,
+// Плашка-предупреждение в духе M3 banner: тональный контейнер, иконка,
+// заголовок, пояснение и текстовая кнопка действия. Занимает всю ширину,
 // высоту считает по содержимому. Для «модуль целиком выключен» есть
-// PanelDisabled — это другой случай: здесь предупреждение живёт рядом с
-// остальным содержимым, на месте недоступного блока.
+// PanelDisabled — это другой случай.
 Item {
     id: root
 
@@ -18,39 +17,37 @@ Item {
     signal actionRequested()
 
     implicitWidth: parent ? parent.width : 0
-    implicitHeight: card.height + 20
+    implicitHeight: card.height + Theme.space.sm * 1.5
 
     Rectangle {
         id: card
 
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.leftMargin: 16
-        anchors.rightMargin: 16
+        anchors.leftMargin: Theme.space.lg
+        anchors.rightMargin: Theme.space.lg
         anchors.verticalCenter: parent.verticalCenter
-        height: body.implicitHeight + 24
-        radius: Theme.quickTileRadius
-        color: Theme.withAlpha(Theme.warningColor, 0.10)
-        border.width: 1
-        border.color: Theme.withAlpha(Theme.warningColor, 0.28)
+        height: body.implicitHeight + Theme.space.xl
+        radius: Theme.shape.md
+        color: Theme.withAlpha(Theme.warning, 0.12)
 
         Row {
             id: body
 
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.leftMargin: 14
-            anchors.rightMargin: 14
+            anchors.leftMargin: Theme.space.lg
+            anchors.rightMargin: Theme.space.md
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 10
+            spacing: Theme.space.md
 
             Text {
                 id: mark
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.icon
-                color: Theme.warningColor
+                color: Theme.warning
                 font.family: Theme.iconFontFamily
-                font.pixelSize: 16
+                font.pixelSize: Theme.iconSize.md
             }
 
             Column {
@@ -62,10 +59,8 @@ Item {
                 Text {
                     width: parent.width
                     text: root.title
-                    color: Theme.quickText
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 13
-                    font.weight: Font.Medium
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeLabelLarge
                     elide: Text.ElideRight
                 }
 
@@ -73,9 +68,8 @@ Item {
                     width: parent.width
                     visible: root.description !== ""
                     text: root.description
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeBodySmall
                     wrapMode: Text.WordWrap
                 }
             }
@@ -84,21 +78,19 @@ Item {
                 id: action
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.actionText !== ""
-                width: visible ? actionLabel.implicitWidth + 26 : 0
-                height: 28
+                width: visible ? actionLabel.implicitWidth + Theme.space.lg * 2 : 0
+                height: 36
                 radius: height / 2
-                color: actionHover.hovered ? Theme.withAlpha(Theme.warningColor, 0.24)
-                                           : Theme.withAlpha(Theme.warningColor, 0.14)
+                color: actionHover.hovered ? Theme.withAlpha(Theme.warning, 0.24)
+                                           : Theme.withAlpha(Theme.warning, 0.14)
                 Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
                 Text {
                     id: actionLabel
                     anchors.centerIn: parent
                     text: root.actionText
-                    color: Theme.warningColor
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 12
-                    font.weight: Font.Medium
+                    color: Theme.warning
+                    font: Theme.typeLabelLarge
                 }
 
                 MouseArea {
