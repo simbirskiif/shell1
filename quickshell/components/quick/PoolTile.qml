@@ -19,7 +19,9 @@ Rectangle {
     implicitWidth: Theme.quickWidth / 2
     implicitHeight: Theme.quickTileHeight
     radius: Theme.quickTileRadius
-    color: hover.hovered ? Theme.quickTileHover : Theme.quickTile
+    // Тональный контейнер m3: в покое — surface-container-high, на hover —
+    // highest c состоянием поверх.
+    color: hover.containsMouse ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
     Behavior on x {
@@ -62,18 +64,18 @@ Rectangle {
         id: circle
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
-        anchors.verticalCenterOffset: -6
+        anchors.verticalCenterOffset: -Theme.space.xs
         width: Theme.quickCircleSize
         height: Theme.quickCircleSize
-        radius: width / 2
-        color: Theme.quickCircleOff
+        radius: Theme.shape.full
+        color: Theme.surfaceContainerHighest
 
         Text {
             anchors.centerIn: parent
             text: root.icon
-            color: Theme.quickTextDim
+            color: Theme.scheme.onSurfaceVariant
             font.family: Theme.iconFontFamily
-            font.pixelSize: 16
+            font.pixelSize: Theme.iconSize.md
         }
     }
 
@@ -81,12 +83,11 @@ Rectangle {
     Text {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: circle.bottom
-        anchors.topMargin: 4
+        anchors.topMargin: Theme.space.xs
         text: root.title
-        color: Theme.quickText
-        font.family: Theme.fontFamily
-        font.pixelSize: 11
-        opacity: hover.hovered ? 1 : 0
+        color: Theme.scheme.onSurface
+        font: Theme.typeLabelMedium
+        opacity: hover.containsMouse ? 1 : 0
         Behavior on opacity {
             MotionNumber {
                 duration: Theme.motionShort4
@@ -95,26 +96,29 @@ Rectangle {
         }
     }
 
-    // «Плюс» крупнее и выступает за плитку.
+    // «Плюс» крупнее и выступает за плитку: маленькая кнопка-иконка m3.
     Rectangle {
         id: addButton
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.rightMargin: -6
-        anchors.topMargin: -6
-        width: 26
-        height: 26
-        radius: width / 2
+        anchors.rightMargin: -Theme.space.xs
+        anchors.topMargin: -Theme.space.xs
+        width: Theme.iconSize.xl
+        height: Theme.iconSize.xl
+        radius: Theme.shape.full
         z: 3
-        color: addHover.hovered ? Theme.accent : Theme.withAlpha(Theme.quickText, 0.18)
+        // Тональная подложка: state-layer on-surface, на hover — primary.
+        color: addHover.containsMouse
+               ? Theme.primary
+               : Theme.stateLayer(Theme.scheme.onSurface, Theme.stateDragged)
         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
         Text {
             anchors.centerIn: parent
             text: "\uf067"
-            color: addHover.hovered ? Theme.quickIconOn : Theme.quickText
+            color: addHover.containsMouse ? Theme.scheme.onPrimary : Theme.scheme.onSurface
             font.family: Theme.iconFontFamily
-            font.pixelSize: 11
+            font.pixelSize: Theme.iconSize.sm
         }
 
         MouseArea {

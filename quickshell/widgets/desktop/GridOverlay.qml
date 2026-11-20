@@ -1,8 +1,13 @@
 import QtQuick
+import "../../singletons"
 
 // Отладочная отрисовка сетки (этап 1).
 // Не принимает ввод: мышь и касания должны проходить сквозь слой,
 // поэтому здесь нет ни одного MouseArea. Маска ввода задаётся в DesktopLayer.
+//
+// Оформление — по M3: сетка рисуется outline-variant с малой альфой, без
+// ярких цветов, а плашка параметров — обычная tonal surface, а не «чёрный
+// ящик» с ручными hex-цветами.
 Item {
     id: root
 
@@ -15,15 +20,16 @@ Item {
 
     enabled: false
 
-    // Фон рабочей области: чуть темнее обоев, чтобы границы клеток читались.
+    // Фон рабочей области: затемнение обоев scrim'ом, чтобы границы клеток
+    // читались и при этом не спорили с тональными поверхностями виджетов.
     Rectangle {
         x: root.gridX
         y: root.gridY
         width: root.gridW
         height: root.gridH
-        color: "#4D000000"
+        color: Theme.withAlpha(Theme.scrim, 0.28)
         border.width: 1
-        border.color: "#88FFFFFF"
+        border.color: Theme.withAlpha(Theme.outlineVariant, 0.55)
     }
 
     // Вертикальные линии по границам клеток.
@@ -37,7 +43,8 @@ Item {
             y: root.gridY
             width: 1
             height: root.gridH
-            color: "#80FFFFFF"
+            // Сетка декоративная: outline-variant с малой альфой.
+            color: Theme.withAlpha(Theme.outlineVariant, 0.38)
         }
     }
 
@@ -52,7 +59,8 @@ Item {
             y: Math.round(root.gridY + index * (root.metrics.cell + root.metrics.gap))
             width: root.gridW
             height: 1
-            color: "#80FFFFFF"
+            // Сетка декоративная: outline-variant с малой альфой.
+            color: Theme.withAlpha(Theme.outlineVariant, 0.38)
         }
     }
 
@@ -73,7 +81,7 @@ Item {
             width: 4
             height: 4
             radius: 2
-            color: "#CCFFFFFF"
+            color: Theme.withAlpha(Theme.outlineVariant, 0.55)
         }
     }
 
@@ -81,22 +89,21 @@ Item {
     Rectangle {
         id: info
 
-        x: root.gridX + 12
-        y: root.gridY + 12
-        width: infoText.implicitWidth + 24
-        height: infoText.implicitHeight + 16
-        radius: 8
-        color: "#CC101014"
+        x: root.gridX + Theme.space.md
+        y: root.gridY + Theme.space.md
+        width: infoText.implicitWidth + Theme.space.lg * 2
+        height: infoText.implicitHeight + Theme.space.md * 2
+        radius: Theme.shape.md
+        color: Theme.veil(Theme.surfaceContainerHigh, 0.96)
         border.width: 1
-        border.color: "#33FFFFFF"
+        border.color: Theme.outlineVariant
 
         Text {
             id: infoText
 
             anchors.centerIn: parent
-            color: "#E6E1E5"
-            font.family: "monospace"
-            font.pixelSize: 12
+            color: Theme.scheme.onSurfaceVariant
+            font: Theme.typeLabelSmall
             text: root.metrics.screenName
                   + "  •  " + root.metrics.cols + " × " + root.metrics.rows + " клеток"
                   + "  •  клетка " + Math.round(root.metrics.cell) + " px = "

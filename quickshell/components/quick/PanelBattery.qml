@@ -35,10 +35,11 @@ Item {
             onBackRequested: root.backRequested()
         }
 
+        // Разделитель шапки m3 — outline-variant.
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.quickSeparator
+            color: Theme.outlineVariant
         }
 
         // Заряд: «батарейка» с уровнем, процент, состояние и время.
@@ -51,7 +52,7 @@ Item {
                 id: batteryArt
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
-                anchors.topMargin: 22
+                anchors.topMargin: Theme.space.xl
                 level: PowerService.level
                 charging: PowerService.charging
                 bodyWidth: 150
@@ -64,18 +65,17 @@ Item {
                 id: percentText
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: batteryArt.bottom
-                anchors.topMargin: 14
+                anchors.topMargin: Theme.space.md
                 text: PowerService.present ? PowerService.level + "%" : "—"
-                color: PowerService.present ? Theme.quickText : Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 22
-                font.weight: Font.Medium
+                color: PowerService.present ? Theme.scheme.onSurface
+                                            : Theme.scheme.onSurfaceVariant
+                font: Theme.typeHeadlineSmall
             }
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: percentText.bottom
-                anchors.topMargin: 4
+                anchors.topMargin: Theme.space.xs
                 text: {
                     if (!PowerService.present)
                         return "No battery detected";
@@ -83,16 +83,15 @@ Item {
                         return PowerService.stateText;
                     return PowerService.stateText + " · " + PowerService.timeText;
                 }
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeBodyMedium
             }
         }
 
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.quickSeparator
+            color: Theme.outlineVariant
         }
 
         PanelSection { text: "Power mode" }
@@ -113,20 +112,21 @@ Item {
             onActionRequested: PowerService.probeProfiles()
         }
 
-        // Режим питания: три сегмента, выбранный залит акцентом
-        // (m3 segmented). Performance без поддержки железом неактивен.
+        // Режим питания: три сегмента m3 segmented button — выбранный залит
+        // secondary-container, Performance без поддержки железом неактивен.
         Item {
             width: parent.width
-            height: PowerService.profilesAvailable ? 56 : 0
+            height: PowerService.profilesAvailable ? Theme.listItemHeight : 0
             visible: height > 0
 
-            readonly property real segmentWidth: (width - 32 - 12) / 3
+            readonly property real segmentWidth: (width - Theme.space.lg * 2
+                                                 - Theme.space.sm * 2) / 3
 
             Row {
                 anchors.left: parent.left
-                anchors.leftMargin: 16
+                anchors.leftMargin: Theme.space.lg
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 6
+                spacing: Theme.space.sm
 
                 Repeater {
                     model: PowerService.profiles
@@ -138,20 +138,19 @@ Item {
                         readonly property bool selected: PowerService.profile === modelData.value
 
                         width: parent.parent.segmentWidth
-                        height: 36
-                        radius: height / 2
-                        color: selected ? Theme.accent : Theme.quickTile
-                        opacity: available ? 1 : 0.45
+                        height: Theme.buttonHeight
+                        radius: Theme.shape.full
+                        color: selected ? Theme.secondaryContainer : Theme.surfaceContainerHigh
+                        opacity: available ? 1 : Theme.disabledContent
                         Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
                         Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
 
                         Text {
                             anchors.centerIn: parent
                             text: modelData.label
-                            color: selected ? Theme.quickIconOn : Theme.quickText
-                            font.family: Theme.fontFamily
-                            font.pixelSize: 12
-                            font.weight: Font.Medium
+                            color: selected ? Theme.scheme.onSecondaryContainer
+                                            : Theme.scheme.onSurface
+                            font: Theme.typeLabelLarge
                             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
                         }
 
@@ -178,10 +177,10 @@ Item {
             Text {
                 id: noteText
                 width: parent.width
-                leftPadding: 16
-                rightPadding: 16
-                topPadding: 6
-                bottomPadding: 8
+                leftPadding: Theme.space.lg
+                rightPadding: Theme.space.lg
+                topPadding: Theme.space.sm
+                bottomPadding: Theme.space.sm
                 wrapMode: Text.WordWrap
                 text: {
                     const parts = [];
@@ -191,16 +190,15 @@ Item {
                         parts.push(PowerService.holdsText);
                     return parts.join(" · ");
                 }
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeBodySmall
             }
         }
 
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.quickSeparator
+            color: Theme.outlineVariant
         }
 
         // Подробности прячем целиком, если данных нет (нет батареи): пустой

@@ -7,6 +7,10 @@ import "../core"
 
 // Глобальные параметры виджетов (материал и режим цвета по умолчанию).
 // Это тот же слой/окно рабочего стола, отдельного окна настроек нет.
+//
+// Оформление — M3: шапка как top app bar (titleLarge + иконка 40), секции
+// подписаны labelLarge, выбор материала/цвета — filter chips 32, действия —
+// пилюли 40 px. Поверхность панели даёт SidePanel.
 SidePanel {
     id: root
 
@@ -39,7 +43,7 @@ SidePanel {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: footer.top
-        anchors.bottomMargin: 10
+        anchors.bottomMargin: Theme.space.sm
         clip: true
         contentHeight: contentColumn.height
         boundsBehavior: Flickable.StopAtBounds
@@ -48,156 +52,364 @@ SidePanel {
             id: contentColumn
 
             width: contentScroll.width
-            spacing: 10
+            spacing: Theme.space.md
 
-        Row {
-            width: parent.width
+            // Шапка — M3 top app bar: заголовок titleLarge и иконка 40.
+            Item {
+                width: parent.width
+                height: Theme.appBarHeight
 
-            Text {
-                width: parent.width - 34
-                color: Theme.quickText
-                font.family: Theme.fontFamily
-                font.pixelSize: 16
-                font.bold: true
-                text: "Параметры виджетов"
-            }
+                Text {
+                    anchors.left: parent.left
+                    anchors.right: headerClose.left
+                    anchors.rightMargin: Theme.space.sm
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeTitleLarge
+                    elide: Text.ElideRight
+                    text: "Параметры виджетов"
+                }
 
-            HostButton {
-                text: "✕"
-                onClicked: EditorState.closeGlobalSettings()
-            }
-        }
+                Item {
+                    id: headerClose
 
-        Text {
-            width: parent.width
-            color: Theme.quickTextDim
-            font.family: Theme.fontFamily
-            font.pixelSize: 11
-            wrapMode: Text.WordWrap
-            text: "Действуют для всех виджетов, пока экземпляр не переопределил "
-                  + "материал или цвет в своих настройках."
-        }
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Theme.iconButtonSize
+                    height: Theme.iconButtonSize
 
-        Text {
-            color: Theme.quickTextDim
-            font.family: Theme.fontFamily
-            font.pixelSize: 11
-            text: "Материал по умолчанию"
-        }
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: width / 2
+                        color: headerCloseHover.containsMouse
+                               ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                               : "transparent"
+                        Behavior on color {
+                            ColorAnimation { duration: Theme.motionShort3 }
+                        }
+                    }
 
-        Flow {
-            width: parent.width
-            spacing: 4
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        color: Theme.scheme.onSurface
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.iconSize.lg
+                    }
 
-            Repeater {
-                model: MaterialRegistry.materials
+                    MouseArea {
+                        id: headerCloseHover
 
-                delegate: HostButton {
-                    required property var modelData
-
-                    text: modelData.name
-                    active: Config.defaultMaterial === modelData.id
-                    onClicked: root.chooseMaterial(modelData.id)
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: EditorState.closeGlobalSettings()
+                    }
                 }
             }
-        }
 
-        Text {
-            color: Theme.quickTextDim
-            font.family: Theme.fontFamily
-            font.pixelSize: 11
-            text: "Цвет по умолчанию"
-        }
-
-        Row {
-            spacing: 4
-
-            HostButton {
-                text: "Акцент"
-                active: Config.defaultColorMode === "accent"
-                onClicked: root.chooseColorMode("accent")
-            }
-
-            HostButton {
-                text: "Нейтральная"
-                active: Config.defaultColorMode === "neutral"
-                onClicked: root.chooseColorMode("neutral")
-            }
-        }
-
-        Text {
-            color: Theme.quickTextDim
-            font.family: Theme.fontFamily
-            font.pixelSize: 11
-            text: "Затемнение материала"
-        }
-
-        Row {
-            width: parent.width
-            spacing: 8
-
-            PanelSlider {
-                width: Math.max(80, parent.width - 48)
-                value: Config.defaultMaterialDim
-                onMoved: value => Config.setDefaultMaterialDim(value)
+            Text {
+                width: parent.width
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeBodySmall
+                wrapMode: Text.WordWrap
+                text: "Действуют для всех виджетов, пока экземпляр не переопределил "
+                      + "материал или цвет в своих настройках."
             }
 
             Text {
-                width: 40
-                anchors.verticalCenter: parent.verticalCenter
-                horizontalAlignment: Text.AlignRight
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
-                text: Math.round(Config.defaultMaterialDim * 100) + "%"
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeLabelLarge
+                text: "Материал по умолчанию"
             }
-        }
 
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.quickSeparator
-            opacity: 0.4
-        }
+            Flow {
+                width: parent.width
+                spacing: Theme.space.sm
 
-        Text {
-            width: parent.width
-            color: Theme.quickTextDim
-            font.family: Theme.fontFamily
-            font.pixelSize: 11
-            wrapMode: Text.WordWrap
-            text: root.message.length > 0
-                  ? root.message
-                  : "Экземпляры с выбранным «По умолчанию» следуют этим значениям."
-        }
+                Repeater {
+                    model: MaterialRegistry.materials
+
+                    delegate: Rectangle {
+                        id: materialChip
+
+                        required property var modelData
+
+                        readonly property bool selected:
+                            Config.defaultMaterial === materialChip.modelData.id
+
+                        width: materialChipLabel.implicitWidth + Theme.space.lg * 2
+                        height: 32
+                        radius: Theme.shape.full
+                        color: materialChip.selected ? Theme.secondaryContainer
+                                                    : "transparent"
+                        border.width: 1
+                        border.color: materialChip.selected ? Theme.secondaryContainer
+                                                            : Theme.outline
+
+                        Text {
+                            id: materialChipLabel
+
+                            anchors.centerIn: parent
+                            text: materialChip.modelData.name
+                            color: materialChip.selected
+                                   ? Theme.scheme.onSecondaryContainer
+                                   : Theme.scheme.onSurfaceVariant
+                            font: Theme.typeLabelLarge
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: Theme.stateLayer(
+                                       materialChip.selected
+                                       ? Theme.scheme.onSecondaryContainer
+                                       : Theme.scheme.onSurface,
+                                       Theme.stateHover)
+                            visible: materialChipHover.containsMouse
+                        }
+
+                        MouseArea {
+                            id: materialChipHover
+
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.chooseMaterial(materialChip.modelData.id)
+                        }
+                    }
+                }
+            }
+
+            Text {
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeLabelLarge
+                text: "Цвет по умолчанию"
+            }
+
+            Row {
+                spacing: Theme.space.sm
+
+                Rectangle {
+                    id: accentChip
+
+                    readonly property bool selected:
+                        Config.defaultColorMode === "accent"
+
+                    width: accentChipLabel.implicitWidth + Theme.space.lg * 2
+                    height: 32
+                    radius: Theme.shape.full
+                    color: accentChip.selected ? Theme.secondaryContainer : "transparent"
+                    border.width: 1
+                    border.color: accentChip.selected ? Theme.secondaryContainer
+                                                      : Theme.outline
+
+                    Text {
+                        id: accentChipLabel
+
+                        anchors.centerIn: parent
+                        text: "Акцент"
+                        color: accentChip.selected
+                               ? Theme.scheme.onSecondaryContainer
+                               : Theme.scheme.onSurfaceVariant
+                        font: Theme.typeLabelLarge
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: Theme.stateLayer(accentChip.selected
+                                                ? Theme.scheme.onSecondaryContainer
+                                                : Theme.scheme.onSurface,
+                                                Theme.stateHover)
+                        visible: accentChipHover.containsMouse
+                    }
+
+                    MouseArea {
+                        id: accentChipHover
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.chooseColorMode("accent")
+                    }
+                }
+
+                Rectangle {
+                    id: neutralChip
+
+                    readonly property bool selected:
+                        Config.defaultColorMode === "neutral"
+
+                    width: neutralChipLabel.implicitWidth + Theme.space.lg * 2
+                    height: 32
+                    radius: Theme.shape.full
+                    color: neutralChip.selected ? Theme.secondaryContainer : "transparent"
+                    border.width: 1
+                    border.color: neutralChip.selected ? Theme.secondaryContainer
+                                                       : Theme.outline
+
+                    Text {
+                        id: neutralChipLabel
+
+                        anchors.centerIn: parent
+                        text: "Нейтральная"
+                        color: neutralChip.selected
+                               ? Theme.scheme.onSecondaryContainer
+                               : Theme.scheme.onSurfaceVariant
+                        font: Theme.typeLabelLarge
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: Theme.stateLayer(neutralChip.selected
+                                                ? Theme.scheme.onSecondaryContainer
+                                                : Theme.scheme.onSurface,
+                                                Theme.stateHover)
+                        visible: neutralChipHover.containsMouse
+                    }
+
+                    MouseArea {
+                        id: neutralChipHover
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.chooseColorMode("neutral")
+                    }
+                }
+            }
+
+            Text {
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeLabelLarge
+                text: "Затемнение материала"
+            }
+
+            Row {
+                width: parent.width
+                spacing: Theme.space.sm
+
+                PanelSlider {
+                    width: Math.max(80, parent.width - 48)
+                    value: Config.defaultMaterialDim
+                    onMoved: value => Config.setDefaultMaterialDim(value)
+                }
+
+                Text {
+                    width: 40
+                    anchors.verticalCenter: parent.verticalCenter
+                    horizontalAlignment: Text.AlignRight
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeLabelMedium
+                    text: Math.round(Config.defaultMaterialDim * 100) + "%"
+                }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: Theme.outlineVariant
+            }
+
+            Text {
+                width: parent.width
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeBodySmall
+                wrapMode: Text.WordWrap
+                text: root.message.length > 0
+                      ? root.message
+                      : "Экземпляры с выбранным «По умолчанию» следуют этим значениям."
+            }
         }
     }
 
-    // Футер закреплён внизу и виден всегда.
-    Row {
+    // Футер закреплён внизу и виден всегда: M3-пилюли, действия у краёв.
+    Item {
         id: footer
 
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        spacing: 6
+        height: Theme.buttonHeight
 
-        HostButton {
-            text: "Сбросить переопределения"
-            onClicked: {
-                EditorState.beginOperation()
-                const count = LayoutStore.clearOverrides()
-                root.message = count > 0
-                             ? "Сброшено переопределений: " + count
-                             : "Переопределений нет"
+        Rectangle {
+            id: resetAction
+
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            width: resetActionLabel.implicitWidth + Theme.space.xl * 2
+            height: Theme.buttonHeight
+            radius: Theme.shape.full
+            color: "transparent"
+
+            Text {
+                id: resetActionLabel
+
+                anchors.centerIn: parent
+                text: "Сбросить переопределения"
+                color: Theme.primary
+                font: Theme.typeLabelLarge
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: Theme.stateLayer(Theme.primary, Theme.stateHover)
+                visible: resetActionHover.containsMouse
+            }
+
+            MouseArea {
+                id: resetActionHover
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    EditorState.beginOperation()
+                    const count = LayoutStore.clearOverrides()
+                    root.message = count > 0
+                                 ? "Сброшено переопределений: " + count
+                                 : "Переопределений нет"
+                }
             }
         }
 
-        Item { width: Math.max(0, footer.width - 220); height: 1 }
+        Rectangle {
+            id: closeAction
 
-        HostButton {
-            text: "Закрыть"
-            onClicked: EditorState.closeGlobalSettings()
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            width: closeActionLabel.implicitWidth + Theme.space.xl * 2
+            height: Theme.buttonHeight
+            radius: Theme.shape.full
+            color: Theme.primary
+
+            Text {
+                id: closeActionLabel
+
+                anchors.centerIn: parent
+                text: "Закрыть"
+                color: Theme.scheme.onPrimary
+                font: Theme.typeLabelLarge
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: Theme.stateLayer(Theme.scheme.onPrimary, Theme.stateHover)
+                visible: closeActionHover.containsMouse
+            }
+
+            MouseArea {
+                id: closeActionHover
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: EditorState.closeGlobalSettings()
+            }
         }
     }
 }

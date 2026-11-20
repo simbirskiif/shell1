@@ -33,10 +33,11 @@ Item {
             onRefreshRequested: NetworkService.scanWifi()
         }
 
+        // Разделитель шапки m3 — outline-variant.
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.quickSeparator
+            color: Theme.outlineVariant
         }
 
         // --- список сетей ------------------------------------------------
@@ -64,11 +65,21 @@ Item {
             Item {
                 id: ethernetRow
                 width: parent.width
-                height: NetworkService.ethernetConnected ? Theme.quickRowHeight : 0
+                height: NetworkService.ethernetConnected ? Theme.listItemHeight : 0
                 visible: height > 0
                 clip: true
 
+                // Строка списка m3: hover — state layer on-surface.
+                Rectangle {
+                    anchors.fill: parent
+                    color: ethernetHover.containsMouse
+                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                           : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                }
+
                 MouseArea {
+                    id: ethernetHover
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
@@ -78,7 +89,7 @@ Item {
                 PanelIcon {
                     id: ethernetIcon
                     anchors.left: parent.left
-                    anchors.leftMargin: 12
+                    anchors.leftMargin: Theme.space.md
                     anchors.verticalCenter: parent.verticalCenter
                     icon: "\uf1e6"
                     connected: NetworkService.internetViaEthernet
@@ -86,22 +97,24 @@ Item {
 
                 Text {
                     anchors.left: ethernetIcon.right
-                    anchors.leftMargin: 12
+                    anchors.leftMargin: Theme.space.md
+                    anchors.right: ethernetSummary.left
+                    anchors.rightMargin: Theme.space.md
                     anchors.verticalCenter: parent.verticalCenter
+                    elide: Text.ElideRight
                     text: NetworkService.ethernetName
-                    color: Theme.quickText
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 13
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeBodyLarge
                 }
 
                 Text {
+                    id: ethernetSummary
                     anchors.right: parent.right
-                    anchors.rightMargin: 16
+                    anchors.rightMargin: Theme.space.lg
                     anchors.verticalCenter: parent.verticalCenter
                     text: NetworkService.ethernetSummary
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeBodyMedium
                 }
             }
 

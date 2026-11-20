@@ -383,10 +383,10 @@ Item {
         width: parent.width
         implicitHeight: content.implicitHeight + Theme.notificationPadding * 2
         height: implicitHeight
-        radius: Theme.notificationRadius
-        color: Theme.quickBackground
-        border.width: 1
-        border.color: root.critical ? Theme.withAlpha(Theme.lowColor, 0.55) : Theme.quickBorder
+        radius: Theme.shape.xl
+        // M3 filled card: тональная поверхность, без обводки и тени.
+        // Требование важности несёт левая полоска, а не рамка.
+        color: Theme.surfaceContainerHigh
         // Плавно тает, пока едет за край.
         opacity: Math.max(0, 1.0 - Math.abs(root.swipeOffset) / (width * 0.85))
 
@@ -403,11 +403,11 @@ Item {
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            anchors.topMargin: Theme.notificationRadius
-            anchors.bottomMargin: Theme.notificationRadius
-            width: root.critical ? 3 : 0
+            anchors.topMargin: Theme.shape.xl
+            anchors.bottomMargin: Theme.shape.xl
+            width: root.critical ? 4 : 0
             radius: width / 2
-            color: Theme.lowColor
+            color: Theme.error
         }
 
         Column {
@@ -417,23 +417,25 @@ Item {
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.margins: Theme.notificationPadding
-            spacing: 6
+            spacing: Theme.space.sm
 
             // Шапка: иконка приложения, имя и крестик.
+            // Высота равна кнопке-иконке M3, чтобы крестик имел полную
+            // тач-цель, а имя не прыгало по вертикали.
             Item {
                 width: parent.width
-                height: 20
+                height: Theme.iconButtonSize
 
                 Image {
                     id: appIconImage
 
-                    width: 20
-                    height: 20
+                    width: Theme.iconSize.lg
+                    height: Theme.iconSize.lg
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
                     visible: root.appIconSource !== "" && appIconImage.status !== Image.Error
                     source: root.appIconSource
-                    sourceSize: Qt.size(20, 20)
+                    sourceSize: Qt.size(Theme.iconSize.lg, Theme.iconSize.lg)
                     fillMode: Image.PreserveAspectFit
                 }
 
@@ -444,44 +446,47 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: !appIconImage.visible
                     text: "\uf0f3"
-                    color: Theme.quickTextDim
+                    color: Theme.scheme.onSurfaceVariant
                     font.family: Theme.iconFontFamily
-                    font.pixelSize: 14
+                    font.pixelSize: Theme.iconSize.md
                 }
 
                 Text {
                     id: appName
 
                     anchors.left: appIconGlyph.right
-                    anchors.leftMargin: 8
+                    anchors.leftMargin: Theme.space.sm
                     anchors.right: closeButton.left
-                    anchors.rightMargin: 8
+                    anchors.rightMargin: Theme.space.sm
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.notification && root.notification.appName
                           ? root.notification.appName : ""
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    // Кто прислал — вспомогательная подпись, M3 labelMedium.
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeLabelMedium
                     elide: Text.ElideRight
                 }
 
+                // Крестик — круглая кнопка-иконка M3 с state layer при наведении.
                 Rectangle {
                     id: closeButton
 
-                    width: 20
-                    height: 20
+                    width: Theme.iconButtonSize
+                    height: Theme.iconButtonSize
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    radius: width / 2
-                    color: closeHover.hovered ? Theme.quickTileHover : "transparent"
+                    radius: Theme.shape.full
+                    color: closeHover.containsMouse
+                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                           : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
                     Text {
                         anchors.centerIn: parent
                         text: "\uf00d"
-                        color: Theme.quickTextDim
+                        color: Theme.scheme.onSurfaceVariant
                         font.family: Theme.iconFontFamily
-                        font.pixelSize: 11
+                        font.pixelSize: Theme.iconSize.md
                     }
 
                     MouseArea {
@@ -499,10 +504,8 @@ Item {
                 visible: text !== ""
                 text: root.notification && root.notification.summary
                       ? root.notification.summary : ""
-                color: Theme.quickText
-                font.family: Theme.fontFamily
-                font.pixelSize: 14
-                font.weight: Font.Medium
+                color: Theme.scheme.onSurface
+                font: Theme.typeBodyLarge
                 wrapMode: Text.WordWrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
@@ -513,19 +516,19 @@ Item {
                 visible: text !== ""
                 text: root.notification && root.notification.body
                       ? root.notification.body : ""
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeBodyMedium
                 wrapMode: Text.WordWrap
                 maximumLineCount: 4
                 elide: Text.ElideRight
             }
 
-            // Кнопки действий из уведомления.
+            // Кнопки действий из уведомления: M3 text button — прозрачный
+            // контейнер, подпись labelLarge цветом primary и state layer.
             Row {
                 width: parent.width
-                height: 28
-                spacing: 6
+                height: Theme.buttonHeight
+                spacing: Theme.space.xs
                 visible: root.hasActions
 
                 Repeater {
@@ -536,19 +539,29 @@ Item {
 
                         required property var modelData
 
-                        width: actionLabel.implicitWidth + 24
-                        height: 28
-                        radius: height / 2
-                        color: actionHover.hovered ? Theme.quickTileHover : Theme.quickTile
-                        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                        // Текстовая кнопка M3: 40dp высоты и по 12dp
+                        // горизонтального паддинга вокруг подписи.
+                        width: actionLabel.implicitWidth + Theme.space.xl
+                        height: Theme.buttonHeight
+                        radius: Theme.shape.full
+                        color: "transparent"
+
+                        // Слой состояния M3: подсветка только сама по себе,
+                        // контейнер кнопки остаётся прозрачным.
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: Theme.stateLayer(Theme.primary, Theme.stateHover)
+                            opacity: actionHover.containsMouse ? 1 : 0
+                            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+                        }
 
                         Text {
                             id: actionLabel
                             anchors.centerIn: parent
                             text: actionButton.modelData ? actionButton.modelData.text : ""
-                            color: Theme.quickText
-                            font.family: Theme.fontFamily
-                            font.pixelSize: 12
+                            color: Theme.primary
+                            font: Theme.typeLabelLarge
                         }
 
                         MouseArea {

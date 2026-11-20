@@ -5,7 +5,8 @@ import "../../singletons"
 
 // Содержимое раскрытого дока: поиск, анимированный список приложений и
 // настройки дока. Это «большая панель», в которую плавно превращается
-// компактная полоса.
+// компактная полоса. Поверхность листа задаёт карточка дока (Dock.qml):
+// в раскрытом виде она тонально опускается до surfaceContainerLow.
 Item {
     id: root
 
@@ -29,7 +30,9 @@ Item {
     readonly property bool tiles: DockSettings.tileLayout
 
     readonly property int columns: root.tiles ? Theme.dockGridColumns : 1
-    readonly property real cellHeight: root.tiles ? Theme.dockGridCellHeight : 46
+    // Строка списка — стандартная высота M3 list item.
+    readonly property real cellHeight: root.tiles ? Theme.dockGridCellHeight
+                                                  : Theme.listItemHeight
     readonly property real listContentHeight: {
         if (appList.count === 0)
             return 0;
@@ -43,7 +46,8 @@ Item {
         // так включение режима «по списку» видно сразу, а не после
         // закрытия настроек. Сам блок настроек при этом прокручивается.
         const listPart = Math.max(72, root.listContentHeight);
-        return header.height + 8 + searchField.height + 8 + listPart;
+        return header.height + Theme.space.sm + searchField.height
+               + Theme.space.sm + listPart;
     }
 
     // Фокус в поле ставим явно, как только доку понадобилась клавиатура:
@@ -239,46 +243,46 @@ Item {
         }
     }
 
-    // Шапка остаётся на месте, содержимое прокручивается.
+    // Шапка — M3 top app bar: titleLarge слева, круглые icon button 40 справа.
+    // Остаётся на месте, содержимое прокручивается.
     Item {
         id: header
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        height: 34
+        height: Theme.appBarHeight
 
         Text {
             id: titleText
             anchors.left: parent.left
+            anchors.leftMargin: Theme.space.xs
             anchors.verticalCenter: parent.verticalCenter
             text: root.settingsOpen ? "Настройки дока" : "Приложения"
-            color: Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 14
-            font.weight: Font.DemiBold
+            color: Theme.scheme.onSurface
+            font: Theme.typeTitleLarge
         }
 
         Text {
             anchors.left: titleText.right
-            anchors.leftMargin: 8
+            anchors.leftMargin: Theme.space.sm
             anchors.verticalCenter: parent.verticalCenter
             visible: !root.settingsOpen
             text: "· " + appList.count
-            color: Theme.quickTextDim
-            font.family: Theme.fontFamily
-            font.pixelSize: 12
+            color: Theme.scheme.onSurfaceVariant
+            font: Theme.typeBodyMedium
         }
     }
 
     Row {
         id: actions
         anchors.right: parent.right
+        anchors.rightMargin: Theme.space.xs
         anchors.verticalCenter: header.verticalCenter
-        spacing: 2
+        spacing: 0
 
         DockIconButton {
-            size: 34
-            glyphSize: 14
+            size: Theme.iconButtonSize
+            glyphSize: Theme.iconSize.md
             icon: "\uf013"
             accented: root.settingsOpen
 
@@ -286,8 +290,8 @@ Item {
         }
 
         DockIconButton {
-            size: 34
-            glyphSize: 14
+            size: Theme.iconButtonSize
+            glyphSize: Theme.iconSize.md
             icon: "\uf00d"
 
             onClicked: root.closeRequested()
@@ -299,12 +303,12 @@ Item {
         id: searchField
         anchors.left: parent.left
         anchors.right: layoutButton.left
-        anchors.rightMargin: 8
+        anchors.rightMargin: Theme.space.sm
         // Позиция задаётся явно, а не парой top/bottom-якорей: смена
         // положения не должна оставлять второй якорь активным и растягивать
         // поле на всю панель.
         y: DockSettings.searchAtBottom ? parent.height - height
-                                       : header.height + 8
+                                       : header.height + Theme.space.sm
         height: DockSettings.searchHeight
         opacity: root.settingsOpen ? 0 : 1
         visible: opacity > 0.001
@@ -328,8 +332,8 @@ Item {
         anchors.right: parent.right
         anchors.verticalCenter: searchField.verticalCenter
         visible: !root.settingsOpen
-        size: Math.min(34, DockSettings.searchHeight)
-        glyphSize: 14
+        size: Theme.iconButtonSize
+        glyphSize: Theme.iconSize.md
         icon: DockSettings.tileLayout ? "\uf00b" : "\uf00a"
         accented: DockSettings.tileLayout
 
@@ -392,10 +396,10 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         y: DockSettings.searchAtBottom
-           ? header.height + 8
-           : searchField.y + searchField.height + 8
+           ? header.height + Theme.space.sm
+           : searchField.y + searchField.height + Theme.space.sm
         height: DockSettings.searchAtBottom
-                ? searchField.y - 8 - y
+                ? searchField.y - Theme.space.sm - y
                 : parent.height - y
         clip: true
         focus: false
@@ -417,11 +421,12 @@ Item {
         onHeightChanged: root.clampScroll()
         onContentHeightChanged: root.clampScroll()
         highlightMoveDuration: 120
+        // Выбранный элемент M3: secondary-container, крупный радиус карточки.
         highlight: Rectangle {
-            width: root.tiles ? appList.cellWidth - 4 : appList.cellWidth
+            width: root.tiles ? appList.cellWidth - Theme.space.xs : appList.cellWidth
             height: appList.cellHeight
-            radius: 12
-            color: Theme.quickTileActive
+            radius: Theme.shape.lg
+            color: Theme.secondaryContainer
         }
         enabled: !root.settingsOpen
         opacity: root.settingsOpen ? 0 : 1
@@ -542,15 +547,14 @@ Item {
         anchors.centerIn: appList
         visible: !root.settingsOpen && appList.count === 0
         text: DockState.query !== "" ? "Ничего не найдено" : "Список приложений пуст"
-        color: Theme.quickTextDim
-        font.family: Theme.fontFamily
-        font.pixelSize: 12
+        color: Theme.scheme.onSurfaceVariant
+        font: Theme.typeBodyMedium
     }
 
     // --- настройки дока ---------------------------------------------------
     DockPanelSettings {
         anchors.top: header.bottom
-        anchors.topMargin: 10
+        anchors.topMargin: Theme.space.sm
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom

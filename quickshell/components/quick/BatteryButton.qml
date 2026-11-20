@@ -45,7 +45,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: height / 2
-        color: hover.hovered ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+        color: hover.containsMouse ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
                              : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
     }

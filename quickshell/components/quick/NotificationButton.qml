@@ -14,7 +14,7 @@ Rectangle {
     implicitHeight: Theme.iconButtonSize
     radius: Theme.controlRadius
     color: root.opened ? Theme.secondaryContainer
-                       : (hover.hovered ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                       : (hover.containsMouse ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
                                         : "transparent")
     Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
 

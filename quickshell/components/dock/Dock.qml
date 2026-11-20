@@ -72,9 +72,9 @@ Item {
     // Иконки при этом уменьшаются вместе с промежутками, а не наезжают.
     readonly property real compactFitScale: root.rowBaseWidth <= 0 ? 1
         : Math.max(0.35, Math.min(1,
-            (root.maxCompactWidth - Theme.dockPadding * 2) / root.rowBaseWidth))
+            (root.maxCompactWidth - Theme.space.md * 2) / root.rowBaseWidth))
     readonly property real compactWidth: Math.round(Math.min(root.maxCompactWidth,
-        root.rowBaseWidth * root.compactFitScale + Theme.dockPadding * 2))
+        root.rowBaseWidth * root.compactFitScale + Theme.space.md * 2))
     // Высокий размер иконок требует чуть более высокой карточки, иначе
     // увеличение при наведении обрезается сверху и снизу.
     readonly property real compactHeight: Math.max(Theme.dockHeight,
@@ -89,7 +89,7 @@ Item {
             ? root.parent.height - Theme.dockBottomMargin - 12
             : DockSettings.panelMaxHeight)
     readonly property real panelContentHeight: panelLoader.item
-        ? panelLoader.item.desiredHeight + Theme.dockPanelPadding * 2 : 0
+        ? panelLoader.item.desiredHeight + Theme.space.lg * 2 : 0
     readonly property real panelHeight: {
         if (!DockSettings.fitPanelToContent)
             return root.panelMaxHeight;
@@ -138,14 +138,17 @@ Item {
         y: (1 - root.reveal) * (root.height + Theme.dockBottomMargin + 20)
     }
 
+    // Карточка дока — M3 navigation bar: тональная поверхность
+    // surfaceContainerHigh (Theme.sheetSurface), радиус shape.xl, без рамки
+    // и без тени. В раскрытом виде лист тонально опускается до
+    // surfaceContainerLow (Theme.panelSurface) — как панель поверх карточки.
     Rectangle {
         id: card
         anchors.fill: parent
         radius: root.cardRadius
-        color: Theme.quickBackground
-        border.width: 1
-        border.color: Theme.quickBorder
+        color: root.expanded ? Theme.panelSurface : Theme.sheetSurface
         clip: true
+        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
 
         DockCompactRow {
             id: compactRow
@@ -153,7 +156,7 @@ Item {
             buttonFirst: DockSettings.buttonOnLeft
             buttonSize: root.baseButtonSize
             iconSize: DockSettings.iconSize
-            glyphSize: Math.max(15, Math.round(DockSettings.iconSize * 0.6))
+            glyphSize: Theme.iconSize.md
             enabled: !root.expanded
             opacity: root.expanded ? 0 : 1
             // Уход полосы быстрее прихода: панель должна проявиться раньше,
@@ -237,7 +240,7 @@ Item {
         Loader {
             id: panelLoader
             anchors.fill: parent
-            anchors.margins: Theme.dockPanelPadding
+            anchors.margins: Theme.space.lg
             active: root.panelLoaded
             sourceComponent: panelComponent
             // Панель нужна видимой (хоть и прозрачной) уже во время

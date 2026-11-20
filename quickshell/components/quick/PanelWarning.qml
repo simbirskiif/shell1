@@ -81,7 +81,7 @@ Item {
                 width: visible ? actionLabel.implicitWidth + Theme.space.lg * 2 : 0
                 height: 36
                 radius: height / 2
-                color: actionHover.hovered ? Theme.withAlpha(Theme.warning, 0.24)
+                color: actionHover.containsMouse ? Theme.withAlpha(Theme.warning, 0.24)
                                            : Theme.withAlpha(Theme.warning, 0.14)
                 Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 

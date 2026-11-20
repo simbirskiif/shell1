@@ -29,11 +29,13 @@ Item {
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         width: Math.min(Theme.quickWidth, parent.width)
-        color: Theme.quickBackground
+        // M3 side sheet: тональная поверхность surface-container-low с лёгкой
+        // вуалью (обои под панелью), обводка — outline-variant.
+        color: Theme.panelSurface
         border.width: 1
-        border.color: Theme.quickBorder
-        topLeftRadius: Theme.quickRadius
-        bottomLeftRadius: Theme.quickRadius
+        border.color: Theme.outlineVariant
+        topLeftRadius: Theme.shape.xl
+        bottomLeftRadius: Theme.shape.xl
         topRightRadius: 0
         bottomRightRadius: 0
         clip: true
@@ -42,7 +44,7 @@ Item {
         Behavior on opacity {
             NumberAnimation {
                 duration: Theme.motionShort4
-                easing.type: Easing.OutCubic
+                easing.bezierCurve: Theme.curveStandard
             }
         }
 
@@ -63,7 +65,7 @@ Item {
             id: body
 
             anchors.fill: parent
-            anchors.margins: Theme.quickPadding
+            anchors.margins: Theme.space.lg
         }
     }
 }

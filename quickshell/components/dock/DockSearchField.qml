@@ -2,7 +2,9 @@ import QtQuick
 import "../../singletons"
 
 // Поле поиска в раскрытой панели. Своё, а не Controls.TextField: нужно
-// попасть в палитру и motion-токены оболочки.
+// попасть в палитру и motion-токены оболочки. M3 filled text field:
+// контейнер surfaceContainerHighest, радиус shape.sm, текст bodyLarge,
+// иконка 20, обводка outline (при фокусе — primary толщиной 2).
 Rectangle {
     id: root
 
@@ -15,11 +17,12 @@ Rectangle {
     signal submitted()
 
     implicitHeight: 36
-    radius: 12
-    color: Theme.quickTile
+    radius: Theme.shape.sm
+    color: Theme.surfaceContainerHighest
     border.width: input.activeFocus ? 2 : 1
-    border.color: input.activeFocus ? Theme.accent : Theme.quickBorder
+    border.color: input.activeFocus ? Theme.primary : Theme.outline
     Behavior on border.color { ColorAnimation { duration: Theme.motionShort3 } }
+    Behavior on border.width { NumberAnimation { duration: Theme.motionShort3 } }
 
     function setText(value) {
         if (input.text !== value)
@@ -40,12 +43,13 @@ Rectangle {
     Text {
         id: searchIcon
         anchors.left: parent.left
-        anchors.leftMargin: 12
+        anchors.leftMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
         text: "\uf002"
-        color: input.activeFocus ? Theme.accent : Theme.quickTextDim
+        color: input.activeFocus ? Theme.primary : Theme.scheme.onSurfaceVariant
         font.family: Theme.iconFontFamily
-        font.pixelSize: Math.max(12, Math.min(18, Math.round(root.height * 0.39)))
+        font.pixelSize: Theme.iconSize.md
+        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
     }
 
     Text {
@@ -55,26 +59,24 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         visible: input.text.length === 0
         text: root.placeholder
-        color: Theme.quickTextDim
-        font.family: Theme.fontFamily
-        font.pixelSize: Math.max(11, Math.min(16, Math.round(root.height * 0.34)))
+        color: Theme.scheme.onSurfaceVariant
+        font: Theme.typeBodyLarge
         elide: Text.ElideRight
     }
 
     TextInput {
         id: input
         anchors.left: searchIcon.right
-        anchors.leftMargin: 8
+        anchors.leftMargin: Theme.space.sm
         anchors.right: clearButton.left
-        anchors.rightMargin: 4
+        anchors.rightMargin: Theme.space.xs
         anchors.verticalCenter: parent.verticalCenter
         height: parent.height
         verticalAlignment: TextInput.AlignVCenter
-        color: Theme.quickText
-        selectionColor: Theme.accent
-        selectedTextColor: Theme.quickIconOn
-        font.family: Theme.fontFamily
-        font.pixelSize: Math.max(11, Math.min(16, Math.round(root.height * 0.34)))
+        color: Theme.scheme.onSurface
+        selectionColor: Theme.primary
+        selectedTextColor: Theme.scheme.onPrimary
+        font: Theme.typeBodyLarge
         selectByMouse: true
         clip: true
         focus: DockState.keyboardActive && !DockState.settingsOpen
@@ -111,25 +113,27 @@ Rectangle {
     Item {
         id: clearButton
         anchors.right: parent.right
-        anchors.rightMargin: 4
+        anchors.rightMargin: Theme.space.xs
         anchors.verticalCenter: parent.verticalCenter
-        width: 26
-        height: 26
+        width: Theme.space.xxl
+        height: Theme.space.xxl
         visible: input.text.length > 0
 
+        // Круглая цель M3: в покое прозрачна, наведение — state layer.
         Rectangle {
             anchors.fill: parent
-            radius: width / 2
-            color: clearHover.containsMouse ? Theme.quickTileHover : "transparent"
-            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+            radius: Theme.shape.full
+            color: Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+            opacity: clearHover.containsMouse ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
         }
 
         Text {
             anchors.centerIn: parent
             text: "\uf00d"
-            color: Theme.quickTextDim
+            color: Theme.scheme.onSurfaceVariant
             font.family: Theme.iconFontFamily
-            font.pixelSize: 11
+            font.pixelSize: Theme.iconSize.sm
         }
 
         MouseArea {

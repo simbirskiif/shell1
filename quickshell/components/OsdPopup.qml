@@ -95,11 +95,13 @@ PanelWindow {
         anchors.bottom: parent.bottom
         width: root.cardWidth
         height: root.cardHeight
-        radius: 14
+        // Компактная M3-поверхность: тот же тон surfaceContainerHigh, что у
+        // остальных всплывашек, форма — xl.
+        radius: Theme.shape.xl
         contentInsideBorder: false
-        color: Theme.quickBackground
+        color: Theme.sheetSurface
         border.width: 1
-        border.color: Theme.quickBorder
+        border.color: Theme.outlineVariant
 
         opacity: root.shown ? 1 : 0
         Behavior on opacity {

@@ -37,7 +37,7 @@ Item {
         width: Theme.iconButtonSize
         height: Theme.iconButtonSize
         radius: width / 2
-        color: backHover.hovered ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+        color: backHover.containsMouse ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
                                  : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
@@ -110,7 +110,7 @@ Item {
                 anchors.fill: parent
                 radius: width / 2
                 color: root.actionChecked ? Theme.secondaryContainer
-                                          : (actionHover.hovered ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                                          : (actionHover.containsMouse ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
                                                                  : "transparent")
                 Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
             }
@@ -142,7 +142,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 radius: width / 2
-                color: refreshHover.hovered && !root.refreshing
+                color: refreshHover.containsMouse && !root.refreshing
                        ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover) : "transparent"
                 Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
             }

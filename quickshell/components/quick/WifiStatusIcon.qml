@@ -71,7 +71,8 @@ Item {
         visible: root.showRing
         anchors.fill: parent
         radius: width / 2
-        color: root.connected ? Theme.quickTileActive : Theme.quickCircleOff
+        // Подложка m3: подключённая сеть — secondary-container, иначе — highest.
+        color: root.connected ? Theme.secondaryContainer : Theme.surfaceContainerHighest
         Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
     }
 
@@ -81,7 +82,7 @@ Item {
         radius: width / 2
         color: "transparent"
         border.width: 2
-        border.color: Theme.accent
+        border.color: Theme.primary
         opacity: root.connected ? 1 : 0
         Behavior on opacity {
             MotionNumber {
@@ -101,12 +102,13 @@ Item {
         text: root.glyph
         color: {
             if (root.dim)
-                return Theme.quickTextDim;
+                return Theme.scheme.onSurfaceVariant;
             if (root.onAccent)
-                return Theme.quickIconOn;
+                return Theme.scheme.onPrimary;
             if (root.showRing)
-                return root.connected ? Theme.accent : Theme.quickText;
-            return Theme.quickText;
+                return root.connected ? Theme.scheme.onSecondaryContainer
+                                      : Theme.scheme.onSurface;
+            return Theme.scheme.onSurface;
         }
         font.family: Theme.iconFontFamily
         font.pixelSize: root.glyphSize

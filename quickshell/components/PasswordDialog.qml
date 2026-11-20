@@ -68,9 +68,10 @@ PanelWindow {
         }
     }
 
+    // Затемнение фона — ролью scrim, а не произвольным чёрным.
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.45)
+        color: Theme.scrimOverlay
         opacity: root.visible ? 1 : 0
         Behavior on opacity {
             MotionNumber {
@@ -95,15 +96,14 @@ PanelWindow {
         NetworkService.pendingPassword = "";
     }
 
+    // Карточка диалога: surface-container-high, радиус dialogs (shape.xl).
     Rectangle {
         id: card
         anchors.centerIn: parent
-        width: 360
-        height: cardColumn.implicitHeight + Theme.quickPadding * 2
-        radius: Theme.quickRadius
-        color: Theme.quickBackground
-        border.width: 1
-        border.color: Theme.quickBorder
+        width: 380
+        height: cardColumn.implicitHeight + Theme.space.xl * 2
+        radius: Theme.shape.xl
+        color: Theme.surfaceContainerHigh
         opacity: root.visible ? 1 : 0
         scale: root.visible ? 1 : Theme.motionFadeThroughScale
         Behavior on opacity {
@@ -129,59 +129,75 @@ PanelWindow {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.margins: Theme.quickPadding
-            spacing: 6
+            anchors.margins: Theme.space.xl
+            spacing: Theme.space.md
 
             Text {
+                width: parent.width
+                wrapMode: Text.WordWrap
                 text: root.changing ? "New password" : "Enter password"
-                color: Theme.quickText
-                font.family: Theme.fontFamily
-                font.pixelSize: 15
-                font.weight: Font.Medium
-            }
-
-            Text {
-                text: NetworkService.pendingNetwork
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
+                color: Theme.scheme.onSurface
+                font: Theme.typeHeadlineSmall
             }
 
             Text {
                 width: parent.width
-                visible: root.failed
                 wrapMode: Text.WordWrap
-                text: root.changing ? "Password was not accepted, try another one"
-                                    : "Wrong password, try again"
-                color: Theme.lowColor
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
+                text: NetworkService.pendingNetwork
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeBodyMedium
             }
 
+            // Ошибка — тональная плашка error-container с текстом
+            // on-error-container, как в M3, а не просто красная строка.
             Rectangle {
                 width: parent.width
-                height: 44
-                radius: 12
-                color: Theme.quickTile
+                height: errorLabel.implicitHeight + Theme.space.md * 2
+                visible: root.failed
+                radius: Theme.shape.xs
+                color: Theme.errorContainer
+
+                Text {
+                    id: errorLabel
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: Theme.space.md
+                    anchors.rightMargin: Theme.space.md
+                    wrapMode: Text.WordWrap
+                    text: root.changing ? "Password was not accepted, try another one"
+                                        : "Wrong password, try again"
+                    color: Theme.scheme.onErrorContainer
+                    font: Theme.typeBodyMedium
+                }
+            }
+
+            // Поле ввода M3: контейнер surface-container-highest, радиус
+            // shape.xs, обводка outline (фокус — primary толщиной 2,
+            // ошибка — error).
+            Rectangle {
+                width: parent.width
+                height: Theme.listItemHeight
+                radius: Theme.shape.xs
+                color: Theme.surfaceContainerHighest
                 border.width: passwordInput.activeFocus ? 2 : 1
-                border.color: root.failed ? Theme.lowColor
-                                          : (passwordInput.activeFocus ? Theme.accent : Theme.quickBorder)
+                border.color: root.failed ? Theme.error
+                                          : (passwordInput.activeFocus ? Theme.primary : Theme.outline)
                 Behavior on border.color { ColorAnimation { duration: Theme.motionShort3 } }
 
                 TextInput {
                     id: passwordInput
                     anchors.fill: parent
-                    anchors.leftMargin: 14
-                    anchors.rightMargin: 44
+                    anchors.leftMargin: Theme.space.lg
+                    anchors.rightMargin: Theme.iconButtonSize + Theme.space.sm
                     verticalAlignment: TextInput.AlignVCenter
                     echoMode: root.revealed ? TextInput.Normal : TextInput.Password
                     passwordCharacter: "•"
                     inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhSensitiveData
-                    color: Theme.quickText
-                    selectionColor: Theme.accent
-                    selectedTextColor: Theme.quickIconOn
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 13
+                    color: Theme.scheme.onSurface
+                    selectionColor: Theme.primary
+                    selectedTextColor: Theme.scheme.onPrimary
+                    font: Theme.typeBodyLarge
                     enabled: !root.connecting
                     // Текст поля — источник истины для окна; сервис получает
                     // пароль только в submitPassword.
@@ -197,34 +213,35 @@ PanelWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: passwordInput.text === "" && !root.revealed
                         text: "Network password"
-                        color: Theme.quickTextDim
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 13
+                        color: Theme.scheme.onSurfaceVariant
+                        font: Theme.typeBodySmall
                     }
                 }
 
-                // Показать/скрыть пароль.
+                // Показать/скрыть пароль — иконка-кнопка M3 40×40.
                 Item {
                     id: revealButton
                     anchors.right: parent.right
-                    anchors.rightMargin: 6
+                    anchors.rightMargin: Theme.space.sm
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 32
-                    height: 32
+                    width: Theme.iconButtonSize
+                    height: Theme.iconButtonSize
 
                     Rectangle {
                         anchors.fill: parent
-                        radius: width / 2
-                        color: revealHover.hovered ? Theme.quickTileHover : "transparent"
+                        radius: Theme.shape.full
+                        color: revealHover.containsMouse
+                               ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                               : "transparent"
                         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
                     }
 
                     Text {
                         anchors.centerIn: parent
                         text: root.revealed ? "\uf070" : "\uf06e"
-                        color: root.revealed ? Theme.accent : Theme.quickTextDim
+                        color: root.revealed ? Theme.primary : Theme.scheme.onSurfaceVariant
                         font.family: Theme.iconFontFamily
-                        font.pixelSize: 13
+                        font.pixelSize: Theme.iconSize.lg
                     }
 
                     MouseArea {
@@ -241,27 +258,29 @@ PanelWindow {
                 }
             }
 
-            Item { width: 1; height: 4 }
+            Item { width: 1; height: Theme.space.xs }
 
             Row {
                 anchors.right: parent.right
-                spacing: 8
+                spacing: Theme.space.sm
 
+                // Текстовая кнопка M3: подпись primary, фон только под
+                // состоянием наведения (state layer).
                 Rectangle {
                     id: cancelButton
-                    width: cancelLabel.implicitWidth + 32
-                    height: 36
-                    radius: height / 2
-                    color: cancelHover.hovered ? Theme.quickTileHover : Theme.quickTile
+                    width: cancelLabel.implicitWidth + Theme.space.xl * 2
+                    height: Theme.buttonHeight
+                    radius: Theme.shape.full
+                    color: cancelHover.containsMouse ? Theme.stateLayer(Theme.primary, Theme.stateHover)
+                                               : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
                     Text {
                         id: cancelLabel
                         anchors.centerIn: parent
                         text: "Cancel"
-                        color: Theme.quickText
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 13
+                        color: Theme.primary
+                        font: Theme.typeLabelLarge
                     }
 
                     MouseArea {
@@ -273,19 +292,24 @@ PanelWindow {
                     }
                 }
 
+                // Залитая кнопка M3: пилюля 40 px, primary + on-primary;
+                // недоступная — 12 % on-surface с подписью 38 %.
                 Rectangle {
                     id: connectButton
-                    width: connectLabel.implicitWidth + 36
-                    height: 36
-                    radius: height / 2
-                    color: Theme.accent
-                    opacity: root.readyToSubmit ? 1 : 0.6
+                    width: connectLabel.implicitWidth + Theme.space.xl * 2
+                    height: Theme.buttonHeight
+                    radius: Theme.shape.full
+                    color: root.connecting
+                           ? Theme.primaryContainer
+                           : (root.readyToSubmit
+                              ? Theme.primary
+                              : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContainer))
 
                     Rectangle {
                         anchors.fill: parent
                         radius: parent.radius
-                        color: Theme.quickIconOn
-                        opacity: connectHover.hovered ? 0.08 : 0
+                        color: Theme.scheme.onPrimary
+                        opacity: connectHover.containsMouse && !root.connecting ? Theme.stateHover : 0
                         Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
                     }
 
@@ -294,16 +318,16 @@ PanelWindow {
                         anchors.centerIn: parent
                         visible: !root.connecting
                         text: "Connect"
-                        color: Theme.quickIconOn
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 13
-                        font.weight: Font.Medium
+                        color: root.readyToSubmit
+                               ? Theme.scheme.onPrimary
+                               : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent)
+                        font: Theme.typeLabelLarge
                     }
 
                     LoadingIndicator {
                         anchors.centerIn: parent
-                        width: 18
-                        height: 18
+                        width: Theme.iconSize.md
+                        height: Theme.iconSize.md
                         visible: root.connecting
                     }
 

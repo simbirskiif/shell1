@@ -207,11 +207,12 @@ PanelWindow {
         onActivated: root.cancel()
     }
 
+    // Затемнение фона — ролью scrim.
     Rectangle {
         id: backdrop
 
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.45)
+        color: Theme.scrimOverlay
         opacity: 0
 
         NumberAnimation {
@@ -232,17 +233,16 @@ PanelWindow {
             onClicked: root.cancel()
         }
 
+        // Карточка диалога: surface-container-high и радиус shape.xl.
         Rectangle {
             id: card
 
             anchors.centerIn: parent
             width: Math.min(380, parent.width - 32)
-            implicitHeight: cardColumn.implicitHeight + Theme.quickPadding * 2
+            implicitHeight: cardColumn.implicitHeight + Theme.space.xl * 2
             height: implicitHeight
-            radius: Theme.quickRadius
-            color: Theme.quickBackground
-            border.width: 1
-            border.color: Theme.quickBorder
+            radius: Theme.shape.xl
+            color: Theme.surfaceContainerHigh
             transform: Translate { x: root.shakeOffset }
 
             // При переходе «сканер → пароль» в колонке появляется поле ввода,
@@ -287,8 +287,8 @@ PanelWindow {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: Theme.quickPadding
-                spacing: 10
+                anchors.margins: Theme.space.xl
+                spacing: Theme.space.sm
 
                 // Шапка: иконка действия от Polkit и текст запроса.
                 Item {
@@ -298,8 +298,8 @@ PanelWindow {
                     Item {
                         id: headerIcon
 
-                        width: 22
-                        height: 22
+                        width: Theme.iconSize.lg
+                        height: Theme.iconSize.lg
                         anchors.left: parent.left
                         anchors.top: parent.top
                         anchors.topMargin: 1
@@ -312,7 +312,7 @@ PanelWindow {
                             // читается: при ошибке показываем глиф замка.
                             visible: root.hasActionIcon && actionIconImage.status !== Image.Error
                             source: root.actionIcon
-                            sourceSize: Qt.size(22, 22)
+                            sourceSize: Qt.size(Theme.iconSize.lg, Theme.iconSize.lg)
                             fillMode: Image.PreserveAspectFit
                         }
 
@@ -321,9 +321,9 @@ PanelWindow {
                             anchors.centerIn: parent
                             visible: !root.hasActionIcon || actionIconImage.status === Image.Error
                             text: "\uf023"
-                            color: Theme.accent
+                            color: Theme.primary
                             font.family: Theme.iconFontFamily
-                            font.pixelSize: 16
+                            font.pixelSize: Theme.iconSize.lg
                         }
                     }
 
@@ -331,17 +331,15 @@ PanelWindow {
                         id: headerColumn
 
                         anchors.left: headerIcon.right
-                        anchors.leftMargin: 10
+                        anchors.leftMargin: Theme.space.sm
                         anchors.right: parent.right
-                        spacing: 2
+                        spacing: Theme.space.xs / 2
 
                         Text {
                             width: parent.width
                             text: root.title
-                            color: Theme.quickText
-                            font.family: Theme.fontFamily
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
+                            color: Theme.scheme.onSurface
+                            font: Theme.typeHeadlineSmall
                             wrapMode: Text.WordWrap
                         }
 
@@ -349,9 +347,8 @@ PanelWindow {
                             width: parent.width
                             visible: root.identityName !== ""
                             text: root.identityName
-                            color: Theme.quickTextDim
-                            font.family: Theme.fontFamily
-                            font.pixelSize: 12
+                            color: Theme.scheme.onSurfaceVariant
+                            font: Theme.typeBodyMedium
                             elide: Text.ElideRight
                         }
                     }
@@ -359,25 +356,52 @@ PanelWindow {
 
                 // Сообщение PAM над полем ввода: ошибка или подсказка
                 // (например, «отпечаток не распознан» после таймаута сканера).
-                Text {
+                // Ошибка — error-container, подсказка — нейтральная поверхность.
+                Rectangle {
                     width: parent.width
+                    height: supplementaryLabel.implicitHeight + Theme.space.md * 2
                     visible: root.textMode && root.supplementary !== ""
-                    text: root.supplementary
-                    color: root.supplementaryIsError ? Theme.lowColor : Theme.quickTextDim
-                    wrapMode: Text.WordWrap
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    radius: Theme.shape.xs
+                    color: root.supplementaryIsError ? Theme.errorContainer
+                                                     : Theme.surfaceContainerHighest
+
+                    Text {
+                        id: supplementaryLabel
+
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: Theme.space.md
+                        anchors.rightMargin: Theme.space.md
+                        text: root.supplementary
+                        color: root.supplementaryIsError ? Theme.scheme.onErrorContainer
+                                                         : Theme.scheme.onSurfaceVariant
+                        wrapMode: Text.WordWrap
+                        font: Theme.typeBodyMedium
+                    }
                 }
 
                 // Наша ошибка, когда PAM о причине молчит.
-                Text {
+                Rectangle {
                     width: parent.width
+                    height: failedLabel.implicitHeight + Theme.space.md * 2
                     visible: root.hasFailed && !(root.textMode && root.supplementaryIsError)
-                    text: "Не удалось войти, попробуйте ещё раз"
-                    color: Theme.lowColor
-                    wrapMode: Text.WordWrap
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    radius: Theme.shape.xs
+                    color: Theme.errorContainer
+
+                    Text {
+                        id: failedLabel
+
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: Theme.space.md
+                        anchors.rightMargin: Theme.space.md
+                        text: "Не удалось войти, попробуйте ещё раз"
+                        color: Theme.scheme.onErrorContainer
+                        wrapMode: Text.WordWrap
+                        font: Theme.typeBodyMedium
+                    }
                 }
 
                 // Статус биометрии: PAM не ждёт текста, но прислал инструкцию.
@@ -385,24 +409,24 @@ PanelWindow {
                     id: biometricBlock
 
                     width: parent.width
-                    height: Math.max(biometricIcon.implicitHeight, biometricText.implicitHeight) + 24
+                    height: Math.max(biometricIcon.implicitHeight, biometricText.implicitHeight)
+                            + Theme.space.xl
                     visible: root.biometricMode
-                    radius: Theme.quickTileRadius
-                    color: Theme.quickTile
-                    border.width: 1
-                    border.color: root.supplementaryIsError
-                                  ? Theme.withAlpha(Theme.lowColor, 0.55) : Theme.quickBorder
+                    radius: Theme.shape.md
+                    color: root.supplementaryIsError ? Theme.errorContainer
+                                                     : Theme.surfaceContainerHighest
 
                     Text {
                         id: biometricIcon
 
                         anchors.left: parent.left
-                        anchors.leftMargin: 14
+                        anchors.leftMargin: Theme.space.lg
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.supplementaryIsError ? "\uf06e" : "\uf0237"
-                        color: root.supplementaryIsError ? Theme.lowColor : Theme.accent
+                        color: root.supplementaryIsError ? Theme.scheme.onErrorContainer
+                                                         : Theme.primary
                         font.family: Theme.iconFontFamily
-                        font.pixelSize: 22
+                        font.pixelSize: Theme.iconSize.lg
 
                         // Сканер ждёт палец: мягкая пульсация иконки.
                         SequentialAnimation on opacity {
@@ -417,15 +441,15 @@ PanelWindow {
                         id: biometricText
 
                         anchors.left: biometricIcon.right
-                        anchors.leftMargin: 12
+                        anchors.leftMargin: Theme.space.md
                         anchors.right: parent.right
-                        anchors.rightMargin: 14
+                        anchors.rightMargin: Theme.space.lg
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.supplementary
-                        color: root.supplementaryIsError ? Theme.lowColor : Theme.quickText
+                        color: root.supplementaryIsError ? Theme.scheme.onErrorContainer
+                                                         : Theme.scheme.onSurface
                         wrapMode: Text.WordWrap
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 13
+                        font: Theme.typeBodyMedium
                     }
                 }
 
@@ -433,83 +457,81 @@ PanelWindow {
                 // ожидание вместо иконки отпечатка, которой может и не быть.
                 Rectangle {
                     width: parent.width
-                    height: 56
+                    height: Theme.listItemHeight
                     visible: root.waitingMode
-                    radius: Theme.quickTileRadius
-                    color: Theme.quickTile
+                    radius: Theme.shape.md
+                    color: Theme.surfaceContainerHighest
 
                     Row {
                         anchors.centerIn: parent
-                        spacing: 10
+                        spacing: Theme.space.sm
 
                         LoadingIndicator {
-                            width: 18
-                            height: 18
+                            width: Theme.iconSize.md
+                            height: Theme.iconSize.md
                         }
 
                         Text {
-                            height: 18
+                            height: Theme.iconSize.md
                             verticalAlignment: Text.AlignVCenter
                             text: "Ожидание ответа от модуля безопасности…"
-                            color: Theme.quickTextDim
-                            font.family: Theme.fontFamily
-                            font.pixelSize: 13
+                            color: Theme.scheme.onSurfaceVariant
+                            font: Theme.typeBodyMedium
                         }
                     }
                 }
 
-                // Поле ввода пароля.
+                // Поле ввода пароля M3: surface-container-highest, shape.xs,
+                // обводка outline / primary в фокусе / error при ошибке.
                 Rectangle {
                     id: field
 
                     width: parent.width
-                    height: 44
+                    height: Theme.listItemHeight
                     visible: root.fieldVisible
-                    radius: Theme.quickTileRadius
-                    color: Theme.quickTile
+                    radius: Theme.shape.xs
+                    color: Theme.surfaceContainerHighest
                     opacity: root.isSubmitting ? 0.6 : 1
                     border.width: passwordInput.activeFocus ? 2 : 1
-                    border.color: root.hasFailed ? Theme.lowColor
-                                  : (passwordInput.activeFocus ? Theme.accent : Theme.quickBorder)
+                    border.color: root.hasFailed ? Theme.error
+                                  : (passwordInput.activeFocus ? Theme.primary : Theme.outline)
                     Behavior on border.color { ColorAnimation { duration: Theme.motionShort3 } }
 
                     TextInput {
                         id: passwordInput
 
                         anchors.fill: parent
-                        anchors.leftMargin: 14
-                        anchors.rightMargin: 14
+                        anchors.leftMargin: Theme.space.lg
+                        anchors.rightMargin: Theme.space.lg
                         verticalAlignment: TextInput.AlignVCenter
                         enabled: root.textMode && !root.isSubmitting
                         echoMode: root.flow && root.flow.responseVisible
                                   ? TextInput.Normal : TextInput.Password
                         passwordCharacter: "•"
                         inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhSensitiveData
-                        color: Theme.quickText
-                        selectionColor: Theme.accent
-                        selectedTextColor: Theme.quickIconOn
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 13
+                        color: Theme.scheme.onSurface
+                        selectionColor: Theme.primary
+                        selectedTextColor: Theme.scheme.onPrimary
+                        font: Theme.typeBodyLarge
                         onAccepted: root.submit()
                     }
 
                     Text {
                         anchors.left: parent.left
-                        anchors.leftMargin: 14
+                        anchors.leftMargin: Theme.space.lg
                         anchors.verticalCenter: parent.verticalCenter
                         visible: passwordInput.text === "" && root.textMode && !root.isSubmitting
                         text: root.inputPrompt !== "" ? root.inputPrompt : "Пароль"
-                        color: Theme.quickTextDim
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 13
+                        color: Theme.scheme.onSurfaceVariant
+                        font: Theme.typeBodySmall
                     }
                 }
 
                 Row {
                     width: parent.width
-                    height: 36
+                    height: Theme.buttonHeight
                     layoutDirection: Qt.RightToLeft
-                    spacing: 8
+                    spacing: Theme.space.sm
 
                     DialogButton {
                         text: "Подтвердить"
@@ -537,13 +559,39 @@ PanelWindow {
 
         signal triggered()
 
-        width: (button.busy ? busyLabel.implicitWidth + 36 : label.implicitWidth + 34)
-        height: 36
-        radius: height / 2
-        color: button.primary ? Theme.accent : "transparent"
-        border.width: button.primary ? 0 : 1
-        border.color: Theme.quickBorder
-        opacity: button.enabled ? 1 : 0.45
+        // Контейнер и подпись M3: залитая — primary/on-primary, текстовая —
+        // прозрачная с подписью primary; недоступная — 12 %/38 % on-surface.
+        // Пока идёт проверка, контейнер primary-container: круговой индикатор
+        // в оболочке рисуется primary, и на primary его было бы не видно.
+        readonly property color containerColor: {
+            if (!button.primary)
+                return "transparent";
+            if (button.busy)
+                return Theme.primaryContainer;
+            if (!button.enabled)
+                return Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContainer);
+            return Theme.primary;
+        }
+        readonly property color labelColor: {
+            if (!button.enabled)
+                return Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent);
+            return button.primary ? Theme.scheme.onPrimary : Theme.primary;
+        }
+
+        width: (button.busy ? busyLabel.implicitWidth + Theme.space.xl * 2
+                            : label.implicitWidth + Theme.space.xl * 2)
+        height: Theme.buttonHeight
+        radius: Theme.shape.full
+        color: button.containerColor
+
+        // Слой состояния: наведение поверх контейнера.
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: button.primary ? Theme.scheme.onPrimary : Theme.primary
+            opacity: buttonHover.containsMouse && button.enabled ? Theme.stateHover : 0
+            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+        }
 
         Text {
             id: label
@@ -551,10 +599,8 @@ PanelWindow {
             anchors.centerIn: parent
             visible: !button.busy
             text: button.text
-            color: button.primary ? Theme.quickIconOn : Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 13
-            font.weight: Font.Medium
+            color: button.labelColor
+            font: Theme.typeLabelLarge
         }
 
         // Пока кнопка занята, ширину держит невидимая подпись: иначе она
@@ -564,19 +610,19 @@ PanelWindow {
 
             visible: false
             text: button.text
-            font.family: Theme.fontFamily
-            font.pixelSize: 13
-            font.weight: Font.Medium
+            font: Theme.typeLabelLarge
         }
 
         LoadingIndicator {
             anchors.centerIn: parent
-            width: 18
-            height: 18
+            width: Theme.iconSize.md
+            height: Theme.iconSize.md
             visible: button.busy
         }
 
         MouseArea {
+            id: buttonHover
+
             anchors.fill: parent
             hoverEnabled: true
             enabled: button.enabled

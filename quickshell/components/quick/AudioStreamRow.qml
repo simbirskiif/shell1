@@ -15,26 +15,28 @@ Item {
     readonly property real value: AudioService.hasAudio(root.node) ? root.node.audio.volume : 0
 
     implicitWidth: parent ? parent.width : 0
-    implicitHeight: 56
+    implicitHeight: Theme.listItemHeight
     height: implicitHeight
 
+    // Кнопка-иконка m3: 40×40, круглая, hover — state layer on-surface.
     Rectangle {
         id: muteButton
         anchors.left: parent.left
-        anchors.leftMargin: 12
+        anchors.leftMargin: Theme.space.sm
         anchors.verticalCenter: parent.verticalCenter
-        width: 30
-        height: 30
-        radius: width / 2
-        color: muteHover.hovered ? Theme.quickTileHover : "transparent"
+        width: Theme.iconButtonSize
+        height: Theme.iconButtonSize
+        radius: Theme.shape.full
+        color: muteHover.containsMouse
+               ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover) : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
         Text {
             anchors.centerIn: parent
             text: root.muted ? "\uf026" : "\uf001"
-            color: root.muted ? Theme.quickTextDim : Theme.quickText
+            color: root.muted ? Theme.scheme.onSurfaceVariant : Theme.scheme.onSurface
             font.family: Theme.iconFontFamily
-            font.pixelSize: 14
+            font.pixelSize: Theme.iconSize.md
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
 
@@ -50,39 +52,37 @@ Item {
     Text {
         id: percent
         anchors.right: parent.right
-        anchors.rightMargin: 16
+        anchors.rightMargin: Theme.space.lg
         anchors.top: parent.top
-        anchors.topMargin: 10
-        width: 42
+        anchors.topMargin: Theme.space.sm
+        width: Theme.space.xxxl
         horizontalAlignment: Text.AlignRight
         text: root.muted ? "Muted" : Math.round(root.value * 100) + "%"
-        color: Theme.quickTextDim
-        font.family: Theme.fontFamily
-        font.pixelSize: 12
+        color: Theme.scheme.onSurfaceVariant
+        font: Theme.typeBodyMedium
     }
 
     Text {
+        id: label
         anchors.left: muteButton.right
-        anchors.leftMargin: 10
+        anchors.leftMargin: Theme.space.sm
         anchors.right: percent.left
-        anchors.rightMargin: 12
+        anchors.rightMargin: Theme.space.md
         anchors.top: parent.top
-        anchors.topMargin: 10
+        anchors.topMargin: Theme.space.sm
         text: AudioService.streamLabel(root.node)
         elide: Text.ElideRight
-        color: Theme.quickText
-        font.family: Theme.fontFamily
-        font.pixelSize: 13
+        color: Theme.scheme.onSurface
+        font: Theme.typeBodyLarge
     }
 
     PanelSlider {
         anchors.left: muteButton.right
-        anchors.leftMargin: 10
+        anchors.leftMargin: Theme.space.sm
         anchors.right: parent.right
-        anchors.rightMargin: 16
-        anchors.top: parent.top
-        anchors.topMargin: 32
-        height: 18
+        anchors.rightMargin: Theme.space.lg
+        anchors.top: label.bottom
+        height: Theme.iconSize.md
         value: root.value
         onMoved: v => AudioService.setNodeVolume(root.node, v)
     }

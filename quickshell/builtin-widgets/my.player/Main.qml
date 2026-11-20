@@ -47,9 +47,12 @@ Item {
         : Math.min(innerH, innerW * 0.42)
 
     // ───────────────────────── Цвет обложки и градиент ─────────────────────────
-    property color sampledBase: "#555555"
+    // Пока обложка не прочитана (и в превью) берём роль палитры: акцентный
+    // tonal-контейнер или нейтральную поверхность, а не произвольный hex.
+    property color sampledBase: ctx.colors.surfaceVariant
     property bool coverReady: false
-    readonly property color baseColor: ctx.preview ? "#6a4c93" : sampledBase
+    readonly property color baseColor: ctx.preview ? ctx.colors.primaryContainer
+                                                   : sampledBase
     readonly property color topColor: Qt.hsva(Math.max(0, baseColor.hsvHue),
                                               baseColor.hsvSaturation * 0.85,
                                               Math.min(1, baseColor.hsvValue + 0.14), 1)

@@ -94,8 +94,12 @@ Item {
                                        ? root.metrics.pixelHeight(DragController.rows)
                                        : root.height
 
-    readonly property real padding: Theme.quickPadding
-    readonly property real materialRadius: Theme.quickRadius
+    readonly property real padding: Theme.space.lg
+    // Радиус подложки — форма M3 по размеру карточки: маленькая — large,
+    // крупная — extra-large. Материал получает уже готовый радиус, поэтому
+    // glass/liquid остаются как есть и просто следуют форме карточки.
+    readonly property int materialRadius:
+        Math.min(root.width, root.height) < 160 ? Theme.shape.lg : Theme.shape.xl
     // Смещение окна слоя внутри экрана: верхняя/боковая панель композитора.
     readonly property real screenOffsetX:
         root.screen ? Math.max(0, root.screen.width - root.metrics.areaWidth) : 0
@@ -149,21 +153,34 @@ Item {
     // кнопки редактора могли чуть выходить за границу карточки.
     clip: false
 
+    // Перемещение/ресайз после отпускания — standard decelerate M3.
     Behavior on x {
         enabled: !root.dragActive
-        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+        NumberAnimation {
+            duration: Theme.motionShort4
+            easing.bezierCurve: Theme.curveStandardDecelerate
+        }
     }
     Behavior on y {
         enabled: !root.dragActive
-        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+        NumberAnimation {
+            duration: Theme.motionShort4
+            easing.bezierCurve: Theme.curveStandardDecelerate
+        }
     }
     Behavior on width {
         enabled: !root.dragActive
-        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+        NumberAnimation {
+            duration: Theme.motionShort4
+            easing.bezierCurve: Theme.curveStandardDecelerate
+        }
     }
     Behavior on height {
         enabled: !root.dragActive
-        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+        NumberAnimation {
+            duration: Theme.motionShort4
+            easing.bezierCurve: Theme.curveStandardDecelerate
+        }
     }
 
     function refreshSettings(): void {
@@ -336,7 +353,7 @@ Item {
         rectWidth: root.width
         rectHeight: root.height
         fallbackColor: root.effectiveColors && root.effectiveColors.surface
-                       ? root.effectiveColors.surface : "#151519"
+                       ? root.effectiveColors.surface : Theme.surface
     }
 
     Connections {
@@ -395,8 +412,8 @@ Item {
 
         Behavior on scale {
             NumberAnimation {
-                duration: 180
-                easing.type: Easing.OutCubic
+                duration: Theme.motionShort4
+                easing.bezierCurve: Theme.curveStandardDecelerate
             }
         }
 
@@ -585,7 +602,8 @@ Item {
 
         ShapePath {
             fillColor: "transparent"
-            strokeColor: Theme.chargeColor
+            // Активное выделение — primary: служебный зелёный здесь не роль M3.
+            strokeColor: Theme.primary
             strokeWidth: 2
             capStyle: ShapePath.FlatCap
             joinStyle: ShapePath.RoundJoin

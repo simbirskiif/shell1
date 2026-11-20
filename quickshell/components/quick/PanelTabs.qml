@@ -2,10 +2,10 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Вкладки панели: равные сегменты с подписью и подчёркиванием под активной.
-// Компонент «глупый»: список вкладок [{ key, title }] и текущий ключ приходят
-// снаружи, наружу уходит выбранный ключ. Так одна панель («Звук») может
-// разделить вывод и вход на два независимых экрана.
+// Вкладки панели: равные сегменты с подписью и подчёркиванием под активной
+// (m3 primary tabs). Компонент «глупый»: список вкладок [{ key, title }] и
+// текущий ключ приходят снаружи, наружу уходит выбранный ключ. Так одна
+// панель («Звук») может разделить вывод и вход на два независимых экрана.
 Item {
     id: root
 
@@ -26,7 +26,7 @@ Item {
     }
 
     implicitWidth: parent ? parent.width : 0
-    implicitHeight: 40
+    implicitHeight: Theme.touchTarget
     height: implicitHeight
 
     Repeater {
@@ -42,18 +42,28 @@ Item {
             width: root.tabWidth
             height: root.height
 
+            // Состояние m3: hover — state layer on-surface поверх вкладки.
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: Theme.space.xs
+                radius: Theme.shape.xs
+                color: Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                opacity: tabHover.containsMouse ? 1 : 0
+                Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+            }
+
             Text {
                 anchors.centerIn: parent
                 text: modelData.title
-                color: parent.active ? Theme.quickText : Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 13
-                font.weight: parent.active ? Font.Medium : Font.Normal
+                color: parent.active ? Theme.primary : Theme.scheme.onSurfaceVariant
+                font: Theme.typeLabelLarge
                 Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
             }
 
             MouseArea {
+                id: tabHover
                 anchors.fill: parent
+                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: root.selected(modelData.key)
             }
@@ -65,15 +75,15 @@ Item {
         anchors.bottom: parent.bottom
         width: parent.width
         height: 1
-        color: Theme.quickSeparator
+        color: Theme.outlineVariant
     }
 
     Rectangle {
         anchors.bottom: parent.bottom
         width: root.tabWidth
-        height: 2
+        height: 3
         radius: height / 2
-        color: Theme.accent
+        color: Theme.primary
         x: root.currentIndex * root.tabWidth
         Behavior on x {
             MotionNumber {

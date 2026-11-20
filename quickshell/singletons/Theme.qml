@@ -62,10 +62,10 @@ Singleton {
 
     // Прозрачные («вуалированные») поверхности оболочки поверх обоев.
     // Это те же тональные роли, только с альфой — не произвольные цвета.
-    readonly property color barSurface: root.veil(root.surfaceContainer, 0.92)
-    readonly property color panelSurface: root.veil(root.surfaceContainerLow, 0.97)
-    readonly property color sheetSurface: root.veil(root.surfaceContainerHigh, 0.98)
-    readonly property color menuSurfaceSolid: root.veil(root.surfaceContainerHigh, 0.99)
+    readonly property color barSurface: root.veil(root.surfaceContainer, 0.94)
+    readonly property color panelSurface: root.veil(root.surfaceContainerLow, 0.985)
+    readonly property color sheetSurface: root.veil(root.surfaceContainerHigh, 0.99)
+    readonly property color menuSurfaceSolid: root.veil(root.surfaceContainerHigh, 0.995)
 
     // Подложка диалогов/меню: M3 поверхность + затемнение фона (scrim).
     readonly property color scrimOverlay: root.withAlpha(root.scrim, 0.45)
@@ -174,7 +174,9 @@ Singleton {
     readonly property int workspaceActiveDotSize: 18
     readonly property int workspaceSpacing: 8
     readonly property color workspaceActiveColor: root.primary
-    readonly property color workspaceInactiveColor: root.outlineVariant
+    // Неактивные точки — on-surface-variant с прозрачностью: в M3
+    // второстепенные элементы навигации именно так и приглушаются.
+    readonly property color workspaceInactiveColor: root.withAlpha(root.scheme.onSurfaceVariant, 0.55)
 
     // Кнопка статуса в баре
     readonly property int controlHeight: 32

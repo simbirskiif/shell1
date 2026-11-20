@@ -74,15 +74,16 @@ PanelWindow {
     WlrLayershell.focusable: root.keyboardWanted
 
     // Подсказка у нижней кромки, пока док спрятан: иначе зону активации
-    // пришлось бы искать вслепую. Она не перехватывает клики.
+    // пришлось бы искать вслепую. Она не перехватывает клики и нарисована
+    // тональной ролью on-surface-variant, без произвольного цвета.
     Rectangle {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 3
         anchors.horizontalCenter: parent.horizontalCenter
         width: 44
         height: 3
-        radius: height / 2
-        color: Theme.quickText
+        radius: Theme.shape.full
+        color: Theme.scheme.onSurfaceVariant
         opacity: DockState.phase === "hidden" ? 0.22 : 0
         Behavior on opacity {
             MotionNumber {

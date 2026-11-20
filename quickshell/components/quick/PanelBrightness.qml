@@ -27,10 +27,11 @@ Item {
             onBackRequested: root.backRequested()
         }
 
+        // Разделитель шапки m3 — outline-variant.
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.quickSeparator
+            color: Theme.outlineVariant
         }
 
         PanelDisabled {

@@ -240,7 +240,7 @@ Item {
                     width: Theme.iconButtonSize
                     height: Theme.iconButtonSize
                     radius: width / 2
-                    color: settingsHover.hovered ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                    color: settingsHover.containsMouse ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
                                                  : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
@@ -334,28 +334,52 @@ Item {
                 }
             }
 
-            // Управление редактором: карандаш, либо сохранить/отменить.
+            // Управление редактором: tonal-кнопка m3 «изменить», либо
+            // текcтовая «отмена» и залитая «сохранить» — все формы-пилюли.
             Item {
                 width: parent.width
-                height: 40
+                height: Theme.touchTarget
 
+                // m3 tonal button: secondary-container + on-secondary-container,
+                // hover — state layer поверх заливки.
                 Rectangle {
                     id: editButton
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     visible: !root.editing
-                    width: 32
-                    height: 32
-                    radius: width / 2
-                    color: editHover.hovered ? Theme.quickTileHover : "transparent"
-                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                    width: editRow.implicitWidth + Theme.space.xl * 2
+                    height: Theme.buttonHeight
+                    radius: Theme.shape.full
+                    color: Theme.secondaryContainer
 
-                    Text {
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: Theme.stateLayer(Theme.scheme.onSecondaryContainer,
+                                                Theme.stateHover)
+                        opacity: editHover.containsMouse ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+                    }
+
+                    Row {
+                        id: editRow
                         anchors.centerIn: parent
-                        text: "\uf040"
-                        color: Theme.quickText
-                        font.family: Theme.iconFontFamily
-                        font.pixelSize: 14
+                        spacing: Theme.space.sm
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "\uf040"
+                            color: Theme.scheme.onSecondaryContainer
+                            font.family: Theme.iconFontFamily
+                            font.pixelSize: Theme.iconSize.sm
+                        }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Изменить"
+                            color: Theme.scheme.onSecondaryContainer
+                            font: Theme.typeLabelLarge
+                        }
                     }
 
                     MouseArea {
@@ -370,23 +394,31 @@ Item {
                 Row {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 8
+                    spacing: Theme.space.sm
                     visible: root.editing
 
+                    // m3 text button: прозрачная, подпись primary.
                     Rectangle {
                         id: cancelButton
-                        width: 32
-                        height: 32
-                        radius: width / 2
-                        color: cancelHover.hovered ? Theme.quickTileHover : Theme.quickTile
-                        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                        width: cancelLabel.implicitWidth + Theme.space.xl * 2
+                        height: Theme.buttonHeight
+                        radius: Theme.shape.full
+                        color: "transparent"
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: Theme.stateLayer(Theme.primary, Theme.stateHover)
+                            opacity: cancelHover.containsMouse ? 1 : 0
+                            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+                        }
 
                         Text {
+                            id: cancelLabel
                             anchors.centerIn: parent
-                            text: "\uf00d"
-                            color: Theme.quickText
-                            font.family: Theme.iconFontFamily
-                            font.pixelSize: 13
+                            text: "Отмена"
+                            color: Theme.primary
+                            font: Theme.typeLabelLarge
                         }
 
                         MouseArea {
@@ -398,27 +430,28 @@ Item {
                         }
                     }
 
+                    // m3 filled button: primary + on-primary.
                     Rectangle {
                         id: saveButton
-                        width: 32
-                        height: 32
-                        radius: width / 2
-                        color: Theme.accent
+                        width: saveLabel.implicitWidth + Theme.space.xl * 2
+                        height: Theme.buttonHeight
+                        radius: Theme.shape.full
+                        color: Theme.primary
 
                         Rectangle {
                             anchors.fill: parent
                             radius: parent.radius
-                            color: Theme.quickIconOn
-                            opacity: saveHover.hovered ? 0.08 : 0
+                            color: Theme.stateLayer(Theme.scheme.onPrimary, Theme.stateHover)
+                            opacity: saveHover.containsMouse ? 1 : 0
                             Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
                         }
 
                         Text {
+                            id: saveLabel
                             anchors.centerIn: parent
-                            text: "\uf00c"
-                            color: Theme.quickIconOn
-                            font.family: Theme.iconFontFamily
-                            font.pixelSize: 13
+                            text: "Сохранить"
+                            color: Theme.scheme.onPrimary
+                            font: Theme.typeLabelLarge
                         }
 
                         MouseArea {
@@ -452,9 +485,8 @@ Item {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     text: "All tiles are on the panel"
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeBodyMedium
                 }
 
                 Item {

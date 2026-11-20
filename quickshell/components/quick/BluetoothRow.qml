@@ -22,9 +22,15 @@ Rectangle {
     // Координаты — локальные для окна панели: меню живёт в том же окне.
     signal contextRequested(real x, real y)
 
+    // m3 divider между строками списка: у последней строки линии нет.
+    readonly property bool separatorVisible: ListView.view !== null
+        && (root.y + root.height) < ListView.view.contentHeight
+
     width: ListView.view ? ListView.view.width : implicitWidth
-    height: Theme.quickRowHeight
-    color: rowHover.hovered && !root.connecting ? Theme.quickTileHover : "transparent"
+    height: Theme.listItemHeight
+    // Состояние M3: прозрачный контейнер, hover — state layer поверх.
+    color: rowHover.containsMouse && !root.connecting
+           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover) : "transparent"
     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
     // Пока идёт подключение, меню не открывается: операция уже в работе.
@@ -50,7 +56,7 @@ Rectangle {
     PanelIcon {
         id: iconSlot
         anchors.left: parent.left
-        anchors.leftMargin: 12
+        anchors.leftMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
         icon: root.icon
         connected: root.connected
@@ -59,16 +65,15 @@ Rectangle {
     Text {
         id: nameText
         anchors.left: iconSlot.right
-        anchors.leftMargin: 12
+        anchors.leftMargin: Theme.space.md
         // Заряд уходит вправо, поэтому имя не должно заезжать под него.
         anchors.right: root.showBattery ? batteryText.left : spinnerSlot.left
-        anchors.rightMargin: 8
+        anchors.rightMargin: Theme.space.sm
         anchors.verticalCenter: parent.verticalCenter
         elide: Text.ElideRight
         text: root.name
-        color: Theme.quickText
-        font.family: Theme.fontFamily
-        font.pixelSize: 13
+        color: Theme.scheme.onSurface
+        font: Theme.typeBodyLarge
     }
 
     // Заряд: только когда он реально известен (подключённое устройство
@@ -76,22 +81,33 @@ Rectangle {
     Text {
         id: batteryText
         anchors.right: spinnerSlot.left
-        anchors.rightMargin: 10
+        anchors.rightMargin: Theme.space.sm
         anchors.verticalCenter: parent.verticalCenter
         visible: root.showBattery
         text: root.batteryPercent + "%"
-        color: Theme.quickTextDim
-        font.family: Theme.fontFamily
-        font.pixelSize: 11
+        color: Theme.scheme.onSurfaceVariant
+        font: Theme.typeBodyMedium
     }
 
     LoadingIndicator {
         id: spinnerSlot
         anchors.right: parent.right
-        anchors.rightMargin: 16
+        anchors.rightMargin: Theme.space.lg
         anchors.verticalCenter: parent.verticalCenter
-        width: 16
-        height: 16
+        width: Theme.iconSize.sm
+        height: Theme.iconSize.sm
         visible: root.connecting
+    }
+
+    // Разделитель m3: outline-variant, толщина 1, отступ 16 по краям.
+    Rectangle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: Theme.space.lg
+        anchors.rightMargin: Theme.space.lg
+        height: 1
+        color: Theme.outlineVariant
+        visible: root.separatorVisible
     }
 }

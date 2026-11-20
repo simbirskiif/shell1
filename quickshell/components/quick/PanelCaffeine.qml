@@ -27,10 +27,11 @@ Item {
             onToggled: CaffeineService.toggle()
         }
 
+        // Разделитель шапки m3 — outline-variant.
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.quickSeparator
+            color: Theme.outlineVariant
         }
 
         PanelList {
@@ -38,44 +39,63 @@ Item {
             model: CaffeineService.options
 
             delegate: Item {
+                id: modeRow
+
                 required property var modelData
 
                 readonly property bool current: CaffeineService.mode === modelData.key
+                // m3 divider между строками: у последней строки списка нет.
+                readonly property bool separatorVisible: ListView.view !== null
+                    && (modeRow.y + modeRow.height) < ListView.view.contentHeight
 
                 width: parent.width
-                height: Theme.quickRowHeight
+                height: Theme.listItemHeight
 
+                // Строка списка m3: прозрачный контейнер, hover — state layer.
                 Rectangle {
                     anchors.fill: parent
-                    color: modeHover.hovered ? Theme.quickTileHover : "transparent"
+                    color: modeHover.containsMouse
+                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                           : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
                 }
 
                 Text {
                     id: modeLabel
                     anchors.left: parent.left
-                    anchors.leftMargin: 16
+                    anchors.leftMargin: Theme.space.lg
                     anchors.right: checkMark.left
-                    anchors.rightMargin: 12
+                    anchors.rightMargin: Theme.space.md
                     anchors.verticalCenter: parent.verticalCenter
                     text: modelData.title
                     elide: Text.ElideRight
-                    color: current ? Theme.accent : Theme.quickText
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 13
+                    color: modeRow.current ? Theme.primary : Theme.scheme.onSurface
+                    font: Theme.typeBodyLarge
                     Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
                 }
 
                 Text {
                     id: checkMark
                     anchors.right: parent.right
-                    anchors.rightMargin: 16
+                    anchors.rightMargin: Theme.space.lg
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: current
+                    visible: modeRow.current
                     text: "\uf00c"
-                    color: Theme.accent
+                    color: Theme.primary
                     font.family: Theme.iconFontFamily
-                    font.pixelSize: 13
+                    font.pixelSize: Theme.iconSize.md
+                }
+
+                // Разделитель m3: outline-variant, толщина 1, отступ 16.
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    anchors.leftMargin: Theme.space.lg
+                    anchors.rightMargin: Theme.space.lg
+                    height: 1
+                    color: Theme.outlineVariant
+                    visible: modeRow.separatorVisible
                 }
 
                 MouseArea {

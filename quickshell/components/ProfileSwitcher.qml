@@ -74,16 +74,17 @@ PanelWindow {
         onClicked: ProfileState.close()
     }
 
+    // Меню M3: тональный контейнер surfaceContainer, радиус xl.
     Rectangle {
         id: card
 
         anchors.centerIn: parent
         width: 340
         height: column.implicitHeight + Theme.notificationPadding * 2
-        radius: Theme.notificationRadius
-        color: Theme.quickBackground
+        radius: Theme.shape.xl
+        color: Theme.surfaceContainer
         border.width: 1
-        border.color: Theme.quickBorder
+        border.color: Theme.outlineVariant
 
         // Клики по карточке не должны закрывать её.
         MouseArea {
@@ -99,10 +100,8 @@ PanelWindow {
 
             Text {
                 text: "Профиль Hyprland"
-                color: Theme.quickText
-                font.family: Theme.fontFamily
-                font.pixelSize: 15
-                font.weight: Font.DemiBold
+                color: Theme.scheme.onSurface
+                font: Theme.typeTitleMedium
             }
 
             Text {
@@ -110,9 +109,10 @@ PanelWindow {
                 text: ProfileState.profiles.length === 0
                       ? "Нет профилей в " + ProfileState.profilesDir
                       : "Бинды, раскладка клавиатуры и правила окон"
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
+                color: Theme.scheme.onSurfaceVariant
+                // Узкая карточка: вспомогательная подпись в одну строку,
+                // поэтому bodySmall, а не bodyMedium.
+                font: Theme.typeBodySmall
                 elide: Text.ElideRight
             }
 
@@ -131,14 +131,29 @@ PanelWindow {
                     required property string modelData
                     required property int index
 
+                    readonly property bool selected: row.index === root.cursor
+
                     width: list.width
-                    height: 42
-                    radius: 8
-                    color: row.index === root.cursor ? Theme.quickTileActive
-                         : hover.hovered ? Theme.quickTileHover : "transparent"
+                    // Пункт M3-меню: высота 48, радиус md.
+                    height: Theme.touchTarget
+                    radius: Theme.shape.md
+                    color: row.selected ? Theme.secondaryContainer : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
                     HoverHandler {
                         id: hover
+                    }
+
+                    // Слой состояния M3 при наведении — под подписями.
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: Theme.stateLayer(row.selected
+                                                ? Theme.scheme.onSecondaryContainer
+                                                : Theme.scheme.onSurface,
+                                                Theme.stateHover)
+                        opacity: hover.hovered ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
                     }
 
                     MouseArea {
@@ -151,23 +166,24 @@ PanelWindow {
 
                     Text {
                         anchors.left: parent.left
-                        anchors.leftMargin: 10
+                        anchors.leftMargin: Theme.space.lg
                         anchors.verticalCenter: parent.verticalCenter
                         text: row.modelData
-                        color: Theme.quickText
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 14
+                        color: row.selected ? Theme.scheme.onSecondaryContainer
+                                            : Theme.scheme.onSurface
+                        font: Theme.typeBodyLarge
                     }
 
                     Text {
                         anchors.right: parent.right
-                        anchors.rightMargin: 10
+                        anchors.rightMargin: Theme.space.lg
                         anchors.verticalCenter: parent.verticalCenter
                         visible: row.modelData === ProfileState.current
                         text: "текущий"
-                        color: Theme.quickTextDim
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 11
+                        color: row.selected
+                               ? Theme.withAlpha(Theme.scheme.onSecondaryContainer, 0.8)
+                               : Theme.scheme.onSurfaceVariant
+                        font: Theme.typeLabelMedium
                     }
                 }
             }
@@ -176,9 +192,8 @@ PanelWindow {
                 width: parent.width
                 visible: ProfileState.busy || ProfileState.lastError !== ""
                 text: ProfileState.busy ? "Применяю…" : ProfileState.lastError
-                color: ProfileState.busy ? Theme.quickTextDim : Theme.lowColor
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
+                color: ProfileState.busy ? Theme.scheme.onSurfaceVariant : Theme.error
+                font: Theme.typeBodySmall
                 wrapMode: Text.Wrap
             }
 
@@ -186,9 +201,8 @@ PanelWindow {
                 width: parent.width
                 visible: ProfileState.profiles.length > 0
                 text: "↑/↓ — выбор, Enter — применить, Esc — закрыть"
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeBodySmall
             }
         }
     }

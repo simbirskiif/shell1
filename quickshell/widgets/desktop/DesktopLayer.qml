@@ -311,10 +311,13 @@ PanelWindow {
         y: gridMetrics.originY + PickerState.row * (gridMetrics.cell + gridMetrics.gap)
         width: gridMetrics.pixelWidth(PickerState.cols)
         height: gridMetrics.pixelHeight(PickerState.rows)
-        radius: Math.round(gridMetrics.cell * 0.28)
-        color: PickerState.valid ? "#114CAF50" : "#11F44336"
+        // Призрак — M3 state layer: primary, если место подходит, error — если нет.
+        radius: Theme.shape.lg
+        color: PickerState.valid
+               ? Theme.stateLayer(Theme.primary, 0.14)
+               : Theme.stateLayer(Theme.error, 0.14)
         border.width: 2
-        border.color: PickerState.valid ? "#CC4CAF50" : "#CCF44336"
+        border.color: PickerState.valid ? Theme.primary : Theme.error
         enabled: false
     }
 
@@ -326,38 +329,126 @@ PanelWindow {
         y: gridMetrics.originY + DragController.row * (gridMetrics.cell + gridMetrics.gap)
         width: gridMetrics.pixelWidth(DragController.cols)
         height: gridMetrics.pixelHeight(DragController.rows)
-        radius: Math.round(gridMetrics.cell * 0.28)
-        color: DragController.valid ? "#114CAF50" : "#11F44336"
+        radius: Theme.shape.lg
+        color: DragController.valid
+               ? Theme.stateLayer(Theme.primary, 0.14)
+               : Theme.stateLayer(Theme.error, 0.14)
         border.width: 2
-        border.color: DragController.valid ? "#CC4CAF50" : "#CCF44336"
+        border.color: DragController.valid ? Theme.primary : Theme.error
         enabled: false
     }
 
-    // Верхняя панель редактора (раздел 8.2 ТЗ).
+    // Верхняя панель редактора (раздел 8.2 ТЗ) — M3: круглое действие 40
+    // и кнопки-пилюли 40. Живут над обоями, поэтому подложка плотная:
+    // filled — для главного действия, tonal — для второстепенных.
     Row {
         anchors.top: parent.top
         anchors.right: parent.right
-        anchors.margins: 12
-        spacing: 6
+        anchors.margins: Theme.space.md
+        spacing: Theme.space.sm
         z: 100
         visible: root.editing
 
-        HostButton {
-            text: "+"
-            prominent: true
-            onClicked: EditorState.openPicker(root.screen.name)
+        Rectangle {
+            id: addButton
+
+            width: Theme.iconButtonSize
+            height: Theme.iconButtonSize
+            radius: Theme.shape.full
+            color: Theme.primary
+
+            Text {
+                anchors.centerIn: parent
+                text: "+"
+                color: Theme.scheme.onPrimary
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.iconSize.lg
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: Theme.stateLayer(Theme.scheme.onPrimary, Theme.stateHover)
+                visible: addButtonHover.containsMouse
+            }
+
+            MouseArea {
+                id: addButtonHover
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: EditorState.openPicker(root.screen.name)
+            }
         }
 
-        HostButton {
-            text: "✓ Готово"
-            prominent: true
-            onClicked: EditorState.exitCommit()
+        Rectangle {
+            id: commitButton
+
+            width: commitLabel.implicitWidth + Theme.space.xl * 2
+            height: Theme.buttonHeight
+            radius: Theme.shape.full
+            color: Theme.primary
+
+            Text {
+                id: commitLabel
+
+                anchors.centerIn: parent
+                text: "✓ Готово"
+                color: Theme.scheme.onPrimary
+                font: Theme.typeLabelLarge
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: Theme.stateLayer(Theme.scheme.onPrimary, Theme.stateHover)
+                visible: commitButtonHover.containsMouse
+            }
+
+            MouseArea {
+                id: commitButtonHover
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: EditorState.exitCommit()
+            }
         }
 
-        HostButton {
-            text: "✕ Отмена"
-            prominent: true
-            onClicked: EditorState.cancel()
+        Rectangle {
+            id: cancelButton
+
+            width: cancelLabel.implicitWidth + Theme.space.xl * 2
+            height: Theme.buttonHeight
+            radius: Theme.shape.full
+            color: Theme.secondaryContainer
+
+            Text {
+                id: cancelLabel
+
+                anchors.centerIn: parent
+                text: "✕ Отмена"
+                color: Theme.scheme.onSecondaryContainer
+                font: Theme.typeLabelLarge
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: Theme.stateLayer(Theme.scheme.onSecondaryContainer,
+                                        Theme.stateHover)
+                visible: cancelButtonHover.containsMouse
+            }
+
+            MouseArea {
+                id: cancelButtonHover
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: EditorState.cancel()
+            }
         }
     }
 
@@ -368,13 +459,14 @@ PanelWindow {
 
         anchors.left: parent.left
         anchors.bottom: parent.bottom
-        anchors.margins: 12
-        width: Math.min(280, parent.width - 24)
-        height: Math.min(240, trayColumn.implicitHeight + 16)
-        radius: Theme.quickRadius
-        color: Theme.quickBackground
+        anchors.margins: Theme.space.md
+        width: Math.min(280, parent.width - Theme.space.xl)
+        height: Math.min(240, trayColumn.implicitHeight + Theme.space.lg)
+        // Лоток — обычная M3-поверхность над обоями; тени не используем.
+        radius: Theme.shape.xl
+        color: Theme.menuSurfaceSolid
         border.width: 1
-        border.color: Theme.quickBorder
+        border.color: Theme.outlineVariant
         visible: root.editing && root.tray.length > 0
         z: 95
 
@@ -382,14 +474,12 @@ PanelWindow {
             id: trayColumn
 
             anchors.fill: parent
-            anchors.margins: 8
-            spacing: 4
+            anchors.margins: Theme.space.sm
+            spacing: Theme.space.xs
 
             Text {
-                color: Theme.quickText
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
-                font.bold: true
+                color: Theme.scheme.onSurface
+                font: Theme.typeTitleSmall
                 text: "Не помещается (" + root.tray.length + ")"
             }
 
@@ -402,13 +492,12 @@ PanelWindow {
                     required property var modelData
 
                     width: trayColumn.width
-                    spacing: 4
+                    spacing: Theme.space.xs
 
                     Text {
                         width: Math.max(40, trayRow.width - 96)
-                        color: Theme.quickTextDim
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 11
+                        color: Theme.scheme.onSurfaceVariant
+                        font: Theme.typeBodySmall
                         elide: Text.ElideRight
                         text: trayRow.modelData.name || trayRow.modelData.id
                     }

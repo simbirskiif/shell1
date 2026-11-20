@@ -6,6 +6,9 @@ import "../core"
 
 // Каталог виджетов (раздел 8.5 ТЗ): поиск, превью, добавление тапом,
 // drag-and-drop на сетку, список пользовательских путей и «Добавить папку…».
+//
+// Оформление — M3 side sheet: surface-container-low, шапка top app bar
+// (titleLarge + иконка 40), поиск — filled-поле, действия — пилюли 40 px.
 Item {
     id: root
 
@@ -23,10 +26,16 @@ Item {
     transform: Translate { x: root.slideOffset }
 
     Behavior on opacity {
-        NumberAnimation { duration: 170; easing.type: Easing.OutCubic }
+        NumberAnimation {
+            duration: Theme.motionShort4
+            easing.bezierCurve: Theme.curveStandard
+        }
     }
     Behavior on slideOffset {
-        NumberAnimation { duration: 190; easing.type: Easing.OutCubic }
+        NumberAnimation {
+            duration: Theme.motionShort4
+            easing.bezierCurve: Theme.curveStandard
+        }
     }
 
     Timer {
@@ -109,80 +118,126 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        topLeftRadius: Theme.quickRadius
-        bottomLeftRadius: Theme.quickRadius
+        topLeftRadius: Theme.shape.xl
+        bottomLeftRadius: Theme.shape.xl
         topRightRadius: 0
         bottomRightRadius: 0
-        color: Theme.quickBackground
+        color: Theme.panelSurface
         border.width: 1
-        border.color: Theme.quickBorder
+        border.color: Theme.outlineVariant
         clip: true
     }
 
     Column {
         anchors.fill: parent
-        anchors.margins: Theme.quickPadding
-        spacing: 8
+        anchors.margins: Theme.space.lg
+        spacing: Theme.space.sm
 
-        Row {
+        // Шапка — M3 top app bar: заголовок titleLarge и иконка 40.
+        Item {
             width: parent.width
+            height: Theme.appBarHeight
 
             Text {
-                width: parent.width - 30
-                color: Theme.quickText
-                font.family: Theme.fontFamily
-                font.pixelSize: 15
-                font.bold: true
+                anchors.left: parent.left
+                anchors.right: headerClose.left
+                anchors.rightMargin: Theme.space.sm
+                anchors.verticalCenter: parent.verticalCenter
+                color: Theme.scheme.onSurface
+                font: Theme.typeTitleLarge
+                elide: Text.ElideRight
                 text: "Виджеты"
             }
 
-            HostButton {
-                text: "✕"
-                onClicked: root.dismiss()
+            Item {
+                id: headerClose
+
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                width: Theme.iconButtonSize
+                height: Theme.iconButtonSize
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    color: headerCloseHover.containsMouse
+                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                           : "transparent"
+                    Behavior on color {
+                        ColorAnimation { duration: Theme.motionShort3 }
+                    }
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "✕"
+                    color: Theme.scheme.onSurface
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.iconSize.lg
+                }
+
+                MouseArea {
+                    id: headerCloseHover
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.dismiss()
+                }
             }
         }
 
-        TextInput {
-            id: search
-
+        // Поиск — M3 filled-поле: surface-container-highest, radius xs,
+        // обводка outline (в фокусе — primary).
+        Item {
             width: parent.width
-            height: 30
-            padding: 6
-            color: Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 12
-            selectionColor: Theme.colors.primary
-            clip: true
-            text: root.query
-            onTextChanged: {
-                root.query = text
-                root.refreshFilter()
-            }
-            onAccepted: root.refreshFilter()
-
-            Text {
-                anchors.fill: parent
-                anchors.leftMargin: 6
-                verticalAlignment: Text.AlignVCenter
-                visible: search.text.length === 0
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
-                text: "Поиск по имени или id"
-            }
+            height: 48
 
             Rectangle {
                 anchors.fill: parent
-                anchors.margins: -3
-                z: -1
-                radius: 8
-                color: Theme.quickTile
+                radius: Theme.shape.xs
+                color: Theme.surfaceContainerHighest
+                border.width: search.activeFocus ? 2 : 1
+                border.color: search.activeFocus ? Theme.primary : Theme.outline
+                Behavior on border.color {
+                    ColorAnimation { duration: Theme.motionShort3 }
+                }
+            }
+
+            TextInput {
+                id: search
+
+                anchors.fill: parent
+                leftPadding: Theme.space.md
+                rightPadding: Theme.space.md
+                verticalAlignment: TextInput.AlignVCenter
+                color: Theme.scheme.onSurface
+                font: Theme.typeBodyMedium
+                selectionColor: Theme.primary
+                selectedTextColor: Theme.scheme.onPrimary
+                clip: true
+                text: root.query
+                onTextChanged: {
+                    root.query = text
+                    root.refreshFilter()
+                }
+                onAccepted: root.refreshFilter()
+
+                Text {
+                    anchors.fill: parent
+                    anchors.leftMargin: Theme.space.md
+                    verticalAlignment: Text.AlignVCenter
+                    visible: search.text.length === 0
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeBodyMedium
+                    text: "Поиск по имени или id"
+                }
             }
         }
 
         Flickable {
             width: parent.width
-            height: Math.max(120, parent.height - 250)
+            height: Math.max(120, parent.height - 280)
             clip: true
             contentHeight: cards.height
             boundsBehavior: Flickable.StopAtBounds
@@ -192,7 +247,7 @@ Item {
                 id: cards
 
                 width: parent.width
-                spacing: 8
+                spacing: Theme.space.sm
 
                 Repeater {
                     model: root.filtered
@@ -223,9 +278,8 @@ Item {
 
         Text {
             width: parent.width
-            color: Theme.quickTextDim
-            font.family: Theme.fontFamily
-            font.pixelSize: 11
+            color: Theme.scheme.onSurfaceVariant
+            font: Theme.typeBodySmall
             text: "Доступно: " + root.filtered.length
         }
 
@@ -233,9 +287,8 @@ Item {
             width: parent.width
             visible: root.message.length > 0
             color: root.message.indexOf("Нет места") >= 0
-                   ? Theme.colors.error : Theme.quickTextDim
-            font.family: Theme.fontFamily
-            font.pixelSize: 11
+                   ? Theme.error : Theme.scheme.onSurfaceVariant
+            font: Theme.typeBodySmall
             wrapMode: Text.WordWrap
             text: root.message
         }
@@ -243,13 +296,12 @@ Item {
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.quickSeparator
+            color: Theme.outlineVariant
         }
 
         Text {
-            color: Theme.quickTextDim
-            font.family: Theme.fontFamily
-            font.pixelSize: 11
+            color: Theme.scheme.onSurfaceVariant
+            font: Theme.typeLabelLarge
             text: "Пользовательские пути"
         }
 
@@ -260,55 +312,132 @@ Item {
                 required property var modelData
 
                 width: parent.width
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 10
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeBodySmall
                 elide: Text.ElideMiddle
                 text: modelData
             }
         }
 
-        HostButton {
-            text: root.showPathInput ? "Скрыть ввод пути" : "Добавить папку…"
-            onClicked: root.showPathInput = !root.showPathInput
+        // Кнопка-пилюля 40 px (tonal): раскрывает поле ввода пути.
+        Rectangle {
+            id: pathToggle
+
+            width: pathToggleLabel.implicitWidth + Theme.space.xl * 2
+            height: Theme.buttonHeight
+            radius: Theme.shape.full
+            color: Theme.secondaryContainer
+
+            Text {
+                id: pathToggleLabel
+
+                anchors.centerIn: parent
+                text: root.showPathInput ? "Скрыть ввод пути" : "Добавить папку…"
+                color: Theme.scheme.onSecondaryContainer
+                font: Theme.typeLabelLarge
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: Theme.stateLayer(Theme.scheme.onSecondaryContainer,
+                                        Theme.stateHover)
+                visible: pathToggleHover.containsMouse
+            }
+
+            MouseArea {
+                id: pathToggleHover
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.showPathInput = !root.showPathInput
+            }
         }
 
         Row {
             width: parent.width
             visible: root.showPathInput
-            spacing: 4
+            spacing: Theme.space.sm
 
-            TextInput {
-                id: pathInput
+            // Поле пути — такое же M3 filled-поле, как поиск.
+            Item {
+                width: Math.max(80, parent.width - 124)
+                height: Theme.buttonHeight
 
-                width: parent.width - 82
-                height: 28
-                padding: 4
-                color: Theme.quickText
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
-                clip: true
-                selectionColor: Theme.colors.primary
-
-                Text {
+                Rectangle {
                     anchors.fill: parent
-                    verticalAlignment: Text.AlignVCenter
-                    visible: pathInput.text.length === 0
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 10
-                    text: "/путь/к/папке"
+                    radius: Theme.shape.xs
+                    color: Theme.surfaceContainerHighest
+                    border.width: pathInput.activeFocus ? 2 : 1
+                    border.color: pathInput.activeFocus ? Theme.primary : Theme.outline
+                    Behavior on border.color {
+                        ColorAnimation { duration: Theme.motionShort3 }
+                    }
+                }
+
+                TextInput {
+                    id: pathInput
+
+                    anchors.fill: parent
+                    leftPadding: Theme.space.md
+                    rightPadding: Theme.space.md
+                    verticalAlignment: TextInput.AlignVCenter
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeBodyMedium
+                    clip: true
+                    selectionColor: Theme.primary
+                    selectedTextColor: Theme.scheme.onPrimary
+
+                    Text {
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.space.md
+                        verticalAlignment: Text.AlignVCenter
+                        visible: pathInput.text.length === 0
+                        color: Theme.scheme.onSurfaceVariant
+                        font: Theme.typeBodyMedium
+                        text: "/путь/к/папке"
+                    }
                 }
             }
 
-            HostButton {
-                text: "Добавить"
-                onClicked: {
-                    if (Config.addExtraPath(pathInput.text)) {
-                        root.message = "Путь добавлен, каталог обновляется"
-                        pathInput.text = ""
-                    } else {
-                        root.message = "Путь уже добавлен или указан неверно"
+            Rectangle {
+                id: pathAdd
+
+                width: pathAddLabel.implicitWidth + Theme.space.xl * 2
+                height: Theme.buttonHeight
+                radius: Theme.shape.full
+                color: Theme.primary
+
+                Text {
+                    id: pathAddLabel
+
+                    anchors.centerIn: parent
+                    text: "Добавить"
+                    color: Theme.scheme.onPrimary
+                    font: Theme.typeLabelLarge
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    color: Theme.stateLayer(Theme.scheme.onPrimary, Theme.stateHover)
+                    visible: pathAddHover.containsMouse
+                }
+
+                MouseArea {
+                    id: pathAddHover
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (Config.addExtraPath(pathInput.text)) {
+                            root.message = "Путь добавлен, каталог обновляется"
+                            pathInput.text = ""
+                        } else {
+                            root.message = "Путь уже добавлен или указан неверно"
+                        }
                     }
                 }
             }

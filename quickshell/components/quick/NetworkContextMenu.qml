@@ -28,7 +28,7 @@ Item {
     // ЗАБЫВАЛ заголовок с именем и зарядом, который остаётся видимым: карточка
     // выходила на ~50 px ниже, и кнопки «Отмена»/«Удалить» оказывались за её
     // пределами.
-    readonly property real cardHeight: column.implicitHeight + 8
+    readonly property real cardHeight: column.implicitHeight + Theme.space.sm
     // То же, что в меню Bluetooth: окно берёт высоту карточки целиком.
     readonly property real maxCardHeight: cardHeight
 
@@ -47,16 +47,18 @@ Item {
         onClicked: root.close()
     }
 
+    // Карточка меню m3: тональная поверхность surface-container-high,
+    // радиус medium, без тени — глубину даёт только тон.
     Rectangle {
         id: card
-        x: Math.max(4, Math.min(UiState.menuX, root.width - width - 8))
-        y: Math.max(4, Math.min(UiState.menuY, root.height - height - 8))
+        x: Math.max(Theme.space.xs, Math.min(UiState.menuX, root.width - width - Theme.space.sm))
+        y: Math.max(Theme.space.xs, Math.min(UiState.menuY, root.height - height - Theme.space.sm))
         width: 236
         height: root.cardHeight
-        radius: 14
-        color: Theme.quickBackground
+        radius: Theme.shape.md
+        color: Theme.menuSurfaceSolid
         border.width: 1
-        border.color: Theme.quickBorder
+        border.color: Theme.outlineVariant
 
         // Клики по карточке не должны её закрывать.
         MouseArea {
@@ -68,7 +70,7 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.margins: 4
+            anchors.margins: Theme.space.xs
             spacing: 0
 
             MenuRow {
@@ -103,37 +105,34 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
-                    spacing: 4
+                    spacing: Theme.space.xs
 
                     Text {
                         width: parent.width
-                        leftPadding: 12
-                        rightPadding: 12
-                        topPadding: 8
+                        leftPadding: Theme.space.md
+                        rightPadding: Theme.space.md
+                        topPadding: Theme.space.sm
                         wrapMode: Text.WordWrap
                         text: "Forget " + UiState.menuNetwork + "?"
-                        color: Theme.quickText
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 13
-                        font.weight: Font.Medium
+                        color: Theme.scheme.onSurface
+                        font: Theme.typeBodyLarge
                     }
 
                     Text {
                         width: parent.width
-                        leftPadding: 12
-                        rightPadding: 12
+                        leftPadding: Theme.space.md
+                        rightPadding: Theme.space.md
                         wrapMode: Text.WordWrap
                         text: "Saved password and profile settings will be removed"
-                        color: Theme.quickTextDim
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 11
+                        color: Theme.scheme.onSurfaceVariant
+                        font: Theme.typeBodyMedium
                     }
 
                     Row {
                         anchors.right: parent.right
-                        anchors.rightMargin: 8
-                        bottomPadding: 2
-                        spacing: 6
+                        anchors.rightMargin: Theme.space.sm
+                        bottomPadding: Theme.space.xs
+                        spacing: Theme.space.sm
 
                         MenuButton {
                             text: "Cancel"
@@ -143,6 +142,7 @@ Item {
                         MenuButton {
                             text: "Forget"
                             primary: true
+                            danger: true
                             onTriggered: {
                                 NetworkService.confirmForget();
                                 root.close();
@@ -154,6 +154,8 @@ Item {
         }
     }
 
+    // Пункт меню m3: иконка, подпись, подсветка опасного действия.
+    // Высота пункта — 48, hover — state layer поверх скруглённой подложки.
     component MenuRow: Item {
         id: row
 
@@ -164,13 +166,15 @@ Item {
         signal triggered()
 
         implicitWidth: column.width
-        implicitHeight: 40
+        implicitHeight: Theme.touchTarget
 
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 2
-            radius: 10
-            color: rowHover.hovered ? Theme.quickTileHover : "transparent"
+            anchors.margins: Theme.space.xs
+            radius: Theme.shape.xs
+            color: rowHover.containsMouse
+                   ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                   : "transparent"
             Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
         }
 
@@ -185,50 +189,64 @@ Item {
         Text {
             id: rowIcon
             anchors.left: parent.left
-            anchors.leftMargin: 14
+            anchors.leftMargin: Theme.space.md
             anchors.verticalCenter: parent.verticalCenter
             text: row.icon
-            color: row.danger ? Theme.lowColor : Theme.quickTextDim
+            color: row.danger ? Theme.error : Theme.scheme.onSurfaceVariant
             font.family: Theme.iconFontFamily
-            font.pixelSize: 13
+            font.pixelSize: Theme.iconSize.md
         }
 
         Text {
             anchors.left: rowIcon.right
-            anchors.leftMargin: 12
+            anchors.leftMargin: Theme.space.md
             anchors.right: parent.right
-            anchors.rightMargin: 12
+            anchors.rightMargin: Theme.space.md
             anchors.verticalCenter: parent.verticalCenter
             elide: Text.ElideRight
             text: row.text
-            color: row.danger ? Theme.lowColor : Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 13
+            color: row.danger ? Theme.error : Theme.scheme.onSurface
+            font: Theme.typeLabelLarge
         }
     }
 
+    // Кнопка m3: текстовая (прозрачная, подпись primary) или залитая (primary).
     component MenuButton: Rectangle {
         id: button
 
         property string text: ""
         property bool primary: false
+        property bool danger: false
 
         signal triggered()
 
-        width: buttonLabel.implicitWidth + 28
-        height: 32
-        radius: height / 2
-        color: button.primary ? Theme.accent
-                              : (buttonHover.hovered ? Theme.quickTileHover : Theme.quickTile)
+        readonly property color accentColor: button.danger ? Theme.error : Theme.primary
+        readonly property color accentLabel: button.danger ? Theme.scheme.onError
+                                                           : Theme.scheme.onPrimary
+
+        width: buttonLabel.implicitWidth + Theme.space.xl
+        height: Theme.buttonHeight
+        radius: Theme.shape.full
+        color: button.primary ? button.accentColor : "transparent"
+
+        // Слой состояния m3: на залитой кнопке — по on-primary, на текстовой —
+        // по primary.
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: button.primary
+                   ? Theme.stateLayer(button.accentLabel, Theme.stateHover)
+                   : Theme.stateLayer(button.accentColor, Theme.stateHover)
+            opacity: buttonHover.containsMouse ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+        }
 
         Text {
             id: buttonLabel
             anchors.centerIn: parent
             text: button.text
-            color: button.primary ? Theme.quickIconOn : Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 12
-            font.weight: Font.Medium
+            color: button.primary ? button.accentLabel : button.accentColor
+            font: Theme.typeLabelLarge
         }
 
         MouseArea {

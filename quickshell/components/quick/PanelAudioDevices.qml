@@ -32,10 +32,11 @@ Item {
             onBackRequested: root.backRequested()
         }
 
+        // Разделитель шапки m3 — outline-variant.
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.quickSeparator
+            color: Theme.outlineVariant
         }
 
         PanelDisabled {
@@ -60,25 +61,33 @@ Item {
             model: root.devices
 
             delegate: Item {
+                id: deviceRow
                 required property var modelData
 
                 readonly property bool current: root.output
                     ? AudioService.isDefaultSink(modelData)
                     : AudioService.isDefaultSource(modelData)
 
-                width: parent.width
-                height: Theme.quickRowHeight
+                // m3 divider между строками: у последней строки списка нет.
+                readonly property bool separatorVisible: ListView.view !== null
+                    && (deviceRow.y + deviceRow.height) < ListView.view.contentHeight
 
+                width: parent.width
+                height: Theme.listItemHeight
+
+                // Строка списка m3: прозрачный контейнер, hover — state layer.
                 Rectangle {
                     anchors.fill: parent
-                    color: rowHover.hovered ? Theme.quickTileHover : "transparent"
+                    color: rowHover.containsMouse
+                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                           : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
                 }
 
                 PanelIcon {
                     id: deviceIcon
                     anchors.left: parent.left
-                    anchors.leftMargin: 12
+                    anchors.leftMargin: Theme.space.md
                     anchors.verticalCenter: parent.verticalCenter
                     icon: root.output ? "\uf028" : "\uf130"
                     connected: current
@@ -86,27 +95,38 @@ Item {
 
                 Text {
                     anchors.left: deviceIcon.right
-                    anchors.leftMargin: 12
+                    anchors.leftMargin: Theme.space.md
                     anchors.right: checkMark.left
-                    anchors.rightMargin: 12
+                    anchors.rightMargin: Theme.space.md
                     anchors.verticalCenter: parent.verticalCenter
                     text: AudioService.deviceLabel(modelData)
                     elide: Text.ElideRight
-                    color: Theme.quickText
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 13
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeBodyLarge
                 }
 
                 Text {
                     id: checkMark
                     anchors.right: parent.right
-                    anchors.rightMargin: 16
+                    anchors.rightMargin: Theme.space.lg
                     anchors.verticalCenter: parent.verticalCenter
                     visible: current
                     text: "\uf00c"
-                    color: Theme.accent
+                    color: Theme.primary
                     font.family: Theme.iconFontFamily
-                    font.pixelSize: 13
+                    font.pixelSize: Theme.iconSize.md
+                }
+
+                // Разделитель m3: outline-variant, толщина 1, отступ 16.
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    anchors.leftMargin: Theme.space.lg
+                    anchors.rightMargin: Theme.space.lg
+                    height: 1
+                    color: Theme.outlineVariant
+                    visible: deviceRow.separatorVisible
                 }
 
                 MouseArea {

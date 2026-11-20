@@ -26,7 +26,7 @@ Item {
             anchors.fill: parent
             radius: parent.radius
             color: Theme.stateLayer(Theme.scheme.onSecondaryContainer, Theme.stateHover)
-            opacity: bannerHover.hovered ? 1 : 0
+            opacity: bannerHover.containsMouse ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
         }
 

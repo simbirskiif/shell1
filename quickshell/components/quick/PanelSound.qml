@@ -31,10 +31,11 @@ Item {
             onToggled: AudioService.toggleOutputMute()
         }
 
+        // Разделитель шапки m3 — outline-variant.
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.quickSeparator
+            color: Theme.outlineVariant
         }
 
         PanelDisabled {
@@ -106,13 +107,12 @@ Item {
                     // в жесте), и высота панели схлопнулась бы на движении.
                     readonly property bool shown: AudioService.streams.length === 0
                     visible: shown
-                    height: shown ? 44 : 0
+                    height: shown ? Theme.touchTarget : 0
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     text: "No applications are playing audio"
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeBodyMedium
                 }
 
                 Repeater {

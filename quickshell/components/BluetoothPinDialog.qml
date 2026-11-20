@@ -117,11 +117,12 @@ PanelWindow {
         BluetoothBackend.replyAgent(false, "");
     }
 
+    // Затемнение фона — ролью scrim.
     Rectangle {
         id: backdrop
 
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.45)
+        color: Theme.scrimOverlay
         opacity: 0
 
         NumberAnimation {
@@ -142,17 +143,16 @@ PanelWindow {
             onClicked: root.reject()
         }
 
+        // Карточка диалога: surface-container-high и радиус shape.xl.
         Rectangle {
             id: card
 
             anchors.centerIn: parent
             width: Math.min(340, parent.width - 32)
-            height: column.implicitHeight + 32
+            height: column.implicitHeight + Theme.space.xl * 2
             scale: 1
-            radius: Theme.quickRadius
-            color: Theme.quickBackground
-            border.width: 1
-            border.color: Theme.quickBorder
+            radius: Theme.shape.xl
+            color: Theme.surfaceContainerHigh
 
             // Клики по карточке не должны её закрывать.
             MouseArea {
@@ -177,69 +177,66 @@ PanelWindow {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: 16
-                spacing: 12
+                anchors.margins: Theme.space.xl
+                spacing: Theme.space.md
 
                 Text {
                     width: parent.width
                     text: root.title
-                    color: Theme.quickText
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 15
-                    font.weight: Font.Medium
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeHeadlineSmall
                     horizontalAlignment: Text.AlignHCenter
                 }
 
                 Text {
                     width: parent.width
                     text: root.subtitle
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeBodyMedium
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
                 }
 
-                // Код, который нужно сверить или продиктовать.
+                // Код, который нужно сверить или продиктовать. Крупный —
+                // headlineSmall (тот же уровень, что заголовок диалога),
+                // для поля ввода — titleLarge.
                 Text {
                     width: parent.width
                     visible: root.displayCode !== ""
                     text: root.displayCode
-                    color: Theme.accent
-                    font.family: Theme.fontFamily
-                    font.pixelSize: root.informational ? 26 : 20
-                    font.weight: Font.Medium
+                    color: Theme.primary
+                    font: root.informational ? Theme.typeHeadlineSmall : Theme.typeTitleLarge
                     horizontalAlignment: Text.AlignHCenter
                 }
 
-                // Поле ввода PIN/passkey.
+                // Поле ввода PIN/passkey M3: surface-container-highest,
+                // shape.xs, обводка outline / primary в фокусе.
                 Rectangle {
                     width: parent.width
-                    height: root.needsInput ? 42 : 0
+                    height: root.needsInput ? Theme.listItemHeight : 0
                     visible: root.needsInput
-                    radius: Theme.controlRadius
-                    color: Theme.quickTile
+                    radius: Theme.shape.xs
+                    color: Theme.surfaceContainerHighest
                     border.width: pinInput.activeFocus ? 2 : 1
-                    border.color: pinInput.activeFocus ? Theme.accent : Theme.quickBorder
+                    border.color: pinInput.activeFocus ? Theme.primary : Theme.outline
                     Behavior on border.color { ColorAnimation { duration: Theme.motionShort3 } }
 
                     TextInput {
                         id: pinInput
 
                         anchors.fill: parent
-                        anchors.leftMargin: 14
-                        anchors.rightMargin: 14
+                        anchors.leftMargin: Theme.space.lg
+                        anchors.rightMargin: Theme.space.lg
                         verticalAlignment: TextInput.AlignVCenter
                         horizontalAlignment: TextInput.AlignHCenter
                         // PIN устройства бывает и буквенно-цифровым, passkey — только цифры.
                         inputMethodHints: root.kind === "passkey"
                                 ? Qt.ImhDigitsOnly | Qt.ImhNoPredictiveText
                                 : Qt.ImhNoPredictiveText
-                        color: Theme.quickText
-                        selectionColor: Theme.accent
-                        selectedTextColor: Theme.quickIconOn
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 16
+                        color: Theme.scheme.onSurface
+                        selectionColor: Theme.primary
+                        selectedTextColor: Theme.scheme.onPrimary
+                        font: Theme.typeBodyLarge
                         onAccepted: root.accept(pinInput.text)
                     }
 
@@ -247,15 +244,14 @@ PanelWindow {
                         anchors.centerIn: parent
                         visible: pinInput.text === "" && !pinInput.activeFocus
                         text: root.kind === "passkey" ? "000000" : "PIN"
-                        color: Theme.quickTextDim
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 14
+                        color: Theme.scheme.onSurfaceVariant
+                        font: Theme.typeBodySmall
                     }
                 }
 
                 Row {
                     width: parent.width
-                    spacing: 8
+                    spacing: Theme.space.sm
                     layoutDirection: Qt.RightToLeft
 
                     DialogButton {
@@ -290,25 +286,45 @@ PanelWindow {
 
         signal triggered()
 
-        width: label.implicitWidth + 34
-        height: 34
-        radius: height / 2
-        color: primary ? Theme.accent : "transparent"
-        border.width: primary ? 0 : 1
-        border.color: Theme.quickBorder
-        opacity: button.enabled ? 1 : 0.4
+        // M3-кнопки: залитая primary/on-primary и текстовая с подписью
+        // primary; недоступная — 12 %/38 % on-surface.
+        readonly property color containerColor: {
+            if (!button.primary)
+                return "transparent";
+            if (!button.enabled)
+                return Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContainer);
+            return Theme.primary;
+        }
+        readonly property color labelColor: {
+            if (!button.enabled)
+                return Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent);
+            return button.primary ? Theme.scheme.onPrimary : Theme.primary;
+        }
+
+        width: label.implicitWidth + Theme.space.xl * 2
+        height: Theme.buttonHeight
+        radius: Theme.shape.full
+        color: button.containerColor
+
+        // Слой состояния: наведение поверх контейнера.
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: button.primary ? Theme.scheme.onPrimary : Theme.primary
+            opacity: buttonHover.containsMouse && button.enabled ? Theme.stateHover : 0
+            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+        }
 
         Text {
             id: label
             anchors.centerIn: parent
             text: button.text
-            color: primary ? Theme.quickIconOn : Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 13
-            font.weight: Font.Medium
+            color: button.labelColor
+            font: Theme.typeLabelLarge
         }
 
         MouseArea {
+            id: buttonHover
             anchors.fill: parent
             hoverEnabled: true
             enabled: button.enabled

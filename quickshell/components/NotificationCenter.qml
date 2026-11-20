@@ -17,12 +17,58 @@ PanelWindow {
     readonly property bool onFocusedScreen: root.focusedScreenName === ""
                                              || root.focusedScreenName === root.screenName
     readonly property real maxHeight: root.centerScreen
-                                      ? root.centerScreen.height - Theme.barHeight - 16 : 10000
+                                      ? root.centerScreen.height - Theme.barHeight - Theme.space.lg : 10000
 
     // Видимость ведём сами: окно должно успеть проявиться и сжаться,
     // прежде чем исчезнуть.
     property bool shown: false
     property bool closing: false
+
+    // Кнопка-иконка M3: круг 40dp; включённое состояние — tonal-контейнер
+    // secondaryContainer, обычное — только state layer при наведении.
+    component PanelIconButton: Item {
+        id: button
+
+        property string icon: ""
+        property bool active: false
+
+        signal clicked()
+
+        width: Theme.iconButtonSize
+        height: Theme.iconButtonSize
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Theme.shape.full
+            color: button.active ? Theme.secondaryContainer
+                                 : (buttonHover.containsMouse && button.enabled
+                                    ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                                    : "transparent")
+            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+        }
+
+        Text {
+            anchors.centerIn: parent
+            text: button.icon
+            color: button.active ? Theme.scheme.onSecondaryContainer
+                                 : (button.enabled
+                                    ? Theme.scheme.onSurface
+                                    : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent))
+            font.family: Theme.iconFontFamily
+            font.pixelSize: Theme.iconSize.md
+            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+        }
+
+        MouseArea {
+            id: buttonHover
+
+            anchors.fill: parent
+            hoverEnabled: true
+            enabled: button.enabled
+            cursorShape: Qt.PointingHandCursor
+            onClicked: button.clicked()
+        }
+    }
 
     screen: centerScreen
     visible: (root.shown || root.closing) && root.onFocusedScreen
@@ -90,20 +136,21 @@ PanelWindow {
         onClicked: NotificationService.closeCenter()
     }
 
-    // Карточка панели: те же токены темы, что у остальных панелей.
+    // Карточка панели: M3-лист на surfaceContainerLow (панельная роль темы —
+    // тот же тон с лёгкой вуалью над обоями), радиус xl.
     Rectangle {
         id: panel
 
         anchors.top: parent.top
-        anchors.topMargin: Theme.barHeight + 4
+        anchors.topMargin: Theme.barHeight + Theme.space.xs
         anchors.right: parent.right
         anchors.rightMargin: Theme.barPadding
-        width: Theme.quickWidth
-        height: Math.min(layout.implicitHeight + Theme.quickPadding * 2, root.maxHeight)
-        radius: Theme.quickRadius
-        color: Theme.quickBackground
+        width: Theme.notificationCenterWidth
+        height: Math.min(layout.implicitHeight + Theme.notificationPadding * 2, root.maxHeight)
+        radius: Theme.shape.xl
+        color: Theme.panelSurface
         border.width: 1
-        border.color: Theme.quickBorder
+        border.color: Theme.outlineVariant
         clip: true
 
         // Появление и закрытие — как у остальных панелей: проявление с 92%
@@ -137,31 +184,36 @@ PanelWindow {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.margins: Theme.quickPadding
+            anchors.margins: Theme.notificationPadding
             spacing: Theme.notificationSpacing
 
+            // Шапка M3 top app bar: заголовок titleLarge, справа — круглые
+            // кнопки-иконки 40 и текстовая кнопка «Очистить».
             Item {
                 id: header
 
                 width: parent.width
-                height: Theme.quickHeaderHeight
+                height: Theme.appBarHeight
 
                 Text {
                     anchors.left: parent.left
-                    anchors.leftMargin: 8
+                    anchors.leftMargin: Theme.space.sm
+                    anchors.right: headerActions.left
+                    anchors.rightMargin: Theme.space.sm
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Уведомления"
-                    color: Theme.quickText
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 14
-                    font.weight: Font.DemiBold
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeTitleLarge
+                    elide: Text.ElideRight
                 }
 
                 Row {
+                    id: headerActions
+
                     anchors.right: parent.right
-                    anchors.rightMargin: 8
+                    anchors.rightMargin: Theme.space.sm
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 4
+                    spacing: Theme.space.xs
 
                     // Тот же «не беспокоить», что и плиткой в быстрых настройках.
                     PanelIconButton {
@@ -170,10 +222,46 @@ PanelWindow {
                         onClicked: NotificationService.doNotDisturb = !NotificationService.doNotDisturb
                     }
 
-                    PanelIconButton {
-                        icon: "\uf1f8"
+                    // «Очистить» — текстовая кнопка M3: прозрачный контейнер,
+                    // подпись labelLarge цветом primary, state layer, а в
+                    // disabled — 38% контента.
+                    Item {
+                        id: clearButton
+
+                        width: clearLabel.implicitWidth + Theme.space.xl
+                        height: Theme.buttonHeight
                         enabled: NotificationService.history.count > 0
-                        onClicked: NotificationService.clearHistory()
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Theme.shape.full
+                            color: clearHover.containsMouse && clearButton.enabled
+                                   ? Theme.stateLayer(Theme.primary, Theme.stateHover)
+                                   : "transparent"
+                            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                        }
+
+                        Text {
+                            id: clearLabel
+
+                            anchors.centerIn: parent
+                            text: "Очистить"
+                            color: clearButton.enabled
+                                   ? Theme.primary
+                                   : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent)
+                            font: Theme.typeLabelLarge
+                            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                        }
+
+                        MouseArea {
+                            id: clearHover
+
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            enabled: clearButton.enabled
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: NotificationService.clearHistory()
+                        }
                     }
 
                     PanelIconButton {
@@ -183,7 +271,7 @@ PanelWindow {
                 }
             }
 
-            // Пустой Центр.
+            // Пустой Центр: иконка и заголовок headlineSmall на onSurfaceVariant.
             Item {
                 width: parent.width
                 height: NotificationService.history.count === 0 ? 130 : 0
@@ -191,22 +279,21 @@ PanelWindow {
 
                 Column {
                     anchors.centerIn: parent
-                    spacing: 8
+                    spacing: Theme.space.sm
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "\uf0f3"
-                        color: Theme.quickTextDim
+                        color: Theme.scheme.onSurfaceVariant
                         font.family: Theme.iconFontFamily
-                        font.pixelSize: 30
+                        font.pixelSize: Theme.iconSize.xl
                     }
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Нет уведомлений"
-                        color: Theme.quickTextDim
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 13
+                        color: Theme.scheme.onSurfaceVariant
+                        font: Theme.typeHeadlineSmall
                     }
                 }
             }
@@ -218,8 +305,8 @@ PanelWindow {
                 visible: NotificationService.history.count > 0
                 height: visible
                         ? Math.min(listColumn.implicitHeight,
-                                   root.maxHeight - Theme.quickHeaderHeight
-                                   - Theme.quickPadding * 2 - Theme.notificationSpacing)
+                                   root.maxHeight - Theme.appBarHeight
+                                   - Theme.notificationPadding * 2 - Theme.notificationSpacing)
                         : 0
                 contentHeight: listColumn.implicitHeight
                 clip: true
@@ -257,46 +344,4 @@ PanelWindow {
                 }
             }
         }
-    }
-
-    // Кнопка шапки: тот же кружок, что у действий в шапках панелей.
-    component PanelIconButton: Item {
-        id: button
-
-        property string icon: ""
-        property bool active: false
-
-        signal clicked()
-
-        width: 30
-        height: 30
-        opacity: button.enabled ? 1 : 0.4
-
-        Rectangle {
-            anchors.fill: parent
-            radius: width / 2
-            color: button.active ? Theme.quickTileActive
-                                 : (buttonHover.hovered ? Theme.quickTileHover : "transparent")
-            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: button.icon
-            color: button.active ? Theme.accent : Theme.quickText
-            font.family: Theme.iconFontFamily
-            font.pixelSize: 13
-            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
-        }
-
-        MouseArea {
-            id: buttonHover
-
-            anchors.fill: parent
-            hoverEnabled: true
-            enabled: button.enabled
-            cursorShape: Qt.PointingHandCursor
-            onClicked: button.clicked()
-        }
-    }
-}
+    }}

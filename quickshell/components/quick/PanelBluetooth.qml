@@ -109,10 +109,11 @@ Item {
             onActionRequested: BluetoothBackend.toggleDiscoverable()
         }
 
+        // Разделитель шапки m3 — outline-variant.
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.quickSeparator
+            color: Theme.outlineVariant
         }
 
         // Ошибка подключения/удаления: причина, подсказка что делать и
@@ -176,30 +177,43 @@ Item {
             // Режим обнаружения: пока включён, устройство видно другим.
             Item {
                 width: parent.width
-                height: BluetoothBackend.discoverable ? 44 : 0
+                height: BluetoothBackend.discoverable ? Theme.touchTarget : 0
                 visible: height > 0
                 clip: true
 
-                // Постоянное состояние — иконка, а не крутящийся индикатор.
-                Text {
-                    id: discoverIcon
-                    anchors.left: parent.left
-                    anchors.leftMargin: 16
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "\uf06e"
-                    color: Theme.accent
-                    font.family: Theme.iconFontFamily
-                    font.pixelSize: 14
-                }
+                // Тональная плашка m3: surface-container-high, радиус medium.
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.leftMargin: Theme.space.lg
+                    anchors.rightMargin: Theme.space.lg
+                    anchors.topMargin: Theme.space.xs
+                    anchors.bottomMargin: Theme.space.xs
+                    radius: Theme.shape.sm
+                    color: Theme.surfaceContainerHigh
 
-                Text {
-                    anchors.left: discoverIcon.right
-                    anchors.leftMargin: 12
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "Discoverable — visible to nearby devices"
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    Row {
+                        anchors.left: parent.left
+                        anchors.leftMargin: Theme.space.md
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: Theme.space.sm
+
+                        // Постоянное состояние — иконка, а не крутящийся индикатор.
+                        Text {
+                            id: discoverIcon
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "\uf06e"
+                            color: Theme.primary
+                            font.family: Theme.iconFontFamily
+                            font.pixelSize: Theme.iconSize.md
+                        }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Discoverable — visible to nearby devices"
+                            color: Theme.scheme.onSurfaceVariant
+                            font: Theme.typeBodyMedium
+                        }
+                    }
                 }
             }
 
@@ -225,17 +239,16 @@ Item {
             // Пусто в «Сохранённых» — подсказываем, как добавить устройство.
             Item {
                 width: parent.width
-                height: BluetoothBackend.pairedDevices.count === 0 ? 40 : 0
+                height: BluetoothBackend.pairedDevices.count === 0 ? Theme.touchTarget : 0
                 visible: height > 0
 
                 Text {
                     anchors.left: parent.left
-                    anchors.leftMargin: 16
+                    anchors.leftMargin: Theme.space.lg
                     anchors.verticalCenter: parent.verticalCenter
                     text: "No saved devices yet"
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeBodyMedium
                 }
             }
 
@@ -263,39 +276,44 @@ Item {
             Item {
                 id: unnamedToggle
                 width: parent.width
-                height: BluetoothBackend.unnamedDevices.count > 0 ? 36 : 0
+                height: BluetoothBackend.unnamedDevices.count > 0 ? Theme.touchTarget : 0
                 visible: height > 0
 
                 readonly property bool expanded: UiState.btShowUnnamed
 
+                // Строка-раскрывашка m3: hover — state layer on-surface.
                 Rectangle {
                     anchors.fill: parent
-                    anchors.margins: 4
-                    radius: 10
-                    color: toggleHover.hovered ? Theme.quickTileHover : "transparent"
+                    anchors.leftMargin: Theme.space.sm
+                    anchors.rightMargin: Theme.space.sm
+                    anchors.topMargin: Theme.space.xs
+                    anchors.bottomMargin: Theme.space.xs
+                    radius: Theme.shape.sm
+                    color: toggleHover.containsMouse
+                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                           : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
                 }
 
                 Text {
                     id: toggleIcon
                     anchors.left: parent.left
-                    anchors.leftMargin: 16
+                    anchors.leftMargin: Theme.space.lg
                     anchors.verticalCenter: parent.verticalCenter
                     text: unnamedToggle.expanded ? "\uf077" : "\uf078"
-                    color: Theme.quickTextDim
+                    color: Theme.scheme.onSurfaceVariant
                     font.family: Theme.iconFontFamily
-                    font.pixelSize: 12
+                    font.pixelSize: Theme.iconSize.sm
                 }
 
                 Text {
                     anchors.left: toggleIcon.right
-                    anchors.leftMargin: 10
+                    anchors.leftMargin: Theme.space.sm
                     anchors.verticalCenter: parent.verticalCenter
                     text: (unnamedToggle.expanded ? "Скрыть безымянные" : "Показать ещё")
                           + " (" + BluetoothBackend.unnamedDevices.count + ")"
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeBodyMedium
                 }
 
                 MouseArea {

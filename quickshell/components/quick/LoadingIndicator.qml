@@ -7,8 +7,8 @@ import "../../singletons"
 Item {
     id: root
 
-    implicitWidth: 22
-    implicitHeight: 22
+    implicitWidth: Theme.iconSize.md
+    implicitHeight: Theme.iconSize.md
 
     property real sweep: 90
 
@@ -19,7 +19,8 @@ Item {
         onPaint: {
             const ctx = getContext("2d");
             ctx.reset();
-            ctx.strokeStyle = Theme.accent;
+            // Дуга индикатора — primary, как у m3 circular progress.
+            ctx.strokeStyle = Theme.primary;
             ctx.lineWidth = 3;
             ctx.lineCap = "round";
             ctx.beginPath();
@@ -39,7 +40,8 @@ Item {
         Connections {
             target: Theme
 
-            function onAccentChanged() {
+            // Индикатор перерисовывается при смене акцентной роли схемы.
+            function onPrimaryChanged() {
                 canvas.requestPaint();
             }
         }

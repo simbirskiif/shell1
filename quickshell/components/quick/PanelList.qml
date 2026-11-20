@@ -9,7 +9,8 @@ import "../../singletons"
 ListView {
     id: root
 
-    property real rowHeight: Theme.quickRowHeight
+    // Строка списка m3 — 56dp; панели берут ту же высоту из Theme.
+    property real rowHeight: Theme.listItemHeight
     // Высота, которую держим до конца анимации удаления, чтобы окно
     // не срезало гаснущую строку.
     property real frameHeight: 0

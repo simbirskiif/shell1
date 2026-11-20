@@ -31,7 +31,7 @@ Item {
     // ЗАБЫВАЛ заголовок с именем и зарядом, который остаётся видимым: карточка
     // выходила на ~50 px ниже, и кнопки «Отмена»/«Удалить» оказывались за её
     // пределами.
-    readonly property real cardHeight: column.implicitHeight + 8
+    readonly property real cardHeight: column.implicitHeight + Theme.space.sm
     // Высота, которую резервирует окно попапа. Совпадает с текущей высотой
     // карточки: пока меню открыто, окно меняет размер без анимации, поэтому
     // карточка не обрезается.
@@ -72,16 +72,18 @@ Item {
         onClicked: root.close()
     }
 
+    // Карточка меню m3: тональная поверхность surface-container-high,
+    // радиус medium, без тени — глубину даёт только тон.
     Rectangle {
         id: card
-        x: Math.max(4, Math.min(UiState.menuDeviceX, root.width - width - 8))
-        y: Math.max(4, Math.min(UiState.menuDeviceY, root.height - height - 8))
+        x: Math.max(Theme.space.xs, Math.min(UiState.menuDeviceX, root.width - width - Theme.space.sm))
+        y: Math.max(Theme.space.xs, Math.min(UiState.menuDeviceY, root.height - height - Theme.space.sm))
         width: 236
         height: root.cardHeight
-        radius: 14
-        color: Theme.quickBackground
+        radius: Theme.shape.md
+        color: Theme.menuSurfaceSolid
         border.width: 1
-        border.color: Theme.quickBorder
+        border.color: Theme.outlineVariant
 
         // Клики по карточке не должны её закрывать.
         MouseArea {
@@ -93,48 +95,46 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.margins: 4
+            anchors.margins: Theme.space.xs
             spacing: 0
 
             // Заголовок: имя устройства и, если BlueZ отдаёт Battery1,
             // процент заряда. Без данных о заряде строка не рисуется вовсе.
             Item {
                 width: parent.width
-                implicitHeight: root.menu && root.menu.batteryKnown ? 46 : 34
+                implicitHeight: root.menu && root.menu.batteryKnown
+                                ? Theme.space.xxxl + Theme.space.sm : Theme.space.xxxl
 
                 Text {
                     id: deviceName
                     anchors.left: parent.left
-                    anchors.leftMargin: 14
+                    anchors.leftMargin: Theme.space.md
                     anchors.right: parent.right
-                    anchors.rightMargin: 14
+                    anchors.rightMargin: Theme.space.md
                     anchors.top: parent.top
-                    anchors.topMargin: 8
+                    anchors.topMargin: Theme.space.sm
                     elide: Text.ElideRight
                     text: root.menu ? root.menu.name : ""
-                    color: Theme.quickText
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 13
-                    font.weight: Font.Medium
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeBodyLarge
                 }
 
                 Text {
                     anchors.left: parent.left
-                    anchors.leftMargin: 14
+                    anchors.leftMargin: Theme.space.md
                     anchors.top: deviceName.bottom
-                    anchors.topMargin: 2
+                    anchors.topMargin: Theme.space.xs
                     visible: root.menu && root.menu.batteryKnown
                     text: root.menu ? (root.menu.batteryPercent + "%") : ""
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeBodyMedium
                 }
             }
 
             Rectangle {
                 width: parent.width
                 height: 1
-                color: Theme.quickSeparator
+                color: Theme.outlineVariant
             }
 
             MenuRow {
@@ -147,7 +147,7 @@ Item {
                       : (root.menu && root.menu.connected ? "\uf011" : "\uf1e6")
                 text: root.menu ? root.menu.actionLabel : ""
                 enabled: root.menu !== null && root.menu.canToggle
-                opacity: enabled ? 1 : 0.4
+                opacity: enabled ? 1 : Theme.disabledContent
                 onTriggered: {
                     if (root.menu && root.menu.cancellable)
                         BluetoothBackend.cancelConnection();
@@ -164,7 +164,7 @@ Item {
                 text: "Удалить устройство"
                 danger: true
                 enabled: root.menu !== null && root.menu.canForget
-                opacity: enabled ? 1 : 0.4
+                opacity: enabled ? 1 : Theme.disabledContent
                 onTriggered: root.confirming = true
             }
 
@@ -173,7 +173,7 @@ Item {
             Item {
                 id: confirmItem
                 width: parent.width
-                implicitHeight: confirmColumn.implicitHeight + 8
+                implicitHeight: confirmColumn.implicitHeight + Theme.space.sm
                 visible: root.confirming
                 height: root.confirming ? implicitHeight : 0
 
@@ -182,32 +182,31 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
-                    anchors.margins: 4
-                    spacing: 2
+                    anchors.margins: Theme.space.xs
+                    spacing: Theme.space.xs
 
                     Text {
                         width: parent.width
-                        anchors.margins: 14
-                        leftPadding: 14
-                        rightPadding: 14
+                        anchors.margins: Theme.space.md
+                        leftPadding: Theme.space.md
+                        rightPadding: Theme.space.md
                         wrapMode: Text.WordWrap
                         text: "Удалить устройство и его спаривание?"
-                        color: Theme.quickText
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 13
+                        color: Theme.scheme.onSurface
+                        font: Theme.typeBodyMedium
                     }
 
                     // Кнопки выравниваются по правому краю и не могут выйти
                     // за карточку: ширина каждой ограничена половиной строки.
                     Item {
                         width: parent.width
-                        height: 30
+                        height: Theme.buttonHeight
 
                         MenuButton {
                             id: cancelButton
                             anchors.right: deleteButton.left
-                            anchors.rightMargin: 6
-                            maxWidth: (parent.width - 6) / 2
+                            anchors.rightMargin: Theme.space.sm
+                            maxWidth: (parent.width - Theme.space.sm) / 2
                             text: "Отмена"
                             onTriggered: root.confirming = false
                         }
@@ -215,7 +214,7 @@ Item {
                         MenuButton {
                             id: deleteButton
                             anchors.right: parent.right
-                            maxWidth: (parent.width - 6) / 2
+                            maxWidth: (parent.width - Theme.space.sm) / 2
                             text: "Удалить"
                             primary: true
                             danger: true
@@ -230,7 +229,8 @@ Item {
         }
     }
 
-    // Строка меню: иконка, подпись, подсветка опасного действия.
+    // Строка меню m3: иконка, подпись, подсветка опасного действия.
+    // Высота пункта — 48, hover — state layer поверх скруглённой подложки.
     component MenuRow: Item {
         id: row
 
@@ -241,13 +241,15 @@ Item {
         signal triggered()
 
         implicitWidth: column.width
-        implicitHeight: 40
+        implicitHeight: Theme.touchTarget
 
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 2
-            radius: 10
-            color: rowHover.hovered && row.enabled ? Theme.quickTileHover : "transparent"
+            anchors.margins: Theme.space.xs
+            radius: Theme.shape.xs
+            color: rowHover.containsMouse && row.enabled
+                   ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                   : "transparent"
             Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
         }
 
@@ -263,29 +265,29 @@ Item {
         Text {
             id: rowIcon
             anchors.left: parent.left
-            anchors.leftMargin: 14
+            anchors.leftMargin: Theme.space.md
             anchors.verticalCenter: parent.verticalCenter
             text: row.icon
-            color: row.danger ? Theme.lowColor : Theme.quickTextDim
+            color: row.danger ? Theme.error : Theme.scheme.onSurfaceVariant
             font.family: Theme.iconFontFamily
-            font.pixelSize: 13
+            font.pixelSize: Theme.iconSize.md
         }
 
         Text {
             anchors.left: rowIcon.right
-            anchors.leftMargin: 12
+            anchors.leftMargin: Theme.space.md
             anchors.right: parent.right
-            anchors.rightMargin: 12
+            anchors.rightMargin: Theme.space.md
             anchors.verticalCenter: parent.verticalCenter
             elide: Text.ElideRight
             text: row.text
-            color: row.danger ? Theme.lowColor : Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 13
+            color: row.danger ? Theme.error : Theme.scheme.onSurface
+            font: Theme.typeLabelLarge
         }
     }
 
-    // Кнопка подтверждения.
+    // Кнопка m3: текстовая (прозрачная, подпись primary) или залитая
+    // (primary, опасное действие — error).
     component MenuButton: Rectangle {
         id: button
 
@@ -297,29 +299,42 @@ Item {
 
         signal triggered()
 
-        width: Math.min(buttonLabel.implicitWidth + 24, maxWidth)
-        height: 30
-        radius: 15
-        color: primary ? (danger ? Theme.lowColor : Theme.accent) : "transparent"
-        border.width: primary ? 0 : 1
-        border.color: Theme.quickBorder
+        readonly property color accentColor: button.danger ? Theme.error : Theme.primary
+        readonly property color accentLabel: button.danger ? Theme.scheme.onError
+                                                           : Theme.scheme.onPrimary
 
-        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+        width: Math.min(buttonLabel.implicitWidth + Theme.space.lg, maxWidth)
+        height: Theme.buttonHeight
+        radius: Theme.shape.full
+        // Второстепенное действие — текстовая кнопка m3: без заливки и обводки,
+        // только подпись primary и слой состояния.
+        color: button.primary ? button.accentColor : "transparent"
+
+        // Слой состояния m3: на залитой кнопке — по on-primary/on-error,
+        // на текстовой — по primary/error.
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: button.primary
+                   ? Theme.stateLayer(button.accentLabel, Theme.stateHover)
+                   : Theme.stateLayer(button.accentColor, Theme.stateHover)
+            opacity: buttonHover.containsMouse ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+        }
 
         Text {
             id: buttonLabel
             anchors.centerIn: parent
-            width: Math.min(implicitWidth, button.width - 20)
+            width: Math.min(implicitWidth, button.width - Theme.space.md)
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignHCenter
             text: button.text
-            color: primary ? Theme.quickIconOn : Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 12
-            font.weight: Font.Medium
+            color: button.primary ? button.accentLabel : button.accentColor
+            font: Theme.typeLabelLarge
         }
 
         MouseArea {
+            id: buttonHover
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor

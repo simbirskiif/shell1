@@ -56,16 +56,18 @@ PanelWindow {
         onClicked: WindowState.cancel()
     }
 
+    // Панель-лист M3: тональная поверхность container-low под карточки,
+    // радиус xl, обводка outline-variant.
     Rectangle {
         id: panel
 
         anchors.centerIn: parent
-        width: root.rowWidth + 28
-        height: column.implicitHeight + 28
-        radius: Theme.notificationRadius
-        color: Theme.withAlpha(Theme.quickBackground, 1.0)
+        width: root.rowWidth + Theme.space.xxl
+        height: column.implicitHeight + Theme.space.xxl
+        radius: Theme.shape.xl
+        color: Theme.panelSurface
         border.width: 1
-        border.color: Theme.quickBorder
+        border.color: Theme.outlineVariant
 
         MouseArea {
             anchors.fill: parent
@@ -75,8 +77,8 @@ PanelWindow {
             id: column
 
             anchors.fill: parent
-            anchors.margins: 14
-            spacing: 8
+            anchors.margins: Theme.space.lg
+            spacing: Theme.space.sm
 
             ListView {
                 id: list
@@ -99,17 +101,30 @@ PanelWindow {
                     required property var modelData
                     required property int index
 
+                    readonly property bool selected: tile.index === WindowState.index
+
                     width: root.cardWidth
                     height: root.cardHeight
-                    radius: 10
-                    color: tile.index === WindowState.index ? Theme.quickTileActive
-                         : hover.hovered ? Theme.quickTileHover : "transparent"
-                    border.width: tile.index === WindowState.index ? 2 : 1
-                    border.color: tile.index === WindowState.index ? Theme.accent
-                                  : Theme.withAlpha(Theme.quickText, 0.06)
+                    // Карточки M3: тональный surfaceContainerHigh, выбранная —
+                    // secondaryContainer с текстом onSecondaryContainer.
+                    radius: Theme.shape.lg
+                    color: tile.selected ? Theme.secondaryContainer
+                                         : Theme.surfaceContainerHigh
 
                     HoverHandler {
                         id: hover
+                    }
+
+                    // Слой состояния M3 при наведении — поверх тона, под текстом.
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: Theme.stateLayer(tile.selected
+                                                ? Theme.scheme.onSecondaryContainer
+                                                : Theme.scheme.onSurface,
+                                                Theme.stateHover)
+                        opacity: hover.hovered ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
                     }
 
                     MouseArea {
@@ -122,8 +137,8 @@ PanelWindow {
 
                     Column {
                         anchors.fill: parent
-                        anchors.margins: 8
-                        spacing: 6
+                        anchors.margins: Theme.space.sm
+                        spacing: Theme.space.sm
 
                         Item {
                             width: 52
@@ -141,11 +156,11 @@ PanelWindow {
 
                         Text {
                             width: parent.width
-                            height: 38
+                            height: 40
                             text: tile.modelData.title
-                            color: Theme.quickText
-                            font.family: Theme.fontFamily
-                            font.pixelSize: 11
+                            color: tile.selected ? Theme.scheme.onSecondaryContainer
+                                                : Theme.scheme.onSurface
+                            font: Theme.typeTitleSmall
                             horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.Wrap
                             maximumLineCount: 2
@@ -155,9 +170,10 @@ PanelWindow {
                         Text {
                             width: parent.width
                             text: tile.modelData.appClass
-                            color: Theme.quickTextDim
-                            font.family: Theme.fontFamily
-                            font.pixelSize: 9
+                            color: tile.selected
+                                   ? Theme.withAlpha(Theme.scheme.onSecondaryContainer, 0.8)
+                                   : Theme.scheme.onSurfaceVariant
+                            font: Theme.typeBodySmall
                             horizontalAlignment: Text.AlignHCenter
                             elide: Text.ElideRight
                         }
@@ -170,9 +186,8 @@ PanelWindow {
                 horizontalAlignment: Text.AlignHCenter
                 visible: WindowState.snapshot.length === 0
                 text: "Нет открытых окон"
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 10
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeBodySmall
                 elide: Text.ElideRight
             }
 
@@ -180,9 +195,8 @@ PanelWindow {
                 width: parent.width
                 visible: WindowState.lastError !== ""
                 text: WindowState.lastError
-                color: Theme.lowColor
-                font.family: Theme.fontFamily
-                font.pixelSize: 10
+                color: Theme.error
+                font: Theme.typeBodySmall
                 wrapMode: Text.Wrap
             }
         }

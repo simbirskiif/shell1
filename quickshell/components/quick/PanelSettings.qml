@@ -25,45 +25,45 @@ Item {
             onBackRequested: root.backRequested()
         }
 
+        // Разделитель шапки m3 — outline-variant.
         Rectangle {
             width: parent.width
             height: 1
-            color: Theme.quickSeparator
+            color: Theme.outlineVariant
         }
 
         PanelSection { text: "Bar" }
 
+        // Двухстрочная строка списка m3: заголовок и подпись.
         Item {
             width: parent.width
-            height: 52
+            height: Theme.listItemHeight + Theme.space.sm
 
             Column {
                 anchors.left: parent.left
-                anchors.leftMargin: 16
+                anchors.leftMargin: Theme.space.lg
                 anchors.right: toggle.left
-                anchors.rightMargin: 12
+                anchors.rightMargin: Theme.space.md
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
+                spacing: Theme.space.xs
 
                 Text {
                     text: "Battery percentage"
-                    color: Theme.quickText
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 13
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeBodyLarge
                 }
 
                 Text {
                     text: "Show charge level next to the icon"
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeBodyMedium
                 }
             }
 
             ToggleSwitch {
                 id: toggle
                 anchors.right: parent.right
-                anchors.rightMargin: 16
+                anchors.rightMargin: Theme.space.lg
                 anchors.verticalCenter: parent.verticalCenter
                 checked: MockState.showBatteryPercent
                 onToggled: MockState.showBatteryPercent = !MockState.showBatteryPercent
@@ -76,21 +76,20 @@ Item {
         // тачпада. 1.00 — карточка идёт ровно за пальцами.
         Item {
             width: parent.width
-            height: 60
+            height: Theme.listItemHeight + Theme.space.lg
 
             Column {
                 anchors.left: parent.left
-                anchors.leftMargin: 16
+                anchors.leftMargin: Theme.space.lg
                 anchors.right: sensitivityValue.left
-                anchors.rightMargin: 12
+                anchors.rightMargin: Theme.space.md
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 10
+                spacing: Theme.space.sm
 
                 Text {
                     text: "Swipe sensitivity"
-                    color: Theme.quickText
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 13
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeBodyLarge
                 }
 
                 PanelSlider {
@@ -106,12 +105,11 @@ Item {
                 id: sensitivityValue
 
                 anchors.right: parent.right
-                anchors.rightMargin: 16
+                anchors.rightMargin: Theme.space.lg
                 anchors.verticalCenter: parent.verticalCenter
                 text: NotificationService.swipeSensitivity.toFixed(2) + "×"
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeBodyMedium
             }
         }
 
@@ -121,48 +119,49 @@ Item {
         // минуты. Правит отдельное окно: попап клавиатуру не получает.
         Item {
             width: parent.width
-            height: 60
+            height: Theme.listItemHeight + Theme.space.sm
 
+            // Строка списка m3: hover — state layer on-surface.
             Rectangle {
                 anchors.fill: parent
-                color: durationsHover.hovered ? Theme.quickTileHover : "transparent"
+                color: durationsHover.containsMouse
+                       ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                       : "transparent"
                 Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
             }
 
             Column {
                 anchors.left: parent.left
-                anchors.leftMargin: 16
+                anchors.leftMargin: Theme.space.lg
                 anchors.right: editIcon.left
-                anchors.rightMargin: 12
+                anchors.rightMargin: Theme.space.md
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
+                spacing: Theme.space.xs
 
                 Text {
                     text: "Длительности"
-                    color: Theme.quickText
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 13
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeBodyLarge
                 }
 
                 Text {
                     width: parent.width
                     text: CaffeineService.durations !== "" ? CaffeineService.durations : "не заданы"
                     elide: Text.ElideRight
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeBodyMedium
                 }
             }
 
             Text {
                 id: editIcon
                 anchors.right: parent.right
-                anchors.rightMargin: 18
+                anchors.rightMargin: Theme.space.lg
                 anchors.verticalCenter: parent.verticalCenter
                 text: "\uf040"
-                color: Theme.quickText
+                color: Theme.scheme.onSurfaceVariant
                 font.family: Theme.iconFontFamily
-                font.pixelSize: 13
+                font.pixelSize: Theme.iconSize.md
             }
 
             MouseArea {
@@ -181,7 +180,7 @@ Item {
         // Порядок слева-направо = порядок в модели; стрелки двигают элемент.
         PanelList {
             width: parent.width
-            rowHeight: 48
+            rowHeight: Theme.touchTarget
             model: MockState.barItems
 
             delegate: Item {
@@ -192,42 +191,44 @@ Item {
                 required property int index
 
                 width: ListView.view ? ListView.view.width : implicitWidth
-                height: 48
+                height: Theme.touchTarget
 
                 Text {
                     anchors.left: parent.left
-                    anchors.leftMargin: 16
+                    anchors.leftMargin: Theme.space.lg
                     anchors.verticalCenter: parent.verticalCenter
                     text: orderRow.title
-                    color: Theme.quickText
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 13
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeBodyLarge
                 }
 
                 Row {
                     anchors.right: parent.right
-                    anchors.rightMargin: 12
+                    anchors.rightMargin: Theme.space.sm
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 4
+                    spacing: Theme.space.xs
 
+                    // Кнопки-иконки m3: 40×40, круглые, hover — state layer.
                     Rectangle {
                         id: upButton
 
                         readonly property bool available: orderRow.index > 0
 
-                        width: 30
-                        height: 30
-                        radius: width / 2
-                        color: upHover.hovered && available ? Theme.quickTileHover : "transparent"
-                        opacity: available ? 1 : 0.3
+                        width: Theme.iconButtonSize
+                        height: Theme.iconButtonSize
+                        radius: Theme.shape.full
+                        color: upHover.containsMouse && available
+                               ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                               : "transparent"
+                        opacity: available ? 1 : Theme.disabledContent
                         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
                         Text {
                             anchors.centerIn: parent
                             text: "\uf077"
-                            color: Theme.quickText
+                            color: Theme.scheme.onSurface
                             font.family: Theme.iconFontFamily
-                            font.pixelSize: 11
+                            font.pixelSize: Theme.iconSize.md
                         }
 
                         MouseArea {
@@ -245,19 +246,21 @@ Item {
 
                         readonly property bool available: orderRow.index < MockState.barItems.count - 1
 
-                        width: 30
-                        height: 30
-                        radius: width / 2
-                        color: downHover.hovered && available ? Theme.quickTileHover : "transparent"
-                        opacity: available ? 1 : 0.3
+                        width: Theme.iconButtonSize
+                        height: Theme.iconButtonSize
+                        radius: Theme.shape.full
+                        color: downHover.containsMouse && available
+                               ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                               : "transparent"
+                        opacity: available ? 1 : Theme.disabledContent
                         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
                         Text {
                             anchors.centerIn: parent
                             text: "\uf078"
-                            color: Theme.quickText
+                            color: Theme.scheme.onSurface
                             font.family: Theme.iconFontFamily
-                            font.pixelSize: 11
+                            font.pixelSize: Theme.iconSize.md
                         }
 
                         MouseArea {

@@ -38,12 +38,16 @@ Item {
     width: 150
     height: 108
 
+    // M3 card: surface-container-high; наведение/выбор — secondary-container.
+    // Радиус lg, тени нет — глубину задаёт тон поверхности.
     Rectangle {
         anchors.fill: parent
-        radius: 12
-        color: Theme.quickTile
+        radius: Theme.shape.lg
+        color: mouse.containsMouse ? Theme.secondaryContainer
+                                   : Theme.surfaceContainerHigh
         border.width: 1
-        border.color: mouse.containsMouse ? Theme.colors.primary : Theme.quickBorder
+        border.color: mouse.containsMouse ? Theme.secondaryContainer
+                                          : Theme.outlineVariant
         opacity: root.dragging ? 0.5 : 1
     }
 
@@ -54,7 +58,7 @@ Item {
         height: root.contentHeight
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        anchors.topMargin: 10
+        anchors.topMargin: Theme.space.sm
         scale: root.previewScale
         transformOrigin: Item.Top
 
@@ -71,10 +75,10 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.margins: 6
-        color: Theme.quickText
-        font.family: Theme.fontFamily
-        font.pixelSize: 11
+        anchors.margins: Theme.space.sm
+        color: mouse.containsMouse ? Theme.scheme.onSecondaryContainer
+                                   : Theme.scheme.onSurface
+        font: Theme.typeLabelMedium
         elide: Text.ElideRight
         text: root.widget ? root.widget.name : ""
     }
@@ -82,8 +86,8 @@ Item {
     Text {
         anchors.centerIn: stage
         visible: previewLoader.status === Loader.Error
-        color: Theme.colors.error
-        font.pixelSize: 10
+        color: Theme.error
+        font: Theme.typeBodySmall
         text: "Ошибка превью"
     }
 

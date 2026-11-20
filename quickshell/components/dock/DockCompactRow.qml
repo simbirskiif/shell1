@@ -10,7 +10,7 @@ Item {
     property bool buttonFirst: false
     property real buttonSize: Theme.dockButtonSize
     property real iconSize: Theme.dockIconSize
-    property real glyphSize: 15
+    property real glyphSize: Theme.iconSize.sm
 
     signal expandRequested()
 
@@ -37,7 +37,8 @@ Item {
         }
     }
 
-    // Разделитель между приложениями и управляющей кнопкой.
+    // Разделитель между приложениями и управляющей кнопкой. M3: декоративная
+    // граница — outline-variant, а не произвольный цвет.
     Item {
         id: separator
         x: root.buttonFirst ? root.buttonSize + Theme.dockSpacing
@@ -49,8 +50,7 @@ Item {
             anchors.centerIn: parent
             width: 1
             height: Math.round(root.buttonSize * 0.6)
-            radius: 0.5
-            color: Theme.quickSeparator
+            color: Theme.outlineVariant
         }
     }
 

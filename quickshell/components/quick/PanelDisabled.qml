@@ -20,28 +20,28 @@ Item {
     signal actionRequested()
 
     implicitWidth: Theme.quickWidth
-    implicitHeight: 236
+    implicitHeight: Theme.space.xxxl * 5
 
     Column {
         anchors.centerIn: parent
-        width: parent.width - 56
-        spacing: 10
+        width: parent.width - Theme.space.xxxl - Theme.space.sm
+        spacing: Theme.space.sm
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: !root.wifiIcon
             text: root.icon
-            color: Theme.quickTextDim
+            color: Theme.scheme.onSurfaceVariant
             font.family: Theme.iconFontFamily
-            font.pixelSize: 34
+            font.pixelSize: Theme.iconSize.xl
         }
 
         WifiStatusIcon {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: root.wifiIcon
-            width: 40
-            height: 40
-            glyphSize: 34
+            width: Theme.iconSize.xl + Theme.space.sm
+            height: Theme.iconSize.xl + Theme.space.sm
+            glyphSize: Theme.iconSize.xl
             offMode: true
             dim: true
         }
@@ -49,10 +49,8 @@ Item {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.title
-            color: Theme.quickText
-            font.family: Theme.fontFamily
-            font.pixelSize: 15
-            font.weight: Font.Medium
+            color: Theme.scheme.onSurface
+            font: Theme.typeTitleMedium
         }
 
         Text {
@@ -60,31 +58,30 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
             text: root.description
-            color: Theme.quickTextDim
-            font.family: Theme.fontFamily
-            font.pixelSize: 12
+            color: Theme.scheme.onSurfaceVariant
+            font: Theme.typeBodyMedium
         }
 
         Item {
             width: 1
-            height: root.showAction ? 6 : 0
+            height: root.showAction ? Theme.space.sm : 0
         }
 
-        // Кнопка в стиле m3 filled button со state layer на ховере.
+        // Кнопка m3 filled button: пилюля primary, hover — state layer on-primary.
         Rectangle {
             id: button
             anchors.horizontalCenter: parent.horizontalCenter
-            width: buttonLabel.implicitWidth + 44
-            height: root.showAction ? 36 : 0
+            width: buttonLabel.implicitWidth + Theme.space.xl * 2
+            height: root.showAction ? Theme.buttonHeight : 0
             visible: root.showAction
-            radius: height / 2
-            color: Theme.accent
+            radius: Theme.shape.full
+            color: Theme.primary
 
             Rectangle {
                 anchors.fill: parent
                 radius: parent.radius
-                color: Theme.quickIconOn
-                opacity: buttonHover.hovered ? 0.08 : 0
+                color: Theme.stateLayer(Theme.scheme.onPrimary, Theme.stateHover)
+                opacity: buttonHover.containsMouse ? 1 : 0
                 Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
             }
 
@@ -92,10 +89,8 @@ Item {
                 id: buttonLabel
                 anchors.centerIn: parent
                 text: root.actionText
-                color: Theme.quickIconOn
-                font.family: Theme.fontFamily
-                font.pixelSize: 13
-                font.weight: Font.Medium
+                color: Theme.scheme.onPrimary
+                font: Theme.typeLabelLarge
             }
 
             MouseArea {

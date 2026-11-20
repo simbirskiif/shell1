@@ -34,8 +34,8 @@ Item {
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Theme.quickBackground }
-            GradientStop { position: 1.0; color: Theme.mix(Theme.quickBackground, Wal.accent, 0.10) }
+            GradientStop { position: 0.0; color: Theme.surface }
+            GradientStop { position: 1.0; color: Theme.mix(Theme.surface, Wal.accent, 0.10) }
         }
     }
 
@@ -68,13 +68,27 @@ Item {
         visible: true
     }
 
-    // Затемнение и лёгкий градиент: текст должен читаться на любых обоях.
+    // Затемнение и тональная подложка поверх размытых обоев.
+    // surface-dim — роль M3 именно для приглушения (в светлой схеме она
+    // светлее базовой, в тёмной — темнее), поэтому текст on-surface
+    // сохраняет контраст на любых обоях.
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.42) }
-            GradientStop { position: 0.45; color: Qt.rgba(0, 0, 0, 0.18) }
-            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.52) }
+            GradientStop { position: 0.0; color: Theme.veil(Theme.surfaceDim, 0.55) }
+            GradientStop { position: 0.45; color: Theme.veil(Theme.surfaceDim, 0.38) }
+            GradientStop { position: 1.0; color: Theme.veil(Theme.surfaceDim, 0.62) }
+        }
+    }
+
+    // Сама подложка — surface-container-high с низкой альфой: тот же приём,
+    // что у панелей оболочки, только полупрозрачнее.
+    Rectangle {
+        anchors.fill: parent
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Theme.veil(Theme.surfaceContainerHigh, 0.55) }
+            GradientStop { position: 0.45; color: Theme.veil(Theme.surfaceContainerHigh, 0.42) }
+            GradientStop { position: 1.0; color: Theme.veil(Theme.surfaceContainerHigh, 0.62) }
         }
     }
 
@@ -119,26 +133,24 @@ Item {
             width: parent.width
             opacity: root.intro
 
+            // Часы — displayLarge: самый крупный уровень шкалы M3, он же
+            // герой-текст экрана блокировки.
             Text {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 text: clock.date.toLocaleTimeString(Qt.locale(), "HH:mm")
-                color: Theme.quickText
-                font.family: "Google Sans Display"
-                font.pixelSize: Math.round(96 * root.scale)
-                font.weight: Font.Normal
-                font.letterSpacing: -Math.round(2 * root.scale)
+                color: Theme.scheme.onSurface
+                font: Theme.typeDisplayLarge
             }
 
+            // Дата — titleLarge: следующий по иерархии уровень.
             Text {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 topPadding: Math.round(2 * root.scale)
                 text: clock.date.toLocaleDateString(Qt.locale(), "dddd, d MMMM")
-                color: Theme.withAlpha(Theme.quickText, 0.72)
-                font.family: Theme.fontFamily
-                font.pixelSize: Math.round(17 * root.scale)
-                font.letterSpacing: Math.round(0.6 * root.scale)
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeTitleLarge
             }
 
             Item { width: 1; height: Math.round(46 * root.scale) }
@@ -154,17 +166,15 @@ Item {
                     width: Math.round(76 * root.scale)
                     height: width
                     radius: width / 2
-                    color: Qt.rgba(0, 0, 0, 0.28)
+                    color: Theme.veil(Theme.surfaceContainerHighest, 0.55)
                     border.width: 1
-                    border.color: Theme.withAlpha(Theme.quickText, 0.16)
+                    border.color: Theme.outlineVariant
 
                     Text {
                         anchors.centerIn: parent
                         text: LockState.avatarLetter
-                        color: Theme.withAlpha(Theme.quickText, 0.92)
-                        font.family: "Google Sans Display"
-                        font.pixelSize: Math.round(32 * root.scale)
-                        font.weight: Font.Medium
+                        color: Theme.scheme.onSurface
+                        font: Theme.typeHeadlineLarge
                     }
                 }
             }
@@ -175,6 +185,16 @@ Item {
                 width: parent.width
                 height: root.fieldHeight
 
+                // Карточка входа: тональная surface-container-high с низкой
+                // альфой и радиусом shape.xl — поле и сканер читаются как
+                // одна поверхность M3.
+                Rectangle {
+                    anchors.fill: inputRow
+                    anchors.margins: -Theme.space.sm
+                    radius: Theme.shape.xl
+                    color: Theme.veil(Theme.surfaceContainerHigh, 0.55)
+                }
+
                 Row {
                     id: inputRow
 
@@ -182,17 +202,20 @@ Item {
                     spacing: Math.round(10 * root.scale)
                     transform: Translate { x: root.shakeOffset }
 
+                    // Поле пароля — заполненное поле M3: контейнер
+                    // surface-container-highest, радиус shape.xs, обводка
+                    // outline, в фокусе — primary толщиной 2.
                     Rectangle {
                         id: field
 
                         width: root.fieldWidth
                         height: root.fieldHeight
-                        radius: height / 2
-                        color: Qt.rgba(0, 0, 0, 0.32)
+                        radius: Theme.shape.xs
+                        color: Theme.veil(Theme.surfaceContainerHighest, 0.92)
                         border.width: passwordInput.activeFocus
                                       ? Math.max(1, Math.round(2 * root.scale)) : 1
                         border.color: passwordInput.activeFocus
-                                      ? Theme.accent : Theme.withAlpha(Theme.quickText, 0.16)
+                                      ? Theme.primary : Theme.outline
 
                         Behavior on border.color {
                             ColorAnimation { duration: Theme.motionShort3 }
@@ -206,9 +229,9 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "\uf023"
                             color: passwordInput.activeFocus
-                                   ? Theme.accent : Theme.withAlpha(Theme.quickText, 0.55)
+                                   ? Theme.primary : Theme.scheme.onSurfaceVariant
                             font.family: Theme.iconFontFamily
-                            font.pixelSize: Math.round(15 * root.scale)
+                            font.pixelSize: Theme.iconSize.lg
 
                             Behavior on color {
                                 ColorAnimation { duration: Theme.motionShort3 }
@@ -228,11 +251,10 @@ Item {
                             echoMode: TextInput.Password
                             passwordCharacter: "●"
                             passwordMaskDelay: 0
-                            selectionColor: Theme.accent
-                            selectedTextColor: Theme.quickIconOn
-                            color: Theme.quickText
-                            font.family: Theme.fontFamily
-                            font.pixelSize: Math.round(15 * root.scale)
+                            selectionColor: Theme.primary
+                            selectedTextColor: Theme.scheme.onPrimary
+                            color: Theme.scheme.onSurface
+                            font: Theme.typeBodyLarge
                             inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText
                                               | Qt.ImhNoAutoUppercase
                             enabled: !LockState.authenticating && !LockState.unlocking
@@ -258,28 +280,28 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: passwordInput.text.length === 0
                             text: "Enter Password"
-                            color: Theme.withAlpha(Theme.quickText, 0.42)
-                            font.family: Theme.fontFamily
-                            font.pixelSize: Math.round(15 * root.scale)
+                            color: Theme.scheme.onSurfaceVariant
+                            font: Theme.typeBodyLarge
                         }
                     }
 
-                    // Кнопка сканера. Пока идёт сканирование — мягкая
-                    // пульсация и акцентная рамка, чтобы было видно, что
-                    // сканер «слушает».
+                    // Кнопка сканера — иконка-кнопка M3: контейнер
+                    // surface-container-highest, при сканировании —
+                    // обводка primary толщиной 2 и пульсация, чтобы было
+                    // видно, что сканер «слушает».
                     Rectangle {
                         id: fingerprintButton
 
                         visible: LockState.fingerprintState !== "unavailable"
                         width: root.fingerprintSize
                         height: root.fingerprintSize
-                        radius: width / 2
-                        color: fingerprintHover.hovered
-                               ? Theme.withAlpha(Theme.quickText, 0.10) : Qt.rgba(0, 0, 0, 0.32)
+                        radius: Theme.shape.full
+                        color: fingerprintHover.containsMouse
+                               ? Theme.surfaceContainerHigh
+                               : Theme.veil(Theme.surfaceContainerHighest, 0.92)
                         border.width: LockState.fingerprintState === "scanning" ? 2 : 1
                         border.color: LockState.fingerprintState === "scanning"
-                                      ? Theme.withAlpha(Theme.accent, 0.75)
-                                      : Theme.withAlpha(Theme.quickText, 0.16)
+                                      ? Theme.primary : Theme.outline
 
                         Behavior on color {
                             ColorAnimation { duration: Theme.motionShort3 }
@@ -294,11 +316,12 @@ Item {
                             anchors.centerIn: parent
                             text: String.fromCodePoint(0xF0237)
                             color: LockState.fingerprintState === "scanning"
-                                   ? Theme.accent
-                                   : Theme.withAlpha(Theme.quickText,
-                                                     LockState.fingerprintState === "checking" ? 0.4 : 0.85)
+                                   ? Theme.primary
+                                   : Theme.withAlpha(Theme.scheme.onSurface,
+                                                     LockState.fingerprintState === "checking"
+                                                     ? Theme.disabledContent : 0.85)
                             font.family: Theme.iconFontFamily
-                            font.pixelSize: Math.round(23 * root.scale)
+                            font.pixelSize: Theme.iconSize.lg
 
                             SequentialAnimation {
                                 id: fingerprintPulse
@@ -338,19 +361,37 @@ Item {
 
             Item { width: 1; height: Math.round(14 * root.scale) }
 
-            Text {
-                id: statusLine
-
+            // Строка статуса: ошибка — тональная плашка error-container
+            // с текстом on-error-container, остальные состояния — нейтральная
+            // полупрозрачная подложка.
+            Rectangle {
                 width: parent.width
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.Wrap
-                text: root.statusText
-                color: root.statusColor
-                font.family: Theme.fontFamily
-                font.pixelSize: Math.round(13 * root.scale)
+                height: statusLine.implicitHeight + Theme.space.sm * 2
+                visible: root.statusText !== ""
+                radius: Theme.shape.xs
+                color: root.statusPlateColor
 
                 Behavior on color {
                     ColorAnimation { duration: Theme.motionShort3 }
+                }
+
+                Text {
+                    id: statusLine
+
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: Theme.space.md
+                    anchors.rightMargin: Theme.space.md
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.Wrap
+                    text: root.statusText
+                    color: root.statusColor
+                    font: Theme.typeBodyMedium
+
+                    Behavior on color {
+                        ColorAnimation { duration: Theme.motionShort3 }
+                    }
                 }
             }
         }
@@ -385,14 +426,22 @@ Item {
 
     readonly property color statusColor: {
         if (LockState.statusKind === "error")
-            return Theme.lowColor;
+            return Theme.scheme.onErrorContainer;
         if (LockState.fingerprintState === "retry" || LockState.fingerprintState === "busy")
             return Theme.warningColor;
         if (LockState.authenticating)
-            return Theme.withAlpha(Theme.quickText, 0.66);
+            return Theme.scheme.onSurfaceVariant;
         if (LockState.capsLock)
             return Theme.warningColor;
-        return Theme.withAlpha(Theme.quickText, 0.62);
+        return Theme.scheme.onSurfaceVariant;
+    }
+
+    // Подложка строки статуса: ошибка — error-container, прочее — та же
+    // surface-container-highest, что у поля, но с низкой альфой.
+    readonly property color statusPlateColor: {
+        if (LockState.statusKind === "error")
+            return Theme.errorContainer;
+        return Theme.veil(Theme.surfaceContainerHighest, 0.55);
     }
 
     function submit() {

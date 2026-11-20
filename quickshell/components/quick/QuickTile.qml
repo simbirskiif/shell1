@@ -163,7 +163,7 @@ Rectangle {
         width: 26
         height: 26
         radius: width / 2
-        color: removeHover.hovered ? Theme.error : Theme.errorContainer
+        color: removeHover.containsMouse ? Theme.error : Theme.errorContainer
         border.width: 2
         border.color: Theme.surface
         z: 3
@@ -172,7 +172,7 @@ Rectangle {
         Text {
             anchors.centerIn: parent
             text: "\uf068"
-            color: removeHover.hovered ? Theme.scheme.onError : Theme.scheme.onErrorContainer
+            color: removeHover.containsMouse ? Theme.scheme.onError : Theme.scheme.onErrorContainer
             font.family: Theme.iconFontFamily
             font.pixelSize: 10
         }

@@ -4,6 +4,10 @@ import "../core"
 
 // Контекстное меню рабочего стола. Живёт внутри того же DesktopLayer, что и
 // виджеты: отдельного окна/слоя для меню нет.
+//
+// Оформление — M3 menu: тональная поверхность surface-container, радиус md,
+// строки 44 px, hover — state layer, разделители outline-variant. Тени не
+// используются: глубину задаёт тон поверхности.
 Item {
     id: root
 
@@ -17,7 +21,7 @@ Item {
 
     visible: root.opened
     width: 240
-    height: menuColumn.implicitHeight + 12
+    height: menuColumn.implicitHeight + Theme.space.sm * 2
     x: Math.max(12, Math.min(root.position.x, parent.width - root.width - 12))
     y: Math.max(12, Math.min(root.position.y, parent.height - root.height - 12))
     z: 210
@@ -53,19 +57,20 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: Theme.quickRadius
-        color: Theme.menuSurface
+        radius: Theme.shape.md
+        // M3 menu — surface-container; поверх обоев оставляем лёгкую вуаль,
+        // но цвет роли не подменяем.
+        color: Theme.veil(Theme.surfaceContainer, 0.98)
         border.width: 1
-        border.color: Theme.menuBorder
-        opacity: 0.98
+        border.color: Theme.outlineVariant
     }
 
     Column {
         id: menuColumn
 
         anchors.fill: parent
-        anchors.margins: 6
-        spacing: 1
+        anchors.margins: Theme.space.sm
+        spacing: 0
 
         Repeater {
             model: root.menuItems()
@@ -76,7 +81,7 @@ Item {
                 required property var modelData
 
                 width: menuColumn.width
-                height: menuRow.modelData.separator ? 9 : 32
+                height: menuRow.modelData.separator ? Theme.space.sm + 1 : Theme.touchTarget
 
                 Rectangle {
                     anchors.fill: parent
@@ -85,27 +90,32 @@ Item {
 
                     Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.leftMargin: Theme.space.md
+                        anchors.rightMargin: Theme.space.md
                         height: 1
-                        color: Theme.quickSeparator
+                        color: Theme.outlineVariant
                     }
                 }
 
                 Rectangle {
                     anchors.fill: parent
                     visible: !menuRow.modelData.separator
-                    radius: 8
+                    // Строка меню — скруглённый state layer, как в M3.
+                    radius: Theme.shape.xs
                     color: menuHover.containsMouse
-                           ? Theme.quickTileHover : "transparent"
+                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                           : "transparent"
 
                     Text {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.leftMargin: 9
-                        color: Theme.quickText
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 12
+                        anchors.leftMargin: Theme.space.md
+                        anchors.rightMargin: Theme.space.md
+                        color: Theme.scheme.onSurface
+                        font: Theme.typeLabelLarge
                         elide: Text.ElideRight
                         text: menuRow.modelData.label
                     }

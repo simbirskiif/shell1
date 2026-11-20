@@ -13,49 +13,50 @@ Item {
     signal clicked()
 
     implicitWidth: parent ? parent.width : 0
-    implicitHeight: Theme.quickRowHeight
+    implicitHeight: Theme.listItemHeight
     height: implicitHeight
 
+    // Строка списка m3: прозрачный контейнер, hover — state layer on-surface.
     Rectangle {
         anchors.fill: parent
-        color: deviceHover.hovered ? Theme.quickTileHover : "transparent"
+        color: deviceHover.containsMouse
+               ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover) : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
     }
 
     Text {
         id: iconText
         anchors.left: parent.left
-        anchors.leftMargin: 21
+        anchors.leftMargin: Theme.space.lg
         anchors.verticalCenter: parent.verticalCenter
         text: root.icon
-        color: Theme.quickTextDim
+        color: Theme.scheme.onSurfaceVariant
         font.family: Theme.iconFontFamily
-        font.pixelSize: 13
+        font.pixelSize: Theme.iconSize.md
     }
 
     Text {
         id: label
         anchors.left: iconText.right
-        anchors.leftMargin: 12
+        anchors.leftMargin: Theme.space.md
         anchors.right: chevron.left
-        anchors.rightMargin: 12
+        anchors.rightMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
         text: root.text !== "" ? root.text : "No device"
         elide: Text.ElideRight
-        color: Theme.quickText
-        font.family: Theme.fontFamily
-        font.pixelSize: 13
+        color: Theme.scheme.onSurface
+        font: Theme.typeBodyLarge
     }
 
     Text {
         id: chevron
         anchors.right: parent.right
-        anchors.rightMargin: 18
+        anchors.rightMargin: Theme.space.lg
         anchors.verticalCenter: parent.verticalCenter
         text: "\uf054"
-        color: Theme.quickTextDim
+        color: Theme.scheme.onSurfaceVariant
         font.family: Theme.iconFontFamily
-        font.pixelSize: 11
+        font.pixelSize: Theme.iconSize.sm
     }
 
     MouseArea {
@@ -64,5 +65,16 @@ Item {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.clicked()
+    }
+
+    // Разделитель m3: отделяет строку устройства от блока громкости выше.
+    Rectangle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.leftMargin: Theme.space.lg
+        anchors.rightMargin: Theme.space.lg
+        height: 1
+        color: Theme.outlineVariant
     }
 }

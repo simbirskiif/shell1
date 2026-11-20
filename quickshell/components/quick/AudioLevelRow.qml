@@ -16,18 +16,20 @@ Item {
     signal muteToggled()
 
     implicitWidth: parent ? parent.width : 0
-    implicitHeight: 58
+    implicitHeight: Theme.listItemHeight
     height: implicitHeight
 
+    // Кнопка-иконка m3: 40×40, круглая, hover — state layer on-surface.
     Rectangle {
         id: muteButton
         anchors.left: parent.left
-        anchors.leftMargin: 12
+        anchors.leftMargin: Theme.space.sm
         anchors.verticalCenter: parent.verticalCenter
-        width: 30
-        height: 30
-        radius: width / 2
-        color: muteHover.hovered ? Theme.quickTileHover : "transparent"
+        width: Theme.iconButtonSize
+        height: Theme.iconButtonSize
+        radius: Theme.shape.full
+        color: muteHover.containsMouse
+               ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover) : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
         Text {
@@ -35,9 +37,9 @@ Item {
             // Заглушённый канал показываем перечёркнутым глифом, иначе
             // непонятно, почему слайдер ничего не меняет.
             text: root.muted ? "\uf026" : root.icon
-            color: root.muted ? Theme.quickTextDim : Theme.quickText
+            color: root.muted ? Theme.scheme.onSurfaceVariant : Theme.scheme.onSurface
             font.family: Theme.iconFontFamily
-            font.pixelSize: 15
+            font.pixelSize: Theme.iconSize.md
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
 
@@ -53,25 +55,24 @@ Item {
     Text {
         id: percent
         anchors.right: parent.right
-        anchors.rightMargin: 16
+        anchors.rightMargin: Theme.space.lg
         anchors.verticalCenter: parent.verticalCenter
-        width: 42
+        width: Theme.space.xxxl
         horizontalAlignment: Text.AlignRight
         text: root.muted ? "Muted" : Math.round(root.value * 100) + "%"
-        color: Theme.quickTextDim
-        font.family: Theme.fontFamily
-        font.pixelSize: 12
+        color: Theme.scheme.onSurfaceVariant
+        font: Theme.typeBodyMedium
     }
 
     // Слайдер показывает сохранённую громкость и при mute: так видно, каким
     // будет уровень после снятия mute. Менять значение mute не мешает.
     PanelSlider {
         anchors.left: muteButton.right
-        anchors.leftMargin: 10
+        anchors.leftMargin: Theme.space.sm
         anchors.right: percent.left
-        anchors.rightMargin: 12
+        anchors.rightMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
-        height: 22
+        height: Theme.iconSize.md + Theme.space.xs
         value: root.value
         onMoved: v => root.moved(v)
     }

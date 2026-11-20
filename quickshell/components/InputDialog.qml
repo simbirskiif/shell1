@@ -45,9 +45,10 @@ PanelWindow {
         UiState.submitInput(value);
     }
 
+    // Затемнение фона — ролью scrim, а не произвольным чёрным.
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.45)
+        color: Theme.scrimOverlay
         opacity: root.visible ? 1 : 0
         Behavior on opacity {
             MotionNumber {
@@ -62,15 +63,16 @@ PanelWindow {
         }
     }
 
+    // Карточка диалога: тональная поверхность surface-container-high и
+    // радиус dialogs (shape.xl). Границы и тени в M3 не нужны: глубину
+    // задаёт сам тон поверхности.
     Rectangle {
         id: card
         anchors.centerIn: parent
         width: 380
-        height: cardColumn.implicitHeight + Theme.quickPadding * 2
-        radius: Theme.quickRadius
-        color: Theme.quickBackground
-        border.width: 1
-        border.color: Theme.quickBorder
+        height: cardColumn.implicitHeight + Theme.space.xl * 2
+        radius: Theme.shape.xl
+        color: Theme.surfaceContainerHigh
         opacity: root.visible ? 1 : 0
         scale: root.visible ? 1 : Theme.motionFadeThroughScale
         Behavior on opacity {
@@ -96,15 +98,13 @@ PanelWindow {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.margins: Theme.quickPadding
-            spacing: 6
+            anchors.margins: Theme.space.xl
+            spacing: Theme.space.md
 
             Text {
                 text: UiState.inputTitle
-                color: Theme.quickText
-                font.family: Theme.fontFamily
-                font.pixelSize: 15
-                font.weight: Font.Medium
+                color: Theme.scheme.onSurface
+                font: Theme.typeHeadlineSmall
             }
 
             Text {
@@ -112,56 +112,58 @@ PanelWindow {
                 visible: UiState.inputHint !== ""
                 wrapMode: Text.WordWrap
                 text: UiState.inputHint
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeBodyMedium
             }
 
+            // Поле ввода M3: контейнер surface-container-highest, радиус
+            // shape.xs, обводка outline; в фокусе — primary толщиной 2.
             Rectangle {
                 width: parent.width
-                height: 44
-                radius: 12
-                color: Theme.quickTile
+                height: Theme.listItemHeight
+                radius: Theme.shape.xs
+                color: Theme.surfaceContainerHighest
                 border.width: input.activeFocus ? 2 : 1
-                border.color: input.activeFocus ? Theme.accent : Theme.quickBorder
+                border.color: input.activeFocus ? Theme.primary : Theme.outline
                 Behavior on border.color { ColorAnimation { duration: Theme.motionShort3 } }
 
                 TextInput {
                     id: input
                     anchors.fill: parent
-                    anchors.leftMargin: 14
-                    anchors.rightMargin: 14
+                    anchors.leftMargin: Theme.space.lg
+                    anchors.rightMargin: Theme.space.lg
                     verticalAlignment: TextInput.AlignVCenter
-                    color: Theme.quickText
-                    selectionColor: Theme.accent
-                    selectedTextColor: Theme.quickIconOn
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 13
+                    color: Theme.scheme.onSurface
+                    selectionColor: Theme.primary
+                    selectedTextColor: Theme.scheme.onPrimary
+                    font: Theme.typeBodyLarge
                     onAccepted: root.submit(input.text)
                 }
             }
 
-            Item { width: 1; height: 4 }
+            Item { width: 1; height: Theme.space.xs }
 
             Row {
                 anchors.right: parent.right
-                spacing: 8
+                spacing: Theme.space.sm
 
+                // Текстовая кнопка M3: прозрачный контейнер, подпись primary,
+                // состояние наведения — state layer.
                 Rectangle {
                     id: cancelButton
-                    width: cancelLabel.implicitWidth + 32
-                    height: 36
-                    radius: height / 2
-                    color: cancelHover.hovered ? Theme.quickTileHover : Theme.quickTile
+                    width: cancelLabel.implicitWidth + Theme.space.xl * 2
+                    height: Theme.buttonHeight
+                    radius: Theme.shape.full
+                    color: cancelHover.containsMouse ? Theme.stateLayer(Theme.primary, Theme.stateHover)
+                                               : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
                     Text {
                         id: cancelLabel
                         anchors.centerIn: parent
                         text: "Отмена"
-                        color: Theme.quickText
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 13
+                        color: Theme.primary
+                        font: Theme.typeLabelLarge
                     }
 
                     MouseArea {
@@ -173,18 +175,19 @@ PanelWindow {
                     }
                 }
 
+                // Залитая кнопка M3: пилюля 40 px, primary + on-primary.
                 Rectangle {
                     id: saveButton
-                    width: saveLabel.implicitWidth + 36
-                    height: 36
-                    radius: height / 2
-                    color: Theme.accent
+                    width: saveLabel.implicitWidth + Theme.space.xl * 2
+                    height: Theme.buttonHeight
+                    radius: Theme.shape.full
+                    color: Theme.primary
 
                     Rectangle {
                         anchors.fill: parent
                         radius: parent.radius
-                        color: Theme.quickIconOn
-                        opacity: saveHover.hovered ? 0.08 : 0
+                        color: Theme.scheme.onPrimary
+                        opacity: saveHover.containsMouse ? Theme.stateHover : 0
                         Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
                     }
 
@@ -192,10 +195,8 @@ PanelWindow {
                         id: saveLabel
                         anchors.centerIn: parent
                         text: "Сохранить"
-                        color: Theme.quickIconOn
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 13
-                        font.weight: Font.Medium
+                        color: Theme.scheme.onPrimary
+                        font: Theme.typeLabelLarge
                     }
 
                     MouseArea {
