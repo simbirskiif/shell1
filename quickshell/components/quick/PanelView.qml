@@ -3,8 +3,10 @@ import ".."
 import "../../singletons"
 
 // Единая обёртка вида (основная сетка плиток и дочерние панели).
-// Переход — m3 fade through: уходящий вид уменьшается и растворяется,
-// приходящий проявляется из 92% и дорастает.
+// Переход — m3 fade through: уходящий вид быстро гаснет, приходящий
+// проявляется с задержкой из 92% и дорастает. Прозрачность в программном
+// переходе ведёт отдельное свойство fade, поэтому виды больше не висят
+// одновременно на полной яркости и заголовки не накладываются.
 // Тем же раскрытием управляет и жест «назад»: палец и анимация пишут в одно
 // свойство reveal, поэтому в момент отпускания нет ни мигания, ни рывка.
 Item {
@@ -30,6 +32,12 @@ Item {
     // перехода, во время жеста — прогресс пальца (мгновенно, без анимации).
     property real reveal: 0
 
+    // Непрозрачность программного перехода. Отдельно от reveal: у M3
+    // fade through уходящий вид гаснет за ~120 мс, а приходящий начинает
+    // проявляться только после ~90 мс. Раскрытие при этом продолжает
+    // анимироваться (масштаб), и кадра «пусто» не возникает.
+    property real fade: 0
+
     readonly property bool gestureDriven: root.gesture >= 0
     // Для приходящего вида жест — это само раскрытие, для уходящего — обратное.
     readonly property real gestureReveal: root.gesture < 0 ? -1
@@ -44,9 +52,14 @@ Item {
         return t * t * (3 - 2 * t);
     }
 
-    opacity: root.eased
+    // Во время жеста прозрачность ведёт палец, в остальное время —
+    // отдельная анимация fade (см. ниже).
+    opacity: root.gestureDriven ? root.eased : root.fade
     scale: Theme.motionFadeThroughScale + (1 - Theme.motionFadeThroughScale) * root.eased
-    visible: root.eased > 0.002
+    // Активный вид держим видимым даже на нулевой прозрачности: иначе
+    // ListView внутри него не создаёт делегаты и до конца перехода отдаёт
+    // неполную высоту — карточка схлопывается и раздувается.
+    visible: root.active || root.opacity > 0.002
 
     // За пальцем вид едет лишь частично: остальное делают прозрачность и
     // масштаб. Иначе на половине жеста оба вида стоят за краями панели.
@@ -62,17 +75,34 @@ Item {
     // а transform — нет.
     transform: Translate { x: root.gestureX }
 
-    // Во время жеста раскрытие мгновенно равно целевому: анимация перехода
-    // не должна догонять палец, иначе на отпускании будет скачок.
+    // Во время жеста раскрытие и прозрачность мгновенно равны целевому:
+    // анимация перехода не должна догонять палец, иначе на отпускании
+    // будет скачок.
     function snapReveal() {
         root.reveal = root.active ? 1 : 0;
+        root.fade = root.active ? 1 : 0;
     }
 
     // Достаточно один раз на входе в жест: дальше раскрытием рулит палец,
-    // а «мигать» при смене panel успевает onActiveChanged.
+    // а «мигать» при смене panel успевает onActiveChanged. На выходе из
+    // жеста синхронизируем fade с состоянием вида, чтобы не было прыжка
+    // с «пальцевой» прозрачности на программную.
     onGestureDrivenChanged: {
-        if (root.gestureDriven)
+        if (root.gestureDriven) {
             root.snapReveal();
+            return;
+        }
+        // Отпустили палец: прозрачность продолжаем с того места, где он
+        // остановился, и доводим вид до целевого состояния. Иначе был бы
+        // скачок с «пальцевой» прозрачности на программную.
+        root.fade = root.eased;
+        if (root.active) {
+            appear.restart();
+            fadeIn.restart();
+        } else {
+            disappear.restart();
+            fadeOut.restart();
+        }
     }
 
     onActiveChanged: {
@@ -80,19 +110,22 @@ Item {
             root.snapReveal();
             return;
         }
-        if (root.active)
+        if (root.active) {
             appear.restart();
-        else
+            fadeIn.restart();
+        } else {
             disappear.restart();
+            fadeOut.restart();
+        }
     }
 
-    Component.onCompleted: root.reveal = root.active ? 1 : 0
+    Component.onCompleted: {
+        root.reveal = root.active ? 1 : 0;
+        root.fade = root.active ? 1 : 0;
+    }
 
-    // Переход — встречное растворение: уходящий гаснет, приходящий
-    // проявляется всё это время. Раньше приходящий ждал 30% времени
-    // (как в m3 fade through), и в середине перехода карточка стояла
-    // пустой — визуально это читается как рывок: контент пропал, потом
-    // появился и доехал. С перекрытием пустого кадра нет.
+    // Раскрытие (масштаб) живёт дольше прозрачности — это и даёт m3
+    // fade through: контент доезжает уже без наложения соседнего вида.
     MotionNumber {
         id: appear
         target: root
@@ -109,6 +142,34 @@ Item {
         to: 0
         duration: Theme.motionMedium2
         curve: Theme.curveEmphasizedAccelerate
+    }
+
+    // Уходящий гаснет быстро (m3: exit — первая часть перехода).
+    NumberAnimation {
+        id: fadeOut
+        target: root
+        property: "fade"
+        to: 0
+        duration: 120
+        easing.type: Easing.Bezier
+        easing.bezierCurve: Theme.curveStandardAccelerate
+    }
+
+    // Приходящий проявляется с задержкой 100 мс и доезжает к концу
+    // перехода. Уходящий к этому моменту уже погас, поэтому заголовки
+    // двух видов не накладываются, а фон карточки не пустует.
+    SequentialAnimation {
+        id: fadeIn
+
+        PauseAnimation { duration: 100 }
+        NumberAnimation {
+            target: root
+            property: "fade"
+            to: 1
+            duration: Theme.motionMedium2 - 100
+            easing.type: Easing.Bezier
+            easing.bezierCurve: Theme.curveEmphasizedDecelerate
+        }
     }
 
     Item {
