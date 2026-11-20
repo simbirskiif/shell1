@@ -731,6 +731,7 @@ qs ipc -p /home/adm_a/shell/quickshell call widgets <function> [args...]
 | `colorMode` | `uid accent\|neutral` | Палитра экземпляра. |
 | `materialList` | — | Список материалов. |
 | `rescan` | — | Пересканировать виджеты и материалы. |
+| `wallpaper` | — | Перечитать активные обои у hyprpaper (если фон сменили внешней утилитой). |
 
 ### 8.2. Примеры
 
@@ -742,6 +743,7 @@ qs ipc -p /home/adm_a/shell/quickshell call widgets colorMode i1 neutral
 qs ipc -p /home/adm_a/shell/quickshell call widgets dimFor i1 0.35
 qs ipc -p /home/adm_a/shell/quickshell call widgets dimFor i1 -1
 qs ipc -p /home/adm_a/shell/quickshell call widgets geometry i1 0 0 2 2
+qs ipc -p /home/adm_a/shell/quickshell call widgets wallpaper
 ```
 
 `state` выводит экраны, uid, id, позиции, размеры, материал, цвет, dim,
