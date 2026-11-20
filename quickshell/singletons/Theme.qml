@@ -87,8 +87,14 @@ Singleton {
     readonly property int dockMorphDuration: 160
     readonly property int dockFadeDuration: 130
     readonly property int dockHideDuration: 220
-    readonly property var curveDockExpressive: [0.2, 1.18, 0.24, 1.0]
-    readonly property var curveDockExit: [0.3, 0.0, 0.8, 0.15]
+    // ВАЖНО: easing.bezierCurve в Qt — это НЕ CSS cubic-bezier. Список
+    // задаётся группами по три точки «[cx1, cy1, cx2, cy2, endx, endy]»,
+    // и последняя точка обязана быть (1, 1). С 4 значениями (как в CSS)
+    // Qt молча игнорирует кривую, и easing вырождается в линейный: движение
+    // идёт с постоянной скоростью и в конце резко обрывается — это и
+    // читалось как «контент дёргается в конце анимации».
+    readonly property var curveDockExpressive: [0.2, 1.18, 0.24, 1.0, 1.0, 1.0]
+    readonly property var curveDockExit: [0.3, 0.0, 0.8, 0.15, 1.0, 1.0]
     // Критически задемпфированная пружина прокрутки (тик 16 мс).
     readonly property real dockScrollOmega: 0.032
     readonly property real dockScrollStop: 0.4
@@ -96,7 +102,7 @@ Singleton {
     // середина и мягкое торможение — заметно нелинейно, без перелёта
     // за маску ввода.
     readonly property int dockResizeDuration: 240
-    readonly property var curveDockResize: [0.4, 0.0, 0.2, 1.0]
+    readonly property var curveDockResize: [0.4, 0.0, 0.2, 1.0, 1.0, 1.0]
 
     // Карточки уведомлений и Центр уведомлений.
     readonly property int notificationWidth: 360
@@ -204,12 +210,13 @@ Singleton {
     readonly property int motionSwipeExit: 150
     readonly property int motionSwipeReturn: 250
 
-    readonly property var curveEmphasized: [0.2, 0.0, 0.0, 1.0]
-    readonly property var curveEmphasizedDecelerate: [0.05, 0.7, 0.1, 1.0]
-    readonly property var curveEmphasizedAccelerate: [0.3, 0.0, 0.8, 0.15]
-    readonly property var curveStandard: [0.2, 0.0, 0.0, 1.0]
-    readonly property var curveStandardDecelerate: [0.0, 0.0, 0.0, 1.0]
-    readonly property var curveStandardAccelerate: [0.3, 0.0, 1.0, 1.0]
+    // Формат списка — как у кривых дока выше: три точки, конец (1, 1).
+    readonly property var curveEmphasized: [0.2, 0.0, 0.0, 1.0, 1.0, 1.0]
+    readonly property var curveEmphasizedDecelerate: [0.05, 0.7, 0.1, 1.0, 1.0, 1.0]
+    readonly property var curveEmphasizedAccelerate: [0.3, 0.0, 0.8, 0.15, 1.0, 1.0]
+    readonly property var curveStandard: [0.2, 0.0, 0.0, 1.0, 1.0, 1.0]
+    readonly property var curveStandardDecelerate: [0.0, 0.0, 0.0, 1.0, 1.0, 1.0]
+    readonly property var curveStandardAccelerate: [0.3, 0.0, 1.0, 1.0, 1.0, 1.0]
 
     // Масштабы входа/выхода: 92% у видов (fade through) и 80% у элементов
     // списков (m3 enter/exit), чтобы переходы читались одинаково.
