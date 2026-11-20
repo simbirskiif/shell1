@@ -31,6 +31,13 @@ Singleton {
     // Плоская карта ключ → значение; пересобирается целиком, потому что QML
     // не замечает изменения полей объекта.
     property var values: ({})
+    // Ключи, изменённые ЭТИМ экземпляром с прошлой записи. На диск пишем их
+    // поверх актуального файла, а не всю карту: оболочка может работать не в
+    // одном экземпляре (например, старый процесс после перезапуска), и запись
+    // целой карты затирала бы чужие только что сохранённые настройки.
+    property var dirty: ({})
+    property var pendingWrite: ({})
+    property bool writing: false
     // Пока файл не прочитан (или не выяснено, что его нет), значения из
     // настроек не применяются и не сохраняются: иначе дефолты затрёт файл.
     property bool loaded: false
@@ -45,6 +52,7 @@ Singleton {
         if (root.values[key] === value)
             return;
         root.values = root.withValue(root.values, key, value);
+        root.dirty = root.withValue(root.dirty, key, value);
         save.restart();
     }
 
@@ -72,10 +80,46 @@ Singleton {
         root.loaded = true;
     }
 
+    // Перечитать актуальный файл и наложить на него наши изменённые ключи.
+    // Чтение асинхронное (FileView), запись — после того как файл прочитан:
+    // иначе гонка с другим экземпляром снова затирала бы его настройки.
     function flush() {
         if (!root.loaded || !root.dirReady)
             return;
-        file.setText(JSON.stringify(root.values, null, 2) + "\n");
+        if (Object.keys(root.dirty).length === 0)
+            return;
+        // Предыдущая запись ещё читает файл: её finishWrite() увидит новые
+        // грязные ключи и запланирует ещё одно сохранение.
+        if (root.writing)
+            return;
+        root.writing = true;
+        root.pendingWrite = root.dirty;
+        root.dirty = ({});
+        disk.reload();
+        writeWatchdog.restart();
+    }
+
+    function finishWrite() {
+        let merged = {};
+        const text = disk.text();
+        if (text) {
+            try {
+                const parsed = JSON.parse(text);
+                if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed))
+                    merged = parsed;
+            } catch (error) {
+                console.warn("Settings: не удалось разобрать", root.path, error);
+            }
+        }
+        for (const key in root.pendingWrite)
+            merged[key] = root.pendingWrite[key];
+        root.pendingWrite = ({});
+        root.values = merged;
+        root.writing = false;
+        writeWatchdog.stop();
+        file.setText(JSON.stringify(merged, null, 2) + "\n");
+        if (Object.keys(root.dirty).length > 0)
+            save.restart();
     }
 
     FileView {
@@ -89,6 +133,43 @@ Singleton {
         onLoadFailed: root.loaded = true
         onSaved: root.loaded = true
         onSaveFailed: error => console.warn("Settings: не удалось сохранить настройки:", error)
+    }
+
+    // Читатель актуального файла для слияния перед записью. Отдельный от
+    // FileView записи: тот держит собственный буфер и не перечитывает файл
+    // перед каждым сохранением.
+    FileView {
+        id: disk
+
+        path: root.path
+        watchChanges: false
+        printErrors: false
+
+        onLoaded: {
+            if (root.writing)
+                root.finishWrite();
+        }
+
+        onLoadFailed: {
+            // Файла нет (или он не читается): пишем только наши ключи.
+            if (root.writing)
+                root.finishWrite();
+        }
+    }
+
+    // Страховка: если FileView почему-то не пришлёт onLoaded (например,
+    // файл исчез между чтениями), запись всё равно завершится.
+    Timer {
+        id: writeWatchdog
+
+        interval: 1500
+        repeat: false
+        onTriggered: {
+            if (root.writing) {
+                console.warn("Settings: чтение перед записью не завершилось, пишем как есть");
+                root.finishWrite();
+            }
+        }
     }
 
     // Каталог состояния может не существовать: без него FileView не запишет.
