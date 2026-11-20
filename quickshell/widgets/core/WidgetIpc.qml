@@ -133,6 +133,13 @@ IpcHandler {
         }).join("\n")
     }
 
+    // Перечитать активные обои у hyprpaper (например, после смены фона
+    // внешней утилитой, которая не оставила событий Hyprland).
+    function wallpaper(): string {
+        Wallpaper.reload()
+        return state()
+    }
+
     function rescan(): string {
         WidgetRegistry.scheduleScan()
         MaterialRegistry.scheduleScan()

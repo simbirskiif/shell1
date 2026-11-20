@@ -1006,9 +1006,10 @@ ShellRoot {
             return state();
         }
 
-        // Принудительно перечитать палитру pywal.
+        // Принудительно перечитать палитру pywal и активные обои.
         function palette(): string {
             Wal.reload();
+            Wallpaper.reload();
             return state();
         }
 
