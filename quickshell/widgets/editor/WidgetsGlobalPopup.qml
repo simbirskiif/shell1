@@ -30,156 +30,174 @@ SidePanel {
             root.message = "Цвет по умолчанию: " + mode
     }
 
-    Column {
-        id: layout
+    // Содержимое прокручивается, чтобы футер с «Закрыть» не уезжал за
+    // нижнюю границу экрана (раньше это был Column на всю высоту панели).
+    Flickable {
+        id: contentScroll
 
-        anchors.fill: parent
-        spacing: 10
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: footer.top
+        anchors.bottomMargin: 10
+        clip: true
+        contentHeight: contentColumn.height
+        boundsBehavior: Flickable.StopAtBounds
 
-            Row {
-                width: parent.width
+        Column {
+            id: contentColumn
 
-                Text {
-                    width: parent.width - 34
-                    color: Theme.quickText
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 16
-                    font.bold: true
-                    text: "Параметры виджетов"
-                }
+            width: contentScroll.width
+            spacing: 10
 
-                HostButton {
-                    text: "✕"
-                    onClicked: EditorState.closeGlobalSettings()
-                }
-            }
-
-            Text {
-                width: parent.width
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
-                wrapMode: Text.WordWrap
-                text: "Действуют для всех виджетов, пока экземпляр не переопределил "
-                      + "материал или цвет в своих настройках."
-            }
+        Row {
+            width: parent.width
 
             Text {
-                color: Theme.quickTextDim
+                width: parent.width - 34
+                color: Theme.quickText
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
-                text: "Материал по умолчанию"
+                font.pixelSize: 16
+                font.bold: true
+                text: "Параметры виджетов"
             }
 
-            Flow {
-                width: parent.width
-                spacing: 4
-
-                Repeater {
-                    model: MaterialRegistry.materials
-
-                    delegate: HostButton {
-                        required property var modelData
-
-                        text: modelData.name
-                        active: Config.defaultMaterial === modelData.id
-                        onClicked: root.chooseMaterial(modelData.id)
-                    }
-                }
+            HostButton {
+                text: "✕"
+                onClicked: EditorState.closeGlobalSettings()
             }
+        }
 
-            Text {
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
-                text: "Цвет по умолчанию"
-            }
+        Text {
+            width: parent.width
+            color: Theme.quickTextDim
+            font.family: Theme.fontFamily
+            font.pixelSize: 11
+            wrapMode: Text.WordWrap
+            text: "Действуют для всех виджетов, пока экземпляр не переопределил "
+                  + "материал или цвет в своих настройках."
+        }
 
-            Row {
-                spacing: 4
+        Text {
+            color: Theme.quickTextDim
+            font.family: Theme.fontFamily
+            font.pixelSize: 11
+            text: "Материал по умолчанию"
+        }
 
-                HostButton {
-                    text: "Акцент"
-                    active: Config.defaultColorMode === "accent"
-                    onClicked: root.chooseColorMode("accent")
-                }
+        Flow {
+            width: parent.width
+            spacing: 4
 
-                HostButton {
-                    text: "Нейтральная"
-                    active: Config.defaultColorMode === "neutral"
-                    onClicked: root.chooseColorMode("neutral")
-                }
-            }
+            Repeater {
+                model: MaterialRegistry.materials
 
-            Text {
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
-                text: "Затемнение материала"
-            }
+                delegate: HostButton {
+                    required property var modelData
 
-            Row {
-                width: parent.width
-                spacing: 8
-
-                PanelSlider {
-                    width: Math.max(80, parent.width - 48)
-                    value: Config.defaultMaterialDim
-                    onMoved: value => Config.setDefaultMaterialDim(value)
-                }
-
-                Text {
-                    width: 40
-                    anchors.verticalCenter: parent.verticalCenter
-                    horizontalAlignment: Text.AlignRight
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 11
-                    text: Math.round(Config.defaultMaterialDim * 100) + "%"
-                }
-            }
-
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: Theme.quickSeparator
-                opacity: 0.4
-            }
-
-            Text {
-                width: parent.width
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
-                wrapMode: Text.WordWrap
-                text: root.message.length > 0
-                      ? root.message
-                      : "Экземпляры с выбранным «По умолчанию» следуют этим значениям."
-            }
-
-            Item { width: 1; height: Math.max(0, parent.height - 430) }
-
-            Row {
-                width: parent.width
-                spacing: 6
-
-                HostButton {
-                    text: "Сбросить переопределения"
-                    onClicked: {
-                        EditorState.beginOperation()
-                        const count = LayoutStore.clearOverrides()
-                        root.message = count > 0
-                                     ? "Сброшено переопределений: " + count
-                                     : "Переопределений нет"
-                    }
-                }
-
-                Item { width: Math.max(0, parent.width - 220); height: 1 }
-
-                HostButton {
-                    text: "Закрыть"
-                    onClicked: EditorState.closeGlobalSettings()
+                    text: modelData.name
+                    active: Config.defaultMaterial === modelData.id
+                    onClicked: root.chooseMaterial(modelData.id)
                 }
             }
         }
+
+        Text {
+            color: Theme.quickTextDim
+            font.family: Theme.fontFamily
+            font.pixelSize: 11
+            text: "Цвет по умолчанию"
+        }
+
+        Row {
+            spacing: 4
+
+            HostButton {
+                text: "Акцент"
+                active: Config.defaultColorMode === "accent"
+                onClicked: root.chooseColorMode("accent")
+            }
+
+            HostButton {
+                text: "Нейтральная"
+                active: Config.defaultColorMode === "neutral"
+                onClicked: root.chooseColorMode("neutral")
+            }
+        }
+
+        Text {
+            color: Theme.quickTextDim
+            font.family: Theme.fontFamily
+            font.pixelSize: 11
+            text: "Затемнение материала"
+        }
+
+        Row {
+            width: parent.width
+            spacing: 8
+
+            PanelSlider {
+                width: Math.max(80, parent.width - 48)
+                value: Config.defaultMaterialDim
+                onMoved: value => Config.setDefaultMaterialDim(value)
+            }
+
+            Text {
+                width: 40
+                anchors.verticalCenter: parent.verticalCenter
+                horizontalAlignment: Text.AlignRight
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
+                font.pixelSize: 11
+                text: Math.round(Config.defaultMaterialDim * 100) + "%"
+            }
+        }
+
+        Rectangle {
+            width: parent.width
+            height: 1
+            color: Theme.quickSeparator
+            opacity: 0.4
+        }
+
+        Text {
+            width: parent.width
+            color: Theme.quickTextDim
+            font.family: Theme.fontFamily
+            font.pixelSize: 11
+            wrapMode: Text.WordWrap
+            text: root.message.length > 0
+                  ? root.message
+                  : "Экземпляры с выбранным «По умолчанию» следуют этим значениям."
+        }
+        }
     }
+
+    // Футер закреплён внизу и виден всегда.
+    Row {
+        id: footer
+
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        spacing: 6
+
+        HostButton {
+            text: "Сбросить переопределения"
+            onClicked: {
+                EditorState.beginOperation()
+                const count = LayoutStore.clearOverrides()
+                root.message = count > 0
+                             ? "Сброшено переопределений: " + count
+                             : "Переопределений нет"
+            }
+        }
+
+        Item { width: Math.max(0, footer.width - 220); height: 1 }
+
+        HostButton {
+            text: "Закрыть"
+            onClicked: EditorState.closeGlobalSettings()
+        }
+    }
+}

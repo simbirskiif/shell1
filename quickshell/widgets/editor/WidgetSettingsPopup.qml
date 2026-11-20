@@ -140,276 +140,295 @@ SidePanel {
         }
     }
 
+    // Шапка и общие параметры материала закреплены сверху: так видно, что
+    // меняешь, даже когда список полей прокручен.
     Column {
-        id: layout
+        id: fixedTop
 
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
         spacing: 8
 
-            Row {
-                width: parent.width
-
-                Text {
-                    width: parent.width - 30
-                    color: Theme.quickText
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 15
-                    font.bold: true
-                    elide: Text.ElideRight
-                    text: root.widget ? root.widget.name : "Настройки"
-                }
-
-                HostButton {
-                    text: "✕"
-                    onClicked: EditorState.closeSettings()
-                }
-            }
+        Row {
+            width: parent.width
 
             Text {
-                color: Theme.quickTextDim
+                width: parent.width - 30
+                color: Theme.quickText
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
-                text: "Материал"
+                font.pixelSize: 15
+                font.bold: true
+                elide: Text.ElideRight
+                text: root.widget ? root.widget.name : "Настройки"
             }
 
-            Flow {
-                width: parent.width
-                spacing: 4
+            HostButton {
+                text: "✕"
+                onClicked: EditorState.closeSettings()
+            }
+        }
 
-                HostButton {
-                    text: "По умолчанию"
-                    active: root.instanceMaterial.length === 0
-                    onClicked: {
-                        LayoutStore.setMaterial(root.uid, "")
-                        root.refreshValues()
-                    }
-                }
+        Text {
+            color: Theme.quickTextDim
+            font.family: Theme.fontFamily
+            font.pixelSize: 11
+            text: "Материал"
+        }
 
-                Repeater {
-                    model: root.materialChoices()
+        Flow {
+            width: parent.width
+            spacing: 4
 
-                    delegate: HostButton {
-                        required property var modelData
-
-                        text: modelData.name
-                        active: root.instanceMaterial === modelData.id
-                        onClicked: {
-                            LayoutStore.setMaterial(root.uid, modelData.id)
-                            root.refreshValues()
-                        }
-                    }
+            HostButton {
+                text: "По умолчанию"
+                active: root.instanceMaterial.length === 0
+                onClicked: {
+                    LayoutStore.setMaterial(root.uid, "")
+                    root.refreshValues()
                 }
             }
 
-            Text {
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
-                text: "Режим цвета"
-            }
+            Repeater {
+                model: root.materialChoices()
 
-            Row {
-                spacing: 4
+                delegate: HostButton {
+                    required property var modelData
 
-                HostButton {
-                    text: "По умолчанию"
-                    active: root.instanceColorMode.length === 0
+                    text: modelData.name
+                    active: root.instanceMaterial === modelData.id
                     onClicked: {
-                        LayoutStore.setColorMode(root.uid, "")
-                        root.refreshValues()
-                    }
-                }
-
-                HostButton {
-                    text: "Акцент"
-                    active: root.instanceColorMode === "accent"
-                    onClicked: {
-                        LayoutStore.setColorMode(root.uid, "accent")
-                        root.refreshValues()
-                    }
-                }
-
-                HostButton {
-                    text: "Нейтральная"
-                    active: root.instanceColorMode === "neutral"
-                    onClicked: {
-                        LayoutStore.setColorMode(root.uid, "neutral")
+                        LayoutStore.setMaterial(root.uid, modelData.id)
                         root.refreshValues()
                     }
                 }
             }
+        }
 
-            Text {
-                color: Theme.quickTextDim
-                font.family: Theme.fontFamily
-                font.pixelSize: 11
-                text: "Затемнение материала"
-            }
+        Text {
+            color: Theme.quickTextDim
+            font.family: Theme.fontFamily
+            font.pixelSize: 11
+            text: "Режим цвета"
+        }
 
-            Row {
-                width: parent.width
-                spacing: 8
+        Row {
+            spacing: 4
 
-                PanelSlider {
-                    width: Math.max(80, parent.width - 48)
-                    value: root.dim
-                    onMoved: value => LayoutStore.setDim(root.uid, value)
-                }
-
-                Text {
-                    width: 40
-                    anchors.verticalCenter: parent.verticalCenter
-                    horizontalAlignment: Text.AlignRight
-                    color: Theme.quickTextDim
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 11
-                    text: Math.round(root.dim * 100) + "%"
+            HostButton {
+                text: "По умолчанию"
+                active: root.instanceColorMode.length === 0
+                onClicked: {
+                    LayoutStore.setColorMode(root.uid, "")
+                    root.refreshValues()
                 }
             }
 
             HostButton {
-                text: "По умолчанию"
-                active: !root.dimOverridden
-                onClicked: LayoutStore.setDim(root.uid, NaN)
+                text: "Акцент"
+                active: root.instanceColorMode === "accent"
+                onClicked: {
+                    LayoutStore.setColorMode(root.uid, "accent")
+                    root.refreshValues()
+                }
             }
 
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: Theme.quickSeparator
-                opacity: 0.4
+            HostButton {
+                text: "Нейтральная"
+                active: root.instanceColorMode === "neutral"
+                onClicked: {
+                    LayoutStore.setColorMode(root.uid, "neutral")
+                    root.refreshValues()
+                }
+            }
+        }
+
+        Text {
+            color: Theme.quickTextDim
+            font.family: Theme.fontFamily
+            font.pixelSize: 11
+            text: "Затемнение материала"
+        }
+
+        Row {
+            width: parent.width
+            spacing: 8
+
+            PanelSlider {
+                width: Math.max(80, parent.width - 48)
+                value: root.dim
+                onMoved: value => LayoutStore.setDim(root.uid, value)
             }
 
-            Flickable {
+            Text {
+                width: 40
+                anchors.verticalCenter: parent.verticalCenter
+                horizontalAlignment: Text.AlignRight
+                color: Theme.quickTextDim
+                font.family: Theme.fontFamily
+                font.pixelSize: 11
+                text: Math.round(root.dim * 100) + "%"
+            }
+        }
+
+        HostButton {
+            text: "По умолчанию"
+            active: !root.dimOverridden
+            onClicked: LayoutStore.setDim(root.uid, NaN)
+        }
+
+        Rectangle {
+            width: parent.width
+            height: 1
+            color: Theme.quickSeparator
+            opacity: 0.4
+        }
+    }
+
+    // Поля settings из манифеста: прокручиваются в остатке высоты панели.
+    // Футер закреплён у нижней кромки, поэтому «Удалить/Закрыть» больше не
+    // уезжают за границу экрана на длинном списке полей.
+    Flickable {
+        id: fieldsScroll
+
+        anchors.top: fixedTop.bottom
+        anchors.topMargin: 8
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: footer.top
+        anchors.bottomMargin: 8
+        clip: true
+        contentHeight: settingsColumn.height
+        boundsBehavior: Flickable.StopAtBounds
+
+
+            Column {
+                id: settingsColumn
+
                 width: parent.width
-                height: Math.max(80, parent.height - 250)
-                clip: true
-                contentHeight: settingsColumn.height
-                boundsBehavior: Flickable.StopAtBounds
+                spacing: 6
 
-                Column {
-                    id: settingsColumn
+                Repeater {
+                    model: root.widget ? root.widget.settingsSchema : []
 
-                    width: parent.width
-                    spacing: 6
+                    delegate: Item {
+                        id: settingRow
 
-                    Repeater {
-                        model: root.widget ? root.widget.settingsSchema : []
+                        required property var modelData
 
-                        delegate: Item {
-                            id: settingRow
+                        width: settingsColumn.width
+                        height: settingRow.modelData.type === "enum" ? 52 : 32
 
-                            required property var modelData
+                        Text {
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width * 0.45
+                            color: Theme.quickTextDim
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 11
+                            elide: Text.ElideRight
+                            text: settingRow.modelData.label
+                        }
 
-                            width: settingsColumn.width
-                            height: settingRow.modelData.type === "enum" ? 52 : 32
-
-                            Text {
-                                anchors.left: parent.left
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width * 0.45
-                                color: Theme.quickTextDim
-                                font.family: Theme.fontFamily
-                                font.pixelSize: 11
-                                elide: Text.ElideRight
-                                text: settingRow.modelData.label
-                            }
+                        Rectangle {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: settingRow.modelData.type === "bool"
+                            width: 42
+                            height: 24
+                            radius: 12
+                            color: root.values[settingRow.modelData.key]
+                                   ? Theme.colors.primary
+                                   : Theme.quickTile
 
                             Rectangle {
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                visible: settingRow.modelData.type === "bool"
-                                width: 42
-                                height: 24
-                                radius: 12
+                                width: 18
+                                height: 18
+                                radius: 9
+                                y: 3
+                                x: root.values[settingRow.modelData.key]
+                                   ? parent.width - width - 3 : 3
                                 color: root.values[settingRow.modelData.key]
-                                       ? Theme.colors.primary
-                                       : Theme.quickTile
+                                       ? Theme.colors.onPrimary
+                                       : Theme.quickTextDim
+                            }
 
-                                Rectangle {
-                                    width: 18
-                                    height: 18
-                                    radius: 9
-                                    y: 3
-                                    x: root.values[settingRow.modelData.key]
-                                       ? parent.width - width - 3 : 3
-                                    color: root.values[settingRow.modelData.key]
-                                           ? Theme.colors.onPrimary
-                                           : Theme.quickTextDim
-                                }
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: root.setValue(settingRow.modelData.key,
+                                                         !root.values[settingRow.modelData.key])
+                            }
+                        }
 
-                                MouseArea {
-                                    anchors.fill: parent
+                        Row {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 4
+                            visible: settingRow.modelData.type === "enum"
+
+                            Repeater {
+                                model: settingRow.modelData.options || []
+
+                                delegate: HostButton {
+                                    required property var modelData
+
+                                    text: String(modelData)
                                     onClicked: root.setValue(settingRow.modelData.key,
-                                                             !root.values[settingRow.modelData.key])
+                                                             modelData)
                                 }
                             }
+                        }
 
-                            Row {
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 4
-                                visible: settingRow.modelData.type === "enum"
-
-                                Repeater {
-                                    model: settingRow.modelData.options || []
-
-                                    delegate: HostButton {
-                                        required property var modelData
-
-                                        text: String(modelData)
-                                        onClicked: root.setValue(settingRow.modelData.key,
-                                                                 modelData)
-                                    }
-                                }
-                            }
-
-                            TextInput {
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: Math.max(80, parent.width * 0.5)
-                                height: 26
-                                padding: 4
-                                visible: settingRow.modelData.type !== "bool"
-                                         && settingRow.modelData.type !== "enum"
-                                color: Theme.quickText
-                                font.family: Theme.fontFamily
-                                font.pixelSize: 11
-                                clip: true
-                                selectionColor: Theme.colors.primary
-                                text: root.values[settingRow.modelData.key] !== undefined
-                                      ? String(root.values[settingRow.modelData.key]) : ""
-                                onEditingFinished: root.setValue(settingRow.modelData.key, text)
-                            }
+                        TextInput {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: Math.max(80, parent.width * 0.5)
+                            height: 26
+                            padding: 4
+                            visible: settingRow.modelData.type !== "bool"
+                                     && settingRow.modelData.type !== "enum"
+                            color: Theme.quickText
+                            font.family: Theme.fontFamily
+                            font.pixelSize: 11
+                            clip: true
+                            selectionColor: Theme.colors.primary
+                            text: root.values[settingRow.modelData.key] !== undefined
+                                  ? String(root.values[settingRow.modelData.key]) : ""
+                            onEditingFinished: root.setValue(settingRow.modelData.key, text)
                         }
                     }
                 }
             }
+        }
 
-            Row {
-                width: parent.width
-                spacing: 6
+    // Футер закреплён внизу: «Сбросить/Удалить/Закрыть» видны всегда.
+    Row {
+        id: footer
 
-                HostButton {
-                    text: "Сбросить"
-                    onClicked: root.reset()
-                }
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        spacing: 6
 
-                HostButton {
-                    text: "Удалить"
-                    onClicked: {
-                        EditorState.beginOperation()
-                        LayoutStore.removeInstance(root.uid)
-                        EditorState.closeSettings()
-                    }
-                }
+        HostButton {
+            text: "Сбросить"
+            onClicked: root.reset()
+        }
 
-                Item { width: Math.max(0, parent.width - 220); height: 1 }
-
-                HostButton {
-                    text: "Закрыть"
-                    onClicked: EditorState.closeSettings()
-                }
+        HostButton {
+            text: "Удалить"
+            onClicked: {
+                EditorState.beginOperation()
+                LayoutStore.removeInstance(root.uid)
+                EditorState.closeSettings()
             }
         }
+
+        Item { width: Math.max(0, footer.width - 220); height: 1 }
+
+        HostButton {
+            text: "Закрыть"
+            onClicked: EditorState.closeSettings()
+        }
     }
+}
