@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import ".."
+import "../expressive"
 import "../../singletons"
 
 // Контекстное меню сохранённой Wi-Fi сети (правый клик по строке в списке):
@@ -12,6 +13,10 @@ import "../../singletons"
 // PopupWindow, и он рисуется поверх любых layer-shell поверхностей. Отдельная
 // поверхность оказывалась под панелью и была не видна. Поэтому координаты
 // клика — локальные для окна панели, а карточка кладётся прямо по ним.
+//
+// Expressive: плавающая карточка с радиусом 32, пункты — крупные пилюли,
+// hover — secondary-контейнер (у удаления — error-контейнер). Разделителей
+// нет, группы читаются формой и цветом.
 Item {
     id: root
 
@@ -22,13 +27,8 @@ Item {
     readonly property bool confirming: NetworkService.forgetPending !== ""
     readonly property bool open: UiState.menuNetwork !== ""
 
-    // Высота карточки. Считаем по колонке целиком: она сама учитывает
-    // состояние — скрытые пункты имеют height 0, а блок подтверждения свою
-    // высоту. Прежний вариант брал при подтверждении только confirmItem и
-    // ЗАБЫВАЛ заголовок с именем и зарядом, который остаётся видимым: карточка
-    // выходила на ~50 px ниже, и кнопки «Отмена»/«Удалить» оказывались за её
-    // пределами.
-    readonly property real cardHeight: column.implicitHeight + Theme.space.sm
+    // Меню Expressive: плавающая карточка с крупными пунктами-пилюлями.
+    readonly property real cardHeight: column.implicitHeight + Theme.space.lg
     // То же, что в меню Bluetooth: окно берёт высоту карточки целиком.
     readonly property real maxCardHeight: cardHeight
 
@@ -47,18 +47,15 @@ Item {
         onClicked: root.close()
     }
 
-    // Карточка меню m3: тональная поверхность surface-container-high,
-    // радиус medium, без тени — глубину даёт только тон.
+    // Плавающая карточка меню: радиус 32, тональная поверхность, без рамки.
     Rectangle {
         id: card
-        x: Math.max(Theme.space.xs, Math.min(UiState.menuX, root.width - width - Theme.space.sm))
-        y: Math.max(Theme.space.xs, Math.min(UiState.menuY, root.height - height - Theme.space.sm))
-        width: 236
+        x: Math.max(Theme.space.sm, Math.min(UiState.menuX, root.width - width - Theme.space.sm))
+        y: Math.max(Theme.space.sm, Math.min(UiState.menuY, root.height - height - Theme.space.sm))
+        width: 250
         height: root.cardHeight
-        radius: Theme.shape.md
+        radius: Theme.shape.xlIncreased
         color: Theme.menuSurfaceSolid
-        border.width: 1
-        border.color: Theme.outlineVariant
 
         // Клики по карточке не должны её закрывать.
         MouseArea {
@@ -70,27 +67,121 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.margins: Theme.space.xs
-            spacing: 0
+            anchors.margins: Theme.space.sm
+            spacing: 2
 
-            MenuRow {
+            // Пункт «сменить пароль»: пилюля, hover — secondary-контейнер.
+            Item {
+                id: changeRow
+                width: parent.width
                 visible: !root.confirming
-                height: root.confirming ? 0 : implicitHeight
-                icon: "\uf084"
-                text: "Change password"
-                onTriggered: {
-                    NetworkService.changePassword(UiState.menuNetwork);
-                    root.close();
+                height: visible ? 52 : 0
+
+                readonly property bool hovered: changeHover.containsMouse
+                readonly property bool pressed: changeHover.pressed
+
+                scale: pressed ? 0.98 : 1
+                Behavior on scale { SpringSpatialFast {} }
+
+                MorphShape {
+                    anchors.fill: parent
+                    shape: changeRow.hovered ? "squircle" : "pill"
+                    color: changeRow.hovered ? Theme.secondaryContainer : "transparent"
+                    modulation: 0.35
+
+                    Behavior on color { ColorAnimation { duration: 140 } }
+                }
+
+                Text {
+                    id: changeIcon
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.space.md
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "\uf084"
+                    color: changeRow.hovered ? Theme.scheme.onSecondaryContainer
+                                             : Theme.scheme.onSurfaceVariant
+                    font.family: Theme.iconFontFamily
+                    font.pixelSize: Theme.iconSize.md
+                }
+
+                Text {
+                    anchors.left: changeIcon.right
+                    anchors.leftMargin: Theme.space.md
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.space.md
+                    anchors.verticalCenter: parent.verticalCenter
+                    elide: Text.ElideRight
+                    text: "Change password"
+                    color: changeRow.hovered ? Theme.scheme.onSecondaryContainer
+                                             : Theme.scheme.onSurface
+                    font: Theme.typeEmphasizedLabelLarge
+                }
+
+                MouseArea {
+                    id: changeHover
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        NetworkService.changePassword(UiState.menuNetwork);
+                        root.close();
+                    }
                 }
             }
 
-            MenuRow {
+            // Пункт «забыть сеть»: опасное действие — error-цвет и на hover
+            // error-контейнер, но та же крупная пилюля.
+            Item {
+                id: forgetRow
+                width: parent.width
                 visible: !root.confirming
-                height: root.confirming ? 0 : implicitHeight
-                icon: "\uf1f8"
-                text: "Forget network"
-                danger: true
-                onTriggered: NetworkService.beginForget(UiState.menuNetwork)
+                height: visible ? 52 : 0
+
+                readonly property bool hovered: forgetHover.containsMouse
+                readonly property bool pressed: forgetHover.pressed
+
+                scale: pressed ? 0.98 : 1
+                Behavior on scale { SpringSpatialFast {} }
+
+                MorphShape {
+                    anchors.fill: parent
+                    shape: forgetRow.hovered ? "squircle" : "pill"
+                    color: forgetRow.hovered ? Theme.errorContainer : "transparent"
+                    modulation: 0.35
+
+                    Behavior on color { ColorAnimation { duration: 140 } }
+                }
+
+                Text {
+                    id: forgetIcon
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.space.md
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "\uf1f8"
+                    color: Theme.error
+                    font.family: Theme.iconFontFamily
+                    font.pixelSize: Theme.iconSize.md
+                }
+
+                Text {
+                    anchors.left: forgetIcon.right
+                    anchors.leftMargin: Theme.space.md
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.space.md
+                    anchors.verticalCenter: parent.verticalCenter
+                    elide: Text.ElideRight
+                    text: "Forget network"
+                    color: Theme.error
+                    font: Theme.typeEmphasizedLabelLarge
+                }
+
+                MouseArea {
+                    id: forgetHover
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: NetworkService.beginForget(UiState.menuNetwork)
+                }
             }
 
             // Подтверждение удаления.
@@ -109,19 +200,19 @@ Item {
 
                     Text {
                         width: parent.width
-                        leftPadding: Theme.space.md
-                        rightPadding: Theme.space.md
+                        leftPadding: Theme.space.sm
+                        rightPadding: Theme.space.sm
                         topPadding: Theme.space.sm
                         wrapMode: Text.WordWrap
                         text: "Forget " + UiState.menuNetwork + "?"
                         color: Theme.scheme.onSurface
-                        font: Theme.typeBodyLarge
+                        font: Theme.typeEmphasizedTitleMedium
                     }
 
                     Text {
                         width: parent.width
-                        leftPadding: Theme.space.md
-                        rightPadding: Theme.space.md
+                        leftPadding: Theme.space.sm
+                        rightPadding: Theme.space.sm
                         wrapMode: Text.WordWrap
                         text: "Saved password and profile settings will be removed"
                         color: Theme.scheme.onSurfaceVariant
@@ -130,131 +221,82 @@ Item {
 
                     Row {
                         anchors.right: parent.right
-                        anchors.rightMargin: Theme.space.sm
+                        anchors.rightMargin: Theme.space.xs
                         bottomPadding: Theme.space.xs
                         spacing: Theme.space.sm
 
-                        MenuButton {
-                            text: "Cancel"
-                            onTriggered: NetworkService.cancelForget()
+                        // «Отмена» — тональная пилюля.
+                        Item {
+                            id: cancelButton
+                            width: cancelLabel.implicitWidth + Theme.space.xl
+                            height: 44
+                            scale: cancelHover.pressed ? 0.94 : (cancelHover.containsMouse ? 1.04 : 1)
+
+                            Behavior on scale { SpringSpatialFast {} }
+
+                            MorphShape {
+                                anchors.fill: parent
+                                shape: cancelHover.containsMouse ? "squircle" : "pill"
+                                color: Theme.surfaceContainerHigh
+                                modulation: 0.4
+                            }
+
+                            Text {
+                                id: cancelLabel
+                                anchors.centerIn: parent
+                                text: "Cancel"
+                                color: Theme.scheme.onSurface
+                                font: Theme.typeEmphasizedLabelLarge
+                            }
+
+                            MouseArea {
+                                id: cancelHover
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: NetworkService.cancelForget()
+                            }
                         }
 
-                        MenuButton {
-                            text: "Forget"
-                            primary: true
-                            danger: true
-                            onTriggered: {
-                                NetworkService.confirmForget();
-                                root.close();
+                        // «Забыть» — залитая error-пилюля.
+                        Item {
+                            id: forgetButton
+                            readonly property bool hovered: forgetHover2.containsMouse
+                            width: forgetLabel.implicitWidth + Theme.space.xl
+                            height: 44
+                            scale: forgetHover2.pressed ? 0.94 : (hovered ? 1.04 : 1)
+
+                            Behavior on scale { SpringSpatialFast {} }
+
+                            MorphShape {
+                                anchors.fill: parent
+                                shape: forgetButton.hovered ? "squircle" : "pill"
+                                color: Theme.error
+                                modulation: 0.4
+                            }
+
+                            Text {
+                                id: forgetLabel
+                                anchors.centerIn: parent
+                                text: "Forget"
+                                color: Theme.scheme.onError
+                                font: Theme.typeEmphasizedLabelLarge
+                            }
+
+                            MouseArea {
+                                id: forgetHover2
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    NetworkService.confirmForget();
+                                    root.close();
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-    }
-
-    // Пункт меню m3: иконка, подпись, подсветка опасного действия.
-    // Высота пункта — 48, hover — state layer поверх скруглённой подложки.
-    component MenuRow: Item {
-        id: row
-
-        property string icon: ""
-        property string text: ""
-        property bool danger: false
-
-        signal triggered()
-
-        implicitWidth: column.width
-        implicitHeight: Theme.touchTarget
-
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: Theme.space.xs
-            radius: Theme.shape.xs
-            color: rowHover.containsMouse
-                   ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
-                   : "transparent"
-            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
-        }
-
-        MouseArea {
-            id: rowHover
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: row.triggered()
-        }
-
-        Text {
-            id: rowIcon
-            anchors.left: parent.left
-            anchors.leftMargin: Theme.space.md
-            anchors.verticalCenter: parent.verticalCenter
-            text: row.icon
-            color: row.danger ? Theme.error : Theme.scheme.onSurfaceVariant
-            font.family: Theme.iconFontFamily
-            font.pixelSize: Theme.iconSize.md
-        }
-
-        Text {
-            anchors.left: rowIcon.right
-            anchors.leftMargin: Theme.space.md
-            anchors.right: parent.right
-            anchors.rightMargin: Theme.space.md
-            anchors.verticalCenter: parent.verticalCenter
-            elide: Text.ElideRight
-            text: row.text
-            color: row.danger ? Theme.error : Theme.scheme.onSurface
-            font: Theme.typeLabelLarge
-        }
-    }
-
-    // Кнопка m3: текстовая (прозрачная, подпись primary) или залитая (primary).
-    component MenuButton: Rectangle {
-        id: button
-
-        property string text: ""
-        property bool primary: false
-        property bool danger: false
-
-        signal triggered()
-
-        readonly property color accentColor: button.danger ? Theme.error : Theme.primary
-        readonly property color accentLabel: button.danger ? Theme.scheme.onError
-                                                           : Theme.scheme.onPrimary
-
-        width: buttonLabel.implicitWidth + Theme.space.xl
-        height: Theme.buttonHeight
-        radius: Theme.shape.full
-        color: button.primary ? button.accentColor : "transparent"
-
-        // Слой состояния m3: на залитой кнопке — по on-primary, на текстовой —
-        // по primary.
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            color: button.primary
-                   ? Theme.stateLayer(button.accentLabel, Theme.stateHover)
-                   : Theme.stateLayer(button.accentColor, Theme.stateHover)
-            opacity: buttonHover.containsMouse ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
-        }
-
-        Text {
-            id: buttonLabel
-            anchors.centerIn: parent
-            text: button.text
-            color: button.primary ? button.accentLabel : button.accentColor
-            font: Theme.typeLabelLarge
-        }
-
-        MouseArea {
-            id: buttonHover
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: button.triggered()
         }
     }
 }

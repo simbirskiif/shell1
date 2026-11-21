@@ -1,9 +1,13 @@
 import QtQuick
 import ".."
+import "../expressive"
 import "../../singletons"
 
 // Строка текущего устройства: подпись и стрелка «открыть список».
 // Нажатие открывает отдельную панель выбора устройств.
+//
+// Expressive: это выбранное устройство, поэтому строка — крупная пилюля
+// secondary-container с орбом-sunny; на hover форма деформируется в squircle.
 Item {
     id: root
 
@@ -13,39 +17,59 @@ Item {
     signal clicked()
 
     implicitWidth: parent ? parent.width : 0
-    implicitHeight: Theme.listItemHeight
+    implicitHeight: 64
     height: implicitHeight
 
-    // Строка списка m3: прозрачный контейнер, hover — state layer on-surface.
-    Rectangle {
+    readonly property bool hovered: deviceHover.containsMouse
+    readonly property bool pressed: deviceHover.pressed
+
+    scale: root.pressed ? 0.98 : (root.hovered ? 1.01 : 1)
+    Behavior on scale { SpringSpatialFast {} }
+
+    MorphShape {
         anchors.fill: parent
-        color: deviceHover.containsMouse
-               ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover) : "transparent"
-        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+        anchors.topMargin: 1
+        anchors.bottomMargin: 1
+        shape: root.hovered ? "squircle" : "pill"
+        color: root.hovered ? Theme.secondaryContainer : Theme.primaryContainer
+        modulation: 0.35
+
+        Behavior on color { ColorAnimation { duration: 140 } }
     }
 
-    Text {
-        id: iconText
+    // Орб устройства: tertiary-контейнер внутри primary-пилюли.
+    MorphShape {
         anchors.left: parent.left
-        anchors.leftMargin: Theme.space.lg
+        anchors.leftMargin: Theme.space.sm
         anchors.verticalCenter: parent.verticalCenter
-        text: root.icon
-        color: Theme.scheme.onSurfaceVariant
-        font.family: Theme.iconFontFamily
-        font.pixelSize: Theme.iconSize.md
+        width: 48
+        height: 48
+        shape: root.hovered ? "cookie" : "circle"
+        color: Theme.tertiaryContainer
+        modulation: 1
+
+        Text {
+            anchors.centerIn: parent
+            text: root.icon
+            color: Theme.scheme.onTertiaryContainer
+            font.family: Theme.iconFontFamily
+            font.pixelSize: 22
+        }
     }
 
     Text {
         id: label
-        anchors.left: iconText.right
-        anchors.leftMargin: Theme.space.md
+        anchors.left: parent.left
+        anchors.leftMargin: 60
         anchors.right: chevron.left
         anchors.rightMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
         text: root.text !== "" ? root.text : "No device"
         elide: Text.ElideRight
-        color: Theme.scheme.onSurface
-        font: Theme.typeBodyLarge
+        color: root.hovered ? Theme.scheme.onSecondaryContainer
+                            : Theme.scheme.onPrimaryContainer
+        font: Theme.typeEmphasizedLabelLarge
+        Behavior on color { ColorAnimation { duration: 140 } }
     }
 
     Text {
@@ -54,9 +78,11 @@ Item {
         anchors.rightMargin: Theme.space.lg
         anchors.verticalCenter: parent.verticalCenter
         text: "\uf054"
-        color: Theme.scheme.onSurfaceVariant
+        color: root.hovered ? Theme.scheme.onSecondaryContainer
+                            : Theme.scheme.onPrimaryContainer
         font.family: Theme.iconFontFamily
-        font.pixelSize: Theme.iconSize.sm
+        font.pixelSize: Theme.iconSize.md
+        Behavior on color { ColorAnimation { duration: 140 } }
     }
 
     MouseArea {
@@ -65,16 +91,5 @@ Item {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.clicked()
-    }
-
-    // Разделитель m3: отделяет строку устройства от блока громкости выше.
-    Rectangle {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.leftMargin: Theme.space.lg
-        anchors.rightMargin: Theme.space.lg
-        height: 1
-        color: Theme.outlineVariant
     }
 }

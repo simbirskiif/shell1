@@ -159,8 +159,14 @@ PopupWindow {
             }
         }
         clip: true
-        radius: Theme.quickRadius
+        radius: 32
         color: Theme.quickBackground
+        // Лёгкий тональный градиент в tertiary: панель перестаёт быть
+        // ровным тёмным прямоугольником.
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Theme.quickBackground }
+            GradientStop { position: 1.0; color: Theme.withAlpha(Theme.tertiaryContainer, 0.22) }
+        }
 
         // Появление: лёгкий рост из угла кнопки.
         // m3 enter: проявление с 92% и ростом из угла кнопки.

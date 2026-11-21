@@ -11,7 +11,9 @@ Item {
         anchors.top: parent.top
         color: root.ctx.colors.onSurfaceVariant
         font.family: root.ctx.fontFamily
-        font.pixelSize: Math.max(9, Math.round(root.ctx.dp * 10))
+        font.pixelSize: Math.max(10, Math.round(root.ctx.dp * 11))
+        font.weight: 720
+        font.letterSpacing: 0.4
         text: root.ctx.settings.enabled ? "вкл" : "выкл"
     }
 

@@ -1,10 +1,14 @@
 import QtQuick
 import ".."
+import "../expressive"
 import "../../singletons"
 
 // Панель «Кофеин»: выбор срока — из настроенных длительностей и бесконечного.
 // Пункта «выключен» здесь нет: выключение делает переключатель в шапке или
 // кружок плитки.
+//
+// Expressive: выбранный срок — крупная пилюля tertiary-container с орбом-
+// «солнышком»; остальные строки прозрачные с hover-слоем. Разделителей нет.
 Item {
     id: root
 
@@ -27,15 +31,9 @@ Item {
             onToggled: CaffeineService.toggle()
         }
 
-        // Разделитель шапки m3 — outline-variant.
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.outlineVariant
-        }
-
         PanelList {
             width: parent.width
+            rowHeight: 62
             model: CaffeineService.options
 
             delegate: Item {
@@ -44,34 +42,68 @@ Item {
                 required property var modelData
 
                 readonly property bool current: CaffeineService.mode === modelData.key
-                // m3 divider между строками: у последней строки списка нет.
-                readonly property bool separatorVisible: ListView.view !== null
-                    && (modeRow.y + modeRow.height) < ListView.view.contentHeight
+                readonly property bool hovered: modeHover.containsMouse
+                readonly property bool pressed: modeHover.pressed
+
+                readonly property color rowColor: current ? Theme.tertiaryContainer
+                                                  : hovered ? Theme.surfaceContainerHigh
+                                                  : "transparent"
+                readonly property color ink: current ? Theme.scheme.onTertiaryContainer
+                                                     : Theme.scheme.onSurface
 
                 width: parent.width
-                height: Theme.listItemHeight
+                height: 62
 
-                // Строка списка m3: прозрачный контейнер, hover — state layer.
-                Rectangle {
+                scale: pressed ? 0.98 : 1
+                Behavior on scale { SpringSpatialFast {} }
+
+                MorphShape {
                     anchors.fill: parent
-                    color: modeHover.containsMouse
-                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
-                           : "transparent"
-                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                    anchors.topMargin: 1
+                    anchors.bottomMargin: 1
+                    shape: modeRow.current ? "pill" : "squircle"
+                    color: modeRow.rowColor
+                    modulation: 0.35
+
+                    Behavior on color { ColorAnimation { duration: 140 } }
+                }
+
+                // Орб режима: активный — «солнышко» primary-контейнера.
+                MorphShape {
+                    id: modeOrb
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.space.md
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 42
+                    height: 42
+                    shape: modeRow.current ? "sunny" : (modeRow.hovered ? "cookie" : "circle")
+                    color: modeRow.current ? Theme.primaryContainer : Theme.surfaceContainerHighest
+                    modulation: 1
+
+                    Behavior on color { ColorAnimation { duration: 140 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "\uf0f4"
+                        color: modeRow.current ? Theme.scheme.onPrimaryContainer
+                                               : Theme.scheme.onSurfaceVariant
+                        font.family: Theme.iconFontFamily
+                        font.pixelSize: 20
+                    }
                 }
 
                 Text {
                     id: modeLabel
-                    anchors.left: parent.left
-                    anchors.leftMargin: Theme.space.lg
+                    anchors.left: modeOrb.right
+                    anchors.leftMargin: Theme.space.md
                     anchors.right: checkMark.left
                     anchors.rightMargin: Theme.space.md
                     anchors.verticalCenter: parent.verticalCenter
                     text: modelData.title
                     elide: Text.ElideRight
-                    color: modeRow.current ? Theme.primary : Theme.scheme.onSurface
-                    font: Theme.typeBodyLarge
-                    Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+                    color: modeRow.ink
+                    font: modeRow.current ? Theme.typeEmphasizedLabelLarge : Theme.typeBodyLarge
+                    Behavior on color { ColorAnimation { duration: 140 } }
                 }
 
                 Text {
@@ -81,21 +113,9 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: modeRow.current
                     text: "\uf00c"
-                    color: Theme.primary
+                    color: Theme.scheme.onTertiaryContainer
                     font.family: Theme.iconFontFamily
                     font.pixelSize: Theme.iconSize.md
-                }
-
-                // Разделитель m3: outline-variant, толщина 1, отступ 16.
-                Rectangle {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    anchors.leftMargin: Theme.space.lg
-                    anchors.rightMargin: Theme.space.lg
-                    height: 1
-                    color: Theme.outlineVariant
-                    visible: modeRow.separatorVisible
                 }
 
                 MouseArea {

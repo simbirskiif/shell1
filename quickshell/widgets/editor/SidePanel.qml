@@ -1,8 +1,12 @@
 import QtQuick
+import "../../components/expressive"
 import "../../singletons"
 
 // Правая панель параметров: та же геометрия и материал, что у панелей
 // оболочки (Theme.quick*). Живёт внутри DesktopLayer, отдельного окна нет.
+//
+// Expressive: панель — крупная morph-форма (squircle с приглушённой волной),
+// выезжает и растворяется на пружинах, а не на длительностях с кривыми.
 Item {
     id: root
 
@@ -22,43 +26,37 @@ Item {
         onClicked: root.closed()
     }
 
-    Rectangle {
+    Item {
         id: panel
 
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         width: Math.min(Theme.quickWidth, parent.width)
-        // M3 side sheet: тональная поверхность surface-container-low с лёгкой
-        // вуалью (обои под панелью), обводка — outline-variant.
-        color: Theme.panelSurface
-        border.width: 1
-        border.color: Theme.outlineVariant
-        topLeftRadius: Theme.shape.xl
-        bottomLeftRadius: Theme.shape.xl
-        topRightRadius: 0
-        bottomRightRadius: 0
-        clip: true
         opacity: root.opened ? 1 : 0
+        clip: true
 
-        Behavior on opacity {
-            NumberAnimation {
-                duration: Theme.motionShort4
-                easing.bezierCurve: Theme.curveStandard
-            }
-        }
+        Behavior on opacity { SpringEffects {} }
 
         transform: Translate {
             id: slide
 
             x: root.opened ? 0 : panel.width
 
-            Behavior on x {
-                NumberAnimation {
-                    duration: Theme.motionMedium2
-                    easing.bezierCurve: Theme.curveEmphasized
-                }
-            }
+            Behavior on x { SpringSpatial {} }
+        }
+
+        // M3 side sheet поверх обоев: крупная форма листа. Для высокой панели
+        // берём большой явный радиус, а не MorphShape: полярная форма на
+        // боксе 420×1200 даёт чрезмерно круглые углы и «съедает» шапку.
+        Rectangle {
+            anchors.fill: parent
+            topLeftRadius: Theme.shape.xlIncreased
+            bottomLeftRadius: Theme.shape.xlIncreased
+            topRightRadius: 0
+            bottomRightRadius: 0
+            color: Theme.panelSurface
+            border.width: 0
         }
 
         Item {

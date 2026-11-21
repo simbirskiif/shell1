@@ -33,12 +33,14 @@ PanelWindow {
         right: true
     }
 
+    // Expressive-воздух: крупные карточки не должны липнуть к бару и краю
+    // экрана, поэтому отступы и промежуток между тостами больше прежних.
     margins {
-        top: Theme.barHeight + Theme.notificationSpacing
-        right: Theme.notificationSpacing
+        top: Theme.barHeight + Theme.space.md
+        right: Theme.space.md
     }
 
-    implicitWidth: Theme.notificationWidth
+    implicitWidth: Theme.notificationWidth + Theme.space.sm
     implicitHeight: root.stackLimit
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
@@ -56,7 +58,7 @@ PanelWindow {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        spacing: Theme.notificationSpacing
+        spacing: Theme.space.md
 
         Repeater {
             model: NotificationService.popups

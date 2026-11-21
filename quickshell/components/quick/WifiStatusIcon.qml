@@ -1,10 +1,15 @@
 import QtQuick
 import ".."
+import "../expressive"
 import "../../singletons"
 
 // Индикатор Wi-Fi: деления сигнала глифами Material Design Icons из Nerd Font
-// (nf-md-wifi_strength_*). Как у иконок строки Bluetooth, у подключённой сети
-// есть круглая подложка и кольцо (showRing).
+// (nf-md-wifi_strength_*).
+//
+// Expressive: у подключённой сети круглый орб превращается в «печенье»
+// (или другой выразительный контур, заданный connectedShape) и заливается
+// цветом-контейнером. У выключенной/неизвестной сети — спокойный круг
+// с тонкой обводкой. API прежний, новые свойства — только оформление.
 //
 //   level 0 — пустой контур (уровень неизвестен),
 //   level 1..3 — деления по силе сигнала.
@@ -16,9 +21,17 @@ Item {
     // Уровень сигнала 0–4, как отдаёт сервис (0 — нет данных, 4 — максимум).
     property int signal: 0
 
-    // Подложка и кольцо подключения — как у PanelIcon в списках.
+    // Орб-подложка подключения — как у иконок в списках панелей.
     property bool showRing: false
     property bool connected: false
+
+    // Цвета и форма орба: панель подбирает контрастную пару под свою строку.
+    property color ringColor: root.connected ? Theme.tertiaryContainer
+                                             : Theme.surfaceContainerHighest
+    property color ringInk: root.connected ? Theme.scheme.onTertiaryContainer
+                                           : Theme.scheme.onSurfaceVariant
+    property string connectedShape: "cookie"
+    property string idleShape: "circle"
 
     // Значок в кружке плитки: заливка — accent, поэтому цвета подбираем под неё.
     property bool onAccent: false
@@ -67,50 +80,38 @@ Item {
         return glyphEmpty;
     }
 
-    Rectangle {
+    // Орб: неактивный — круг с тонкой обводкой, подключённый — выразительный
+    // контур без обводки (держит форму и цвет, а не рамку).
+    MorphShape {
         visible: root.showRing
         anchors.fill: parent
-        radius: width / 2
-        // Подложка m3: подключённая сеть — secondary-container, иначе — highest.
-        color: root.connected ? Theme.secondaryContainer : Theme.surfaceContainerHighest
-        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        shape: root.connected ? root.connectedShape : root.idleShape
+        color: root.ringColor
+        modulation: 1
+        borderWidth: root.connected ? 0 : 1
+        borderColor: Theme.outlineVariant
+
+        Behavior on color { ColorAnimation { duration: 140 } }
     }
 
-    Rectangle {
-        visible: root.showRing
-        anchors.fill: parent
-        radius: width / 2
-        color: "transparent"
-        border.width: 2
-        border.color: Theme.primary
-        opacity: root.connected ? 1 : 0
-        Behavior on opacity {
-            MotionNumber {
-                duration: Theme.motionShort3
-                curve: Theme.curveStandard
-            }
-        }
-    }
-
-    // Кегль значка — как у глифов в остальных виджетах: 15 в кружке строки
-    // (PanelIcon), 16 в кружке плитки (StatusCircle), 14 в баре, 34 на
-    // заглушке. Контексты передают своё значение.
+    // Кегль значка — как у глифов в остальных виджетах: 15 в кружке строки,
+    // 16 в кружке плитки, 14 в баре, 34 на заглушке. Контексты передают своё.
     property int glyphSize: 15
 
     Text {
         anchors.centerIn: parent
         text: root.glyph
         color: {
-            if (root.dim)
-                return Theme.scheme.onSurfaceVariant;
             if (root.onAccent)
                 return Theme.scheme.onPrimary;
             if (root.showRing)
-                return root.connected ? Theme.scheme.onSecondaryContainer
-                                      : Theme.scheme.onSurface;
+                return root.connected ? root.ringInk : Theme.scheme.onSurfaceVariant;
+            if (root.dim)
+                return Theme.scheme.onSurfaceVariant;
             return Theme.scheme.onSurface;
         }
         font.family: Theme.iconFontFamily
         font.pixelSize: root.glyphSize
+        Behavior on color { ColorAnimation { duration: 140 } }
     }
 }

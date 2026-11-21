@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
 import ".."
+import "../expressive"
 import "../../singletons"
 import "."
 
@@ -74,23 +75,20 @@ PanelWindow {
     WlrLayershell.focusable: root.keyboardWanted
 
     // Подсказка у нижней кромки, пока док спрятан: иначе зону активации
-    // пришлось бы искать вслепую. Она не перехватывает клики и нарисована
-    // тональной ролью on-surface-variant, без произвольного цвета.
-    Rectangle {
+    // пришлось бы искать вслепую. Expressive: не тонкая линия, а маленькая
+    // волнистая пилюля tertiary-цвета — форма дока видна ещё до появления.
+    // Подсказка не перехватывает клики и растворяется springs-эффектом.
+    MorphShape {
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 3
+        anchors.bottomMargin: 4
         anchors.horizontalCenter: parent.horizontalCenter
-        width: 44
-        height: 3
-        radius: Theme.shape.full
-        color: Theme.scheme.onSurfaceVariant
-        opacity: DockState.phase === "hidden" ? 0.22 : 0
-        Behavior on opacity {
-            MotionNumber {
-                duration: Theme.motionShort4
-                curve: Theme.curveStandard
-            }
-        }
+        width: 40
+        height: 6
+        shape: "pill"
+        modulation: 0.5
+        color: Theme.tertiary
+        opacity: DockState.phase === "hidden" ? 0.45 : 0
+        Behavior on opacity { SpringEffects {} }
     }
 
     mask: Region {

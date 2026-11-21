@@ -35,6 +35,7 @@ Item {
     MorphShape {
         anchors.fill: parent
         shape: root.hovered ? root.hoverShape : root.shape
+        keepRound: true
         color: root.container
         borderWidth: 0
     }

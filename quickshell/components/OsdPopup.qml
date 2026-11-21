@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Widgets
+import "expressive"
 import "../singletons"
 
 // Общая оболочка нижних всплывашек: окно-оверлей внизу экрана, выезд снизу,
@@ -84,10 +85,9 @@ PanelWindow {
         onTriggered: root.keepingAlive = false
     }
 
-    // Скругление должно обрезать и содержимое (полоску уровня), поэтому это
-    // ClippingRectangle, а не Rectangle с clip: обычный clip режет по
-    // прямоугольнику, и на нижних скруглённых углах торчали квадратные углы
-    // полоски.
+    // Скругление должно обрезать и содержимое (волнистый слайдер), поэтому
+    // это ClippingRectangle, а не Rectangle с clip: обычный clip режет по
+    // прямоугольнику, и на нижних скруглённых углах торчали квадратные углы.
     ClippingRectangle {
         id: card
 
@@ -95,30 +95,20 @@ PanelWindow {
         anchors.bottom: parent.bottom
         width: root.cardWidth
         height: root.cardHeight
-        // Компактная M3-поверхность: тот же тон surfaceContainerHigh, что у
-        // остальных всплывашек, форма — xl.
-        radius: Theme.shape.xl
+        // Expressive-пилюля: радиус — половина высоты, без обводки.
+        // Тональная поверхность та же, что у остальных всплывашек.
+        radius: height / 2
         contentInsideBorder: false
         color: Theme.sheetSurface
-        border.width: 1
-        border.color: Theme.outlineVariant
 
+        // Появление — пружины: прозрачность effects-пружиной (без перелёта),
+        // выезд снизу — spatial-пружиной с лёгким перелётом.
         opacity: root.shown ? 1 : 0
-        Behavior on opacity {
-            MotionNumber {
-                duration: Theme.motionShort4
-                curve: Theme.curveStandard
-            }
-        }
+        Behavior on opacity { SpringEffects {} }
 
         transform: Translate {
             y: root.shown ? 0 : root.slideDistance
-            Behavior on y {
-                MotionNumber {
-                    duration: Theme.motionMedium1
-                    curve: Theme.curveEmphasized
-                }
-            }
+            Behavior on y { SpringSpatial {} }
         }
 
         Item {

@@ -20,9 +20,10 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             color: root.ctx.colors.onSurface
             font.family: root.ctx.fontFamily
-            font.pixelSize: Math.max(14, Math.round(root.ctx.dp
-                * (root.ctx.sizeClass === "compact" ? 26 : 42)))
-            font.bold: true
+            font.pixelSize: Math.max(15, Math.round(root.ctx.dp
+                * (root.ctx.sizeClass === "compact" ? 28 : 46)))
+            font.weight: 780
+            font.letterSpacing: -0.5
             text: Qt.formatTime(clock.date,
                                 root.ctx.settings.format24 ? "HH:mm" : "hh:mm AP")
         }
@@ -32,6 +33,8 @@ Item {
             color: root.ctx.colors.onSurfaceVariant
             font.family: root.ctx.fontFamily
             font.pixelSize: Math.max(10, Math.round(root.ctx.dp * 11))
+            font.weight: 620
+            font.letterSpacing: 0.4
             text: Qt.formatDate(clock.date, "ddd, d MMM")
         }
     }

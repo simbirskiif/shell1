@@ -1,12 +1,17 @@
 import QtQuick
 import Quickshell
 import ".."
+import "../expressive"
 import "../../singletons"
 
 // Содержимое раскрытого дока: поиск, анимированный список приложений и
 // настройки дока. Это «большая панель», в которую плавно превращается
 // компактная полоса. Поверхность листа задаёт карточка дока (Dock.qml):
 // в раскрытом виде она тонально опускается до surfaceContainerLow.
+//
+// Expressive: лист держит контрастные формы — точку-«печеньку» перед
+// крупным заголовком typeEmphasizedHeadlineSmall, пилюлю-счётчик
+// tertiary-контейнера и карточки приложений на разных контейнерах.
 Item {
     id: root
 
@@ -30,9 +35,10 @@ Item {
     readonly property bool tiles: DockSettings.tileLayout
 
     readonly property int columns: root.tiles ? Theme.dockGridColumns : 1
-    // Строка списка — стандартная высота M3 list item.
+    // Строка списка — крупная воздушная пилюля: 60 внутри ячейки 64,
+    // зазор 4 не даёт строкам слипаться без разделителей.
     readonly property real cellHeight: root.tiles ? Theme.dockGridCellHeight
-                                                  : Theme.listItemHeight
+                                                  : Theme.listItemHeight + Theme.space.sm
     readonly property real listContentHeight: {
         if (appList.count === 0)
             return 0;
@@ -243,8 +249,9 @@ Item {
         }
     }
 
-    // Шапка — M3 top app bar: titleLarge слева, круглые icon button 40 справа.
-    // Остаётся на месте, содержимое прокручивается.
+    // Шапка — M3 top app bar: крупный emphasized-заголовок с точкой-маркером,
+    // пилюля-счётчик и круглые icon button справа. Остаётся на месте,
+    // содержимое прокручивается.
     Item {
         id: header
         anchors.top: parent.top
@@ -252,33 +259,63 @@ Item {
         anchors.right: parent.right
         height: Theme.appBarHeight
 
-        Text {
-            id: titleText
+        // Маркер-«печенька»: секция/экран читается цветной формой, а не
+        // мелкой подписью.
+        MorphShape {
+            id: titleDot
             anchors.left: parent.left
-            anchors.leftMargin: Theme.space.xs
+            anchors.leftMargin: 2
             anchors.verticalCenter: parent.verticalCenter
-            text: root.settingsOpen ? "Настройки дока" : "Приложения"
-            color: Theme.scheme.onSurface
-            font: Theme.typeTitleLarge
+            width: 10
+            height: 10
+            shape: "cookie"
+            color: Theme.tertiary
         }
 
         Text {
+            id: titleText
+            anchors.left: titleDot.right
+            anchors.leftMargin: Theme.space.sm
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.settingsOpen ? "Настройки дока" : "Приложения"
+            color: Theme.scheme.onSurface
+            font: Theme.typeEmphasizedHeadlineSmall
+        }
+
+        // Счётчик приложений — пилюля tertiary-контейнера: цифра крупная,
+        // но это метаданные, поэтому контрастнее заголовка, но тише.
+        Item {
+            id: countChip
             anchors.left: titleText.right
             anchors.leftMargin: Theme.space.sm
             anchors.verticalCenter: parent.verticalCenter
+            width: countText.implicitWidth + Theme.space.lg + Theme.space.xs
+            height: 26
             visible: !root.settingsOpen
-            text: "· " + appList.count
-            color: Theme.scheme.onSurfaceVariant
-            font: Theme.typeBodyMedium
+
+            MorphShape {
+                anchors.fill: parent
+                shape: "pill"
+                modulation: 0.35
+                color: Theme.tertiaryContainer
+            }
+
+            Text {
+                id: countText
+                anchors.centerIn: parent
+                text: appList.count
+                color: Theme.scheme.onTertiaryContainer
+                font: Theme.typeEmphasizedLabelLarge
+            }
         }
     }
 
     Row {
         id: actions
         anchors.right: parent.right
-        anchors.rightMargin: Theme.space.xs
+        anchors.rightMargin: 2
         anchors.verticalCenter: header.verticalCenter
-        spacing: 0
+        spacing: 2
 
         DockIconButton {
             size: Theme.iconButtonSize
@@ -312,12 +349,7 @@ Item {
         height: DockSettings.searchHeight
         opacity: root.settingsOpen ? 0 : 1
         visible: opacity > 0.001
-        Behavior on opacity {
-            MotionNumber {
-                duration: Theme.dockFadeDuration
-                curve: Theme.curveEmphasized
-            }
-        }
+        Behavior on opacity { SpringEffects {} }
 
         onEdited: value => DockState.query = value
         onNavigate: delta => root.moveSelection(delta)
@@ -330,6 +362,7 @@ Item {
     DockIconButton {
         id: layoutButton
         anchors.right: parent.right
+        anchors.rightMargin: 2
         anchors.verticalCenter: searchField.verticalCenter
         visible: !root.settingsOpen
         size: Theme.iconButtonSize
@@ -391,6 +424,8 @@ Item {
     }
 
     // --- список приложений ------------------------------------------------
+    // Подсветку выбора рисует сам DockListItem: форма (cookie/clover) и
+    // контейнер важнее отдельного прямоугольника, который едет за курсором.
     GridView {
         id: appList
         anchors.left: parent.left
@@ -420,92 +455,71 @@ Item {
         }
         onHeightChanged: root.clampScroll()
         onContentHeightChanged: root.clampScroll()
-        highlightMoveDuration: 120
-        // Выбранный элемент M3: secondary-container, крупный радиус карточки.
-        highlight: Rectangle {
-            width: root.tiles ? appList.cellWidth - Theme.space.xs : appList.cellWidth
-            height: appList.cellHeight
-            radius: Theme.shape.lg
-            color: Theme.secondaryContainer
-        }
         enabled: !root.settingsOpen
         opacity: root.settingsOpen ? 0 : 1
         visible: opacity > 0.001
-        Behavior on opacity {
-            MotionNumber {
-                duration: Theme.dockFadeDuration
-                curve: Theme.curveEmphasized
-            }
-        }
+        Behavior on opacity { SpringEffects {} }
 
         delegate: DockListItem {
+            id: dockItem
+
             required property var modelData
 
             item: modelData
             tile: root.tiles
+            slot: dockItem.index
         }
 
         // Удаляемый элемент остаётся видимым до конца перехода: GridView
         // сам держит его в сцене, поэтому opacity/scale анимируем явно.
         remove: Transition {
             ParallelAnimation {
-                NumberAnimation {
+                MotionNumber {
                     property: "opacity"
                     to: 0
-                    duration: 200
-                    easing.type: Easing.OutCubic
                 }
-                NumberAnimation {
+                MotionNumber {
                     property: "scale"
-                    to: 0.8
-                    duration: 200
-                    easing.type: Easing.OutCubic
+                    to: Theme.motionElementScale
                 }
             }
         }
 
         add: Transition {
             ParallelAnimation {
-                NumberAnimation {
+                MotionNumber {
                     property: "opacity"
                     from: 0
                     to: 1
-                    duration: 200
-                    easing.type: Easing.OutCubic
                 }
-                NumberAnimation {
+                MotionNumber {
                     property: "scale"
-                    from: 0.8
+                    from: Theme.motionElementScale
                     to: 1
-                    duration: 200
-                    easing.type: Easing.OutCubic
                 }
             }
         }
 
-        // Соседи переезжают на освободившиеся места; add/removeDisplaced
-        // заданы явно, чтобы не полагаться на наследование.
+        // Соседи переезжают на освободившиеся места на пружине:
+        // в плитках двигаются и x, и y.
         displaced: Transition {
-            NumberAnimation {
-                properties: "x,y"
-                duration: 250
-                easing.type: Easing.OutCubic
+            ParallelAnimation {
+                MotionNumber { property: "x" }
+                MotionNumber { property: "y" }
             }
         }
 
         addDisplaced: Transition {
-            NumberAnimation {
-                properties: "x,y"
-                duration: 250
-                easing.type: Easing.OutCubic
+            ParallelAnimation {
+                MotionNumber { property: "x" }
+                MotionNumber { property: "y" }
             }
         }
 
         removeDisplaced: Transition {
-            NumberAnimation {
-                properties: "x,y"
-                duration: 250
-                easing.type: Easing.OutCubic
+            ParallelAnimation {
+                MotionNumber { property: "x" }
+                MotionNumber { property: "y" }
             }
         }
     }
@@ -548,7 +562,7 @@ Item {
         visible: !root.settingsOpen && appList.count === 0
         text: DockState.query !== "" ? "Ничего не найдено" : "Список приложений пуст"
         color: Theme.scheme.onSurfaceVariant
-        font: Theme.typeBodyMedium
+        font: Theme.typeTitleMedium
     }
 
     // --- настройки дока ---------------------------------------------------
@@ -561,11 +575,6 @@ Item {
         enabled: root.settingsOpen
         opacity: root.settingsOpen ? 1 : 0
         visible: opacity > 0.001
-        Behavior on opacity {
-            MotionNumber {
-                duration: Theme.dockFadeDuration
-                curve: Theme.curveEmphasized
-            }
-        }
+        Behavior on opacity { SpringEffects {} }
     }
 }

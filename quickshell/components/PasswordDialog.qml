@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import "quick"
+import "expressive"
 import "../singletons"
 
 // Модальное окно ввода пароля. Отдельная поверхность на весь экран:
@@ -11,6 +12,10 @@ import "../singletons"
 // Окно открывается не «по клику», а по изменению NetworkService.pendingNetwork:
 // пароль может понадобиться и позже, асинхронно — например, у сохранённой
 // сети сменился пароль на роутере.
+//
+// Оформление — Material 3 Expressive: крупная карточка с радиусом 32,
+// контрастный орб-акцент, который морфится из cookie в burst при ошибке,
+// высокое поле-пилюля с толстой обводкой primary и кнопки-пилюли на пружине.
 PanelWindow {
     id: root
 
@@ -73,12 +78,7 @@ PanelWindow {
         anchors.fill: parent
         color: Theme.scrimOverlay
         opacity: root.visible ? 1 : 0
-        Behavior on opacity {
-            MotionNumber {
-                duration: Theme.motionShort4
-                curve: Theme.curveStandard
-            }
-        }
+        Behavior on opacity { SpringEffects {} }
 
         MouseArea {
             anchors.fill: parent
@@ -96,28 +96,19 @@ PanelWindow {
         NetworkService.pendingPassword = "";
     }
 
-    // Карточка диалога: surface-container-high, радиус dialogs (shape.xl).
+    // Карточка диалога: surface-container-high, крупный радиус 32.
+    // Глубину задаёт тон поверхности, а не тень.
     Rectangle {
         id: card
         anchors.centerIn: parent
-        width: 380
+        width: 400
         height: cardColumn.implicitHeight + Theme.space.xl * 2
-        radius: Theme.shape.xl
+        radius: Theme.shape.xlIncreased
         color: Theme.surfaceContainerHigh
         opacity: root.visible ? 1 : 0
         scale: root.visible ? 1 : Theme.motionFadeThroughScale
-        Behavior on opacity {
-            MotionNumber {
-                duration: Theme.motionShort4
-                curve: Theme.curveStandard
-            }
-        }
-        Behavior on scale {
-            MotionNumber {
-                duration: Theme.motionMedium1
-                curve: Theme.curveEmphasizedDecelerate
-            }
-        }
+        Behavior on opacity { SpringEffects {} }
+        Behavior on scale { SpringSpatial {} }
 
         // Клики по карточке не должны закрывать окно.
         MouseArea {
@@ -130,22 +121,57 @@ PanelWindow {
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.margins: Theme.space.xl
-            spacing: Theme.space.md
+            spacing: Theme.space.lg
 
-            Text {
+            // Шапка: крупный акцентный орб. Ошибка читается не только
+            // цветом, но и формой — cookie спокойный, burst «взрывается».
+            Item {
                 width: parent.width
-                wrapMode: Text.WordWrap
-                text: root.changing ? "New password" : "Enter password"
-                color: Theme.scheme.onSurface
-                font: Theme.typeHeadlineSmall
-            }
+                implicitHeight: Math.max(accentOrb.height, titleColumn.implicitHeight)
 
-            Text {
-                width: parent.width
-                wrapMode: Text.WordWrap
-                text: NetworkService.pendingNetwork
-                color: Theme.scheme.onSurfaceVariant
-                font: Theme.typeBodyMedium
+                MorphShape {
+                    id: accentOrb
+                    width: Theme.touchTarget + Theme.space.md
+                    height: width
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    shape: root.failed ? "burst" : "cookie"
+                    color: root.failed ? Theme.errorContainer : Theme.primaryContainer
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.failed ? "\uf071" : "\uf023"
+                        color: root.failed ? Theme.scheme.onErrorContainer
+                                           : Theme.scheme.onPrimaryContainer
+                        font.family: Theme.iconFontFamily
+                        font.pixelSize: Theme.iconSize.lg + Theme.space.xs
+                    }
+                }
+
+                Column {
+                    id: titleColumn
+                    anchors.left: accentOrb.right
+                    anchors.leftMargin: Theme.space.lg
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Theme.space.xs
+
+                    Text {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: root.changing ? "New password" : "Enter password"
+                        color: Theme.scheme.onSurface
+                        font: Theme.typeEmphasizedHeadlineSmall
+                    }
+
+                    Text {
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: NetworkService.pendingNetwork
+                        color: Theme.scheme.onSurfaceVariant
+                        font: Theme.typeBodyMedium
+                    }
+                }
             }
 
             // Ошибка — тональная плашка error-container с текстом
@@ -154,16 +180,27 @@ PanelWindow {
                 width: parent.width
                 height: errorLabel.implicitHeight + Theme.space.md * 2
                 visible: root.failed
-                radius: Theme.shape.xs
+                radius: Theme.shape.lg
                 color: Theme.errorContainer
 
                 Text {
-                    id: errorLabel
+                    id: errorIcon
                     anchors.left: parent.left
-                    anchors.right: parent.right
+                    anchors.leftMargin: Theme.space.lg
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.leftMargin: Theme.space.md
-                    anchors.rightMargin: Theme.space.md
+                    text: "\uf071"
+                    color: Theme.scheme.onErrorContainer
+                    font.family: Theme.iconFontFamily
+                    font.pixelSize: Theme.iconSize.md
+                }
+
+                Text {
+                    id: errorLabel
+                    anchors.left: errorIcon.right
+                    anchors.leftMargin: Theme.space.sm
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.space.lg
+                    anchors.verticalCenter: parent.verticalCenter
                     wrapMode: Text.WordWrap
                     text: root.changing ? "Password was not accepted, try another one"
                                         : "Wrong password, try again"
@@ -172,24 +209,22 @@ PanelWindow {
                 }
             }
 
-            // Поле ввода M3: контейнер surface-container-highest, радиус
-            // shape.xs, обводка outline (фокус — primary толщиной 2,
-            // ошибка — error).
+            // Поле ввода Expressive: высокий контейнер-пилюля (56), толстая
+            // обводка primary (в фокусе — ещё толще, при ошибке — error).
             Rectangle {
                 width: parent.width
                 height: Theme.listItemHeight
-                radius: Theme.shape.xs
+                radius: Theme.shape.full
                 color: Theme.surfaceContainerHighest
-                border.width: passwordInput.activeFocus ? 2 : 1
-                border.color: root.failed ? Theme.error
-                                          : (passwordInput.activeFocus ? Theme.primary : Theme.outline)
+                border.width: root.failed || passwordInput.activeFocus ? 4 : 3
+                border.color: root.failed ? Theme.error : Theme.primary
                 Behavior on border.color { ColorAnimation { duration: Theme.motionShort3 } }
 
                 TextInput {
                     id: passwordInput
                     anchors.fill: parent
-                    anchors.leftMargin: Theme.space.lg
-                    anchors.rightMargin: Theme.iconButtonSize + Theme.space.sm
+                    anchors.leftMargin: Theme.space.xl
+                    anchors.rightMargin: Theme.touchTarget + Theme.space.sm
                     verticalAlignment: TextInput.AlignVCenter
                     echoMode: root.revealed ? TextInput.Normal : TextInput.Password
                     passwordCharacter: "•"
@@ -197,7 +232,7 @@ PanelWindow {
                     color: Theme.scheme.onSurface
                     selectionColor: Theme.primary
                     selectedTextColor: Theme.scheme.onPrimary
-                    font: Theme.typeBodyLarge
+                    font: Theme.typeTitleMedium
                     enabled: !root.connecting
                     // Текст поля — источник истины для окна; сервис получает
                     // пароль только в submitPassword.
@@ -214,26 +249,27 @@ PanelWindow {
                         visible: passwordInput.text === "" && !root.revealed
                         text: "Network password"
                         color: Theme.scheme.onSurfaceVariant
-                        font: Theme.typeBodySmall
+                        font: Theme.typeBodyMedium
                     }
                 }
 
-                // Показать/скрыть пароль — иконка-кнопка M3 40×40.
+                // Показать/скрыть пароль — круглая кнопка-орб: форма и
+                // цвет меняются, само нажатие сжимается на пружине.
                 Item {
                     id: revealButton
                     anchors.right: parent.right
-                    anchors.rightMargin: Theme.space.sm
+                    anchors.rightMargin: Theme.space.xs
                     anchors.verticalCenter: parent.verticalCenter
-                    width: Theme.iconButtonSize
-                    height: Theme.iconButtonSize
+                    width: Theme.touchTarget
+                    height: Theme.touchTarget
+                    scale: revealHover.pressed ? 0.9 : (revealHover.containsMouse ? 1.06 : 1)
+                    Behavior on scale { SpringSpatialFast {} }
 
-                    Rectangle {
+                    MorphShape {
                         anchors.fill: parent
-                        radius: Theme.shape.full
+                        shape: revealHover.containsMouse ? "squircle" : "circle"
                         color: revealHover.containsMouse
-                               ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
-                               : "transparent"
-                        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                               ? Theme.stateLayer(Theme.primary, Theme.stateHover) : "transparent"
                     }
 
                     Text {
@@ -264,16 +300,18 @@ PanelWindow {
                 anchors.right: parent.right
                 spacing: Theme.space.sm
 
-                // Текстовая кнопка M3: подпись primary, фон только под
-                // состоянием наведения (state layer).
+                // Текстовая кнопка отказа: прозрачный пилюльный контейнер,
+                // подпись primary, сжатие на пружине.
                 Rectangle {
                     id: cancelButton
                     width: cancelLabel.implicitWidth + Theme.space.xl * 2
-                    height: Theme.buttonHeight
+                    height: Theme.touchTarget
                     radius: Theme.shape.full
                     color: cancelHover.containsMouse ? Theme.stateLayer(Theme.primary, Theme.stateHover)
                                                : "transparent"
+                    scale: cancelHover.pressed ? 0.94 : 1
                     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                    Behavior on scale { SpringSpatialFast {} }
 
                     Text {
                         id: cancelLabel
@@ -292,25 +330,28 @@ PanelWindow {
                     }
                 }
 
-                // Залитая кнопка M3: пилюля 40 px, primary + on-primary;
+                // Залитая кнопка-пилюля 48 px: primary + on-primary,
                 // недоступная — 12 % on-surface с подписью 38 %.
                 Rectangle {
                     id: connectButton
                     width: connectLabel.implicitWidth + Theme.space.xl * 2
-                    height: Theme.buttonHeight
+                    height: Theme.touchTarget
                     radius: Theme.shape.full
                     color: root.connecting
                            ? Theme.primaryContainer
                            : (root.readyToSubmit
                               ? Theme.primary
                               : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContainer))
+                    scale: connectHover.pressed && root.readyToSubmit ? 0.93
+                         : (connectHover.containsMouse && root.readyToSubmit ? 1.04 : 1)
+                    Behavior on scale { SpringSpatialFast {} }
 
                     Rectangle {
                         anchors.fill: parent
                         radius: parent.radius
                         color: Theme.scheme.onPrimary
                         opacity: connectHover.containsMouse && !root.connecting ? Theme.stateHover : 0
-                        Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+                        Behavior on opacity { SpringEffects {} }
                     }
 
                     Text {
@@ -321,7 +362,7 @@ PanelWindow {
                         color: root.readyToSubmit
                                ? Theme.scheme.onPrimary
                                : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent)
-                        font: Theme.typeLabelLarge
+                        font: Theme.typeEmphasizedLabelLarge
                     }
 
                     LoadingIndicator {

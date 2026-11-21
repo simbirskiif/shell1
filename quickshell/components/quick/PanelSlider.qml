@@ -11,7 +11,20 @@ Item {
 
     required property real value
     // Акцент слайдера: громкость — primary, яркость — tertiary.
-    property color accent: Theme.primary
+    // Принимает и цвет, и имя роли ("primary"/"tertiary"/"secondary"),
+    // чтобы вызывающий код не зависел от типа.
+    property var accent: "primary"
+
+    readonly property color accentColor: {
+        if (typeof root.accent === "string") {
+            if (root.accent === "tertiary")
+                return Theme.tertiary;
+            if (root.accent === "secondary")
+                return Theme.secondary;
+            return Theme.primary;
+        }
+        return root.accent;
+    }
 
     signal moved(real v)
 
@@ -29,7 +42,7 @@ Item {
 
     onHandleXChanged: canvas.requestPaint()
     onValueChanged: canvas.requestPaint()
-    onAccentChanged: canvas.requestPaint()
+    onAccentColorChanged: canvas.requestPaint()
     onWidthChanged: canvas.requestPaint()
 
     Canvas {
@@ -67,7 +80,7 @@ Item {
 
             // Неактивная волна — тональная, активная — акцентная.
             wave(x0, x1, Theme.surfaceContainerHighest);
-            wave(x0, root.handleX, root.accent);
+            wave(x0, root.handleX, root.accentColor);
 
             // Отметка конца: маленькая точка-«стоп».
             ctx.fillStyle = Theme.outline;
@@ -86,7 +99,7 @@ Item {
         height: root.handleHeight
         radius: width / 2
         x: root.handleX - width / 2
-        color: root.accent
+        color: root.accentColor
         border.width: 2
         border.color: Theme.withAlpha(Theme.scheme.onPrimary, 0.55)
 

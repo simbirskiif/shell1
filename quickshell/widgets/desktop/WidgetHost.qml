@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Shapes
+import "../../components/expressive"
 import "../../singletons"
 import Quickshell
 import "../core"
@@ -95,11 +96,14 @@ Item {
                                        : root.height
 
     readonly property real padding: Theme.space.lg
-    // Радиус подложки — форма M3 по размеру карточки: маленькая — large,
-    // крупная — extra-large. Материал получает уже готовый радиус, поэтому
-    // glass/liquid остаются как есть и просто следуют форме карточки.
+    // Радиус подложки — форма M3 Expressive по размеру карточки: маленькая —
+    // large, средняя — extra-large, крупная — extra-large increased. Материал
+    // получает уже готовый радиус, поэтому glass/liquid остаются как есть и
+    // просто следуют форме карточки.
     readonly property int materialRadius:
-        Math.min(root.width, root.height) < 160 ? Theme.shape.lg : Theme.shape.xl
+        Math.min(root.width, root.height) < 160 ? Theme.shape.lg
+        : Math.min(root.width, root.height) < 280 ? Theme.shape.xl
+        : Theme.shape.xlIncreased
     // Смещение окна слоя внутри экрана: верхняя/боковая панель композитора.
     readonly property real screenOffsetX:
         root.screen ? Math.max(0, root.screen.width - root.metrics.areaWidth) : 0
@@ -153,34 +157,24 @@ Item {
     // кнопки редактора могли чуть выходить за границу карточки.
     clip: false
 
-    // Перемещение/ресайз после отпускания — standard decelerate M3.
+    // Перемещение/ресайз после отпускания — spatial-пружина Expressive:
+    // карточка «доуезжает» в цель с лёгким перелётом. Во время жеста
+    // поведение выключено, иначе курсор отрывался бы от карточки.
     Behavior on x {
         enabled: !root.dragActive
-        NumberAnimation {
-            duration: Theme.motionShort4
-            easing.bezierCurve: Theme.curveStandardDecelerate
-        }
+        SpringSpatial {}
     }
     Behavior on y {
         enabled: !root.dragActive
-        NumberAnimation {
-            duration: Theme.motionShort4
-            easing.bezierCurve: Theme.curveStandardDecelerate
-        }
+        SpringSpatial {}
     }
     Behavior on width {
         enabled: !root.dragActive
-        NumberAnimation {
-            duration: Theme.motionShort4
-            easing.bezierCurve: Theme.curveStandardDecelerate
-        }
+        SpringSpatial {}
     }
     Behavior on height {
         enabled: !root.dragActive
-        NumberAnimation {
-            duration: Theme.motionShort4
-            easing.bezierCurve: Theme.curveStandardDecelerate
-        }
+        SpringSpatial {}
     }
 
     function refreshSettings(): void {
@@ -400,6 +394,23 @@ Item {
         }
     }
 
+    // Выразительное выделение в редакторе: за карточкой проступает
+    // primary-контейнер формы «печенье» — заметный контейнер вместо тонкой
+    // служебной рамки. При перетаскивании контур «взрывается» в burst.
+    MorphShape {
+        id: selectionHalo
+
+        anchors.fill: parent
+        anchors.margins: -6
+        z: -1
+        visible: root.editing && root.selected
+        shape: root.dragActive ? "burst" : "cookie"
+        modulation: 0.42
+        color: Theme.primaryContainer
+        opacity: visible ? 1 : 0
+        Behavior on opacity { SpringEffects {} }
+    }
+
     // Визуальная карточка. В редакторе чуть уменьшается, чтобы кнопки
     // управления могли выйти за её границу и не закрывать контент.
     Item {
@@ -410,12 +421,7 @@ Item {
         transformOrigin: Item.Center
         clip: true
 
-        Behavior on scale {
-            NumberAnimation {
-                duration: Theme.motionShort4
-                easing.bezierCurve: Theme.curveStandardDecelerate
-            }
-        }
+        Behavior on scale { SpringSpatial {} }
 
     // --- Материал подложки (раздел 6.1 ТЗ) ---
     Rectangle {
@@ -588,6 +594,8 @@ Item {
     // --- Редактор (раздел 8 ТЗ) ---
     // Выделение — скруглённый контур по форме карточки, без квадратной рамки
     // и без отдельных квадратных ручек. Тянуть за контур = менять размер.
+    // Цвет — primary: служебный зелёный здесь не роль M3. Контур толще и
+    // держится на primary-контейнере-ореоле выше.
     Shape {
         id: selectionOutline
 
@@ -602,9 +610,8 @@ Item {
 
         ShapePath {
             fillColor: "transparent"
-            // Активное выделение — primary: служебный зелёный здесь не роль M3.
             strokeColor: Theme.primary
-            strokeWidth: 2
+            strokeWidth: 3
             capStyle: ShapePath.FlatCap
             joinStyle: ShapePath.RoundJoin
             startX: selectionOutline.r
@@ -737,10 +744,10 @@ Item {
         id: controls
 
         anchors.top: card.top
-        anchors.topMargin: -13
+        anchors.topMargin: -16
         anchors.right: card.right
-        anchors.rightMargin: -5
-        spacing: 4
+        anchors.rightMargin: -8
+        spacing: 6
         z: 30
         visible: root.editing
 

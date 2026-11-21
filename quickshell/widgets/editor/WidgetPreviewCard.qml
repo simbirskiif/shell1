@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../components/expressive"
 import "../../singletons"
 import "../core"
 
@@ -38,17 +39,57 @@ Item {
     width: 150
     height: 108
 
-    // M3 card: surface-container-high; наведение/выбор — secondary-container.
-    // Радиус lg, тени нет — глубину задаёт тон поверхности.
-    Rectangle {
+    // Контейнер карточки — один из трёх акцентов M3, выбранных детерминированно
+    // по id виджета: в каталоге соседствуют разные по цвету и форме карточки,
+    // а не ряд одинаковых серых плиток.
+    readonly property int accentSlot: {
+        const id = root.widget ? String(root.widget.id) : ""
+        let hash = 0
+        for (let i = 0; i < id.length; ++i)
+            hash = (hash * 31 + id.charCodeAt(i)) >>> 0
+        return hash % 3
+    }
+    readonly property color baseContainer:
+        root.accentSlot === 0 ? Theme.primaryContainer
+        : root.accentSlot === 1 ? Theme.tertiaryContainer
+        : Theme.secondaryContainer
+    readonly property color baseInk:
+        root.accentSlot === 0 ? Theme.scheme.onPrimaryContainer
+        : root.accentSlot === 1 ? Theme.scheme.onTertiaryContainer
+        : Theme.scheme.onSecondaryContainer
+    readonly property bool hovered: mouse.containsMouse
+
+    // Выразительный контейнер: волна «печенья» в покое, clover при наведении,
+    // squircle при перетаскивании — состояние читается формой.
+    opacity: root.dragging ? 0.5 : 1
+    Behavior on opacity { SpringEffects {} }
+
+    scale: mouse.pressed ? 0.95 : (root.hovered ? 1.03 : 1)
+    Behavior on scale { SpringSpatial {} }
+
+    MorphShape {
         anchors.fill: parent
-        radius: Theme.shape.lg
-        color: mouse.containsMouse ? Theme.secondaryContainer
-                                   : Theme.surfaceContainerHigh
-        border.width: 1
-        border.color: mouse.containsMouse ? Theme.secondaryContainer
-                                          : Theme.outlineVariant
-        opacity: root.dragging ? 0.5 : 1
+        shape: root.dragging ? "squircle"
+             : root.hovered ? "clover"
+             : "cookie"
+        modulation: 0.42
+        color: root.hovered ? Theme.primaryContainer : root.baseContainer
+        borderWidth: 0
+        Behavior on color { ColorAnimation { duration: 140 } }
+    }
+
+    // Тёмная подложка под живым превью: контент виджета почти всегда
+    // рассчитан на тональную поверхность, а не на яркий контейнер.
+    Rectangle {
+        id: stagePlate
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: Theme.space.sm
+        width: Math.min(parent.width - Theme.space.sm * 2, 138)
+        height: 64
+        radius: Theme.shape.md
+        color: Theme.withAlpha(Theme.surface, 0.55)
     }
 
     Item {
@@ -75,12 +116,14 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.margins: Theme.space.sm
-        color: mouse.containsMouse ? Theme.scheme.onSecondaryContainer
-                                   : Theme.scheme.onSurface
-        font: Theme.typeLabelMedium
+        anchors.leftMargin: Theme.space.md
+        anchors.rightMargin: Theme.space.md
+        anchors.bottomMargin: Theme.space.sm
+        color: root.hovered ? Theme.scheme.onPrimaryContainer : root.baseInk
+        font: Theme.typeEmphasizedLabelLarge
         elide: Text.ElideRight
         text: root.widget ? root.widget.name : ""
+        Behavior on color { ColorAnimation { duration: 140 } }
     }
 
     Text {

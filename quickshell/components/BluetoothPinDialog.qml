@@ -1,7 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
-import "quick"
+import "expressive"
 import "../singletons"
 
 // Диалог запроса BlueZ-агента: PIN, passkey, подтверждение сопряжения.
@@ -14,6 +14,10 @@ import "../singletons"
 //
 // Окно открывается само по BluetoothBackend.agentRequest: запрос приходит
 // асинхронно (например, через несколько секунд после начала спаривания).
+//
+// Оформление — Material 3 Expressive: карточка радиуса 32, морфящийся
+// орб-акцент по сценарию (cookie / sunny / clover), крупный код на цветной
+// пилюле, высокое поле-пилюля и залитая кнопка на пружине.
 PanelWindow {
     id: root
 
@@ -125,16 +129,12 @@ PanelWindow {
         color: Theme.scrimOverlay
         opacity: 0
 
-        NumberAnimation {
+        SpringEffects {
             id: showFade
 
             target: backdrop
             property: "opacity"
-            from: 0
             to: 1
-            duration: Theme.motionShort4
-            easing.type: Easing.Bezier
-            easing.bezierCurve: Theme.curveStandardDecelerate
         }
 
         // Клик мимо карточки — отказ от сопряжения (BlueZ получит Rejected).
@@ -143,15 +143,15 @@ PanelWindow {
             onClicked: root.reject()
         }
 
-        // Карточка диалога: surface-container-high и радиус shape.xl.
+        // Карточка диалога: surface-container-high и крупный радиус 32.
         Rectangle {
             id: card
 
             anchors.centerIn: parent
-            width: Math.min(340, parent.width - 32)
+            width: Math.min(360, parent.width - 32)
             height: column.implicitHeight + Theme.space.xl * 2
             scale: 1
-            radius: Theme.shape.xl
+            radius: Theme.shape.xlIncreased
             color: Theme.surfaceContainerHigh
 
             // Клики по карточке не должны её закрывать.
@@ -159,16 +159,13 @@ PanelWindow {
                 anchors.fill: parent
             }
 
-            NumberAnimation {
+            SpringSpatial {
                 id: cardIn
 
                 target: card
                 property: "scale"
                 from: Theme.motionFadeThroughScale
                 to: 1
-                duration: Theme.motionShort4
-                easing.type: Easing.Bezier
-                easing.bezierCurve: Theme.curveEmphasizedDecelerate
             }
 
             Column {
@@ -178,55 +175,113 @@ PanelWindow {
                 anchors.right: parent.right
                 anchors.top: parent.top
                 anchors.margins: Theme.space.xl
-                spacing: Theme.space.md
+                spacing: Theme.space.lg
 
-                Text {
+                // Шапка: крупный морфящийся орб-акцент по сценарию запроса
+                // и текст запроса под ним.
+                Item {
                     width: parent.width
-                    text: root.title
-                    color: Theme.scheme.onSurface
-                    font: Theme.typeHeadlineSmall
-                    horizontalAlignment: Text.AlignHCenter
+                    implicitHeight: headerColumn.implicitHeight
+
+                    MorphShape {
+                        id: accentOrb
+
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.top: parent.top
+                        width: Theme.touchTarget + Theme.space.md
+                        height: width
+                        // Сценарий читается формой: показ кода — sunny,
+                        // подтверждение — clover, ввод — cookie.
+                        shape: root.informational ? "sunny"
+                             : root.needsConfirm ? "clover"
+                             : "cookie"
+                        color: Theme.primaryContainer
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "\uf293"
+                            color: Theme.scheme.onPrimaryContainer
+                            font.family: Theme.iconFontFamily
+                            font.pixelSize: Theme.iconSize.lg + Theme.space.xs
+                        }
+                    }
+
+                    Column {
+                        id: headerColumn
+
+                        anchors.top: accentOrb.bottom
+                        anchors.topMargin: Theme.space.md
+                        width: parent.width
+                        spacing: Theme.space.xs
+
+                        Text {
+                            width: parent.width
+                            text: root.title
+                            color: Theme.scheme.onSurface
+                            font: Theme.typeEmphasizedHeadlineSmall
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: root.subtitle
+                            color: Theme.scheme.onSurfaceVariant
+                            font: Theme.typeBodyMedium
+                            wrapMode: Text.WordWrap
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                    }
                 }
 
-                Text {
+                // Код, который нужно сверить или продиктовать: крупная
+                // цветная пилюля, а не просто строка текста.
+                Item {
                     width: parent.width
-                    text: root.subtitle
-                    color: Theme.scheme.onSurfaceVariant
-                    font: Theme.typeBodyMedium
-                    wrapMode: Text.WordWrap
-                    horizontalAlignment: Text.AlignHCenter
-                }
-
-                // Код, который нужно сверить или продиктовать. Крупный —
-                // headlineSmall (тот же уровень, что заголовок диалога),
-                // для поля ввода — titleLarge.
-                Text {
-                    width: parent.width
+                    height: codeShape.height
                     visible: root.displayCode !== ""
-                    text: root.displayCode
-                    color: Theme.primary
-                    font: root.informational ? Theme.typeHeadlineSmall : Theme.typeTitleLarge
-                    horizontalAlignment: Text.AlignHCenter
+
+                    MorphShape {
+                        id: codeShape
+
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: codeText.implicitWidth + Theme.space.xxl * 2
+                        height: Theme.touchTarget + Theme.space.md
+                        shape: "pill"
+                        color: Theme.primaryContainer
+
+                        Text {
+                            id: codeText
+
+                            anchors.centerIn: parent
+                            text: root.displayCode
+                            color: Theme.scheme.onPrimaryContainer
+                            // Показ кода — самый крупный акцент окна,
+                            // ввод — заметно, но компактнее.
+                            font: root.informational ? Theme.typeEmphasizedDisplaySmall
+                                                     : Theme.typeEmphasizedTitleLarge
+                        }
+                    }
                 }
 
-                // Поле ввода PIN/passkey M3: surface-container-highest,
-                // shape.xs, обводка outline / primary в фокусе.
+                // Поле ввода PIN/passkey Expressive: высокий контейнер-пилюля
+                // (56) с толстой обводкой primary.
                 Rectangle {
                     width: parent.width
                     height: root.needsInput ? Theme.listItemHeight : 0
                     visible: root.needsInput
-                    radius: Theme.shape.xs
+                    radius: Theme.shape.full
                     color: Theme.surfaceContainerHighest
-                    border.width: pinInput.activeFocus ? 2 : 1
-                    border.color: pinInput.activeFocus ? Theme.primary : Theme.outline
-                    Behavior on border.color { ColorAnimation { duration: Theme.motionShort3 } }
+                    border.width: pinInput.activeFocus ? 4 : 3
+                    border.color: Theme.primary
+                    Behavior on border.width { SpringSpatialFast {} }
 
                     TextInput {
                         id: pinInput
 
                         anchors.fill: parent
-                        anchors.leftMargin: Theme.space.lg
-                        anchors.rightMargin: Theme.space.lg
+                        anchors.leftMargin: Theme.space.xl
+                        anchors.rightMargin: Theme.space.xl
                         verticalAlignment: TextInput.AlignVCenter
                         horizontalAlignment: TextInput.AlignHCenter
                         // PIN устройства бывает и буквенно-цифровым, passkey — только цифры.
@@ -236,7 +291,7 @@ PanelWindow {
                         color: Theme.scheme.onSurface
                         selectionColor: Theme.primary
                         selectedTextColor: Theme.scheme.onPrimary
-                        font: Theme.typeBodyLarge
+                        font: Theme.typeEmphasizedTitleLarge
                         onAccepted: root.accept(pinInput.text)
                     }
 
@@ -245,7 +300,7 @@ PanelWindow {
                         visible: pinInput.text === "" && !pinInput.activeFocus
                         text: root.kind === "passkey" ? "000000" : "PIN"
                         color: Theme.scheme.onSurfaceVariant
-                        font: Theme.typeBodySmall
+                        font: Theme.typeBodyMedium
                     }
                 }
 
@@ -254,82 +309,103 @@ PanelWindow {
                     spacing: Theme.space.sm
                     layoutDirection: Qt.RightToLeft
 
-                    DialogButton {
-                        text: root.informational ? "Готово" : "Подтвердить"
-                        primary: true
-                        enabled: !root.needsInput || pinInput.text !== ""
-                        onTriggered: {
-                            if (root.informational) {
-                                // BlueZ ответа не ждёт: просто закрываем окно.
-                                BluetoothBackend.agentRequest = null;
-                                return;
+                    // Подтверждение — залитая пилюля на spatial-пружине;
+                    // недоступная — 12 % on-surface с подписью 38 %.
+                    Rectangle {
+                        id: confirmButton
+
+                        readonly property bool canConfirm: !root.needsInput || pinInput.text !== ""
+
+                        width: confirmLabel.implicitWidth + Theme.space.xl * 2
+                        height: Theme.touchTarget
+                        radius: Theme.shape.full
+                        color: confirmButton.canConfirm
+                               ? Theme.primary
+                               : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContainer)
+                        scale: confirmHover.pressed && confirmButton.canConfirm ? 0.93
+                             : (confirmHover.containsMouse && confirmButton.canConfirm ? 1.03 : 1)
+                        Behavior on scale { SpringSpatialFast {} }
+
+                        // Слой состояния: наведение поверх контейнера.
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: Theme.scheme.onPrimary
+                            opacity: confirmHover.containsMouse && confirmButton.canConfirm ? Theme.stateHover : 0
+                            Behavior on opacity { SpringEffects {} }
+                        }
+
+                        Text {
+                            id: confirmLabel
+
+                            anchors.centerIn: parent
+                            text: root.informational ? "Готово" : "Подтвердить"
+                            color: confirmButton.canConfirm
+                                   ? Theme.scheme.onPrimary
+                                   : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent)
+                            font: Theme.typeEmphasizedLabelLarge
+                        }
+
+                        MouseArea {
+                            id: confirmHover
+
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            enabled: confirmButton.canConfirm
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (root.informational) {
+                                    // BlueZ ответа не ждёт: просто закрываем окно.
+                                    BluetoothBackend.agentRequest = null;
+                                    return;
+                                }
+                                root.accept(pinInput.text);
                             }
-                            root.accept(pinInput.text);
                         }
                     }
 
-                    DialogButton {
+                    // Отмена — текстовая кнопка-пилюля; при показе кода
+                    // BlueZ ответа не ждёт, поэтому её нет.
+                    Rectangle {
+                        id: cancelButton
+
                         visible: !root.informational
-                        text: "Отмена"
-                        onTriggered: root.reject()
+                        width: cancelLabel.implicitWidth + Theme.space.xl * 2
+                        height: Theme.touchTarget
+                        radius: Theme.shape.full
+                        color: "transparent"
+                        scale: cancelHover.pressed ? 0.94 : (cancelHover.containsMouse ? 1.02 : 1)
+                        Behavior on scale { SpringSpatialFast {} }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: Theme.stateLayer(Theme.primary, Theme.stateHover)
+                            opacity: cancelHover.containsMouse ? 1 : 0
+                            Behavior on opacity { SpringEffects {} }
+                        }
+
+                        Text {
+                            id: cancelLabel
+
+                            anchors.centerIn: parent
+                            text: "Отмена"
+                            color: Theme.primary
+                            font: Theme.typeLabelLarge
+                        }
+
+                        MouseArea {
+                            id: cancelHover
+
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.reject()
+                        }
                     }
                 }
             }
         }
     }
 
-    component DialogButton: Rectangle {
-        id: button
-
-        property string text: ""
-        property bool primary: false
-
-        signal triggered()
-
-        // M3-кнопки: залитая primary/on-primary и текстовая с подписью
-        // primary; недоступная — 12 %/38 % on-surface.
-        readonly property color containerColor: {
-            if (!button.primary)
-                return "transparent";
-            if (!button.enabled)
-                return Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContainer);
-            return Theme.primary;
-        }
-        readonly property color labelColor: {
-            if (!button.enabled)
-                return Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent);
-            return button.primary ? Theme.scheme.onPrimary : Theme.primary;
-        }
-
-        width: label.implicitWidth + Theme.space.xl * 2
-        height: Theme.buttonHeight
-        radius: Theme.shape.full
-        color: button.containerColor
-
-        // Слой состояния: наведение поверх контейнера.
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            color: button.primary ? Theme.scheme.onPrimary : Theme.primary
-            opacity: buttonHover.containsMouse && button.enabled ? Theme.stateHover : 0
-            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
-        }
-
-        Text {
-            id: label
-            anchors.centerIn: parent
-            text: button.text
-            color: button.labelColor
-            font: Theme.typeLabelLarge
-        }
-
-        MouseArea {
-            id: buttonHover
-            anchors.fill: parent
-            hoverEnabled: true
-            enabled: button.enabled
-            cursorShape: Qt.PointingHandCursor
-            onClicked: button.triggered()
-        }
-    }
 }

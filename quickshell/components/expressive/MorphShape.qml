@@ -22,6 +22,10 @@ Item {
     // Для широких плиток большие амплитуды растягиваются в «баннер»,
     // поэтому фон плитки приглушают, а иконка-орб остаётся смелой.
     property real modulation: 1
+    // Круглые формы (cookie/clover/sunny/burst) нельзя растягивать в овал:
+    // при keepRound контур вписывается в квадрат min(width, height) и
+    // остаётся круглым. Для вытянутых элементов используйте pill/squircle.
+    property bool keepRound: false
 
     // Морфинг: 0 — fromArr, 1 — toArr. Наружу менять не нужно.
     property real morph: 1
@@ -132,6 +136,7 @@ Item {
             const inset = Math.max(1, root.borderWidth / 2 + 0.5);
             const rx = Math.max(0, w / 2 - inset);
             const ry = Math.max(0, h / 2 - inset);
+            const round = root.keepRound ? Math.min(rx, ry) : 0;
             const radii = root.radii();
             const n = radii.length;
 
@@ -140,8 +145,8 @@ Item {
             ctx.beginPath();
             for (let i = 0; i < n; ++i) {
                 const a = i / n * Math.PI * 2;
-                const x = Math.cos(a) * rx * radii[i];
-                const y = Math.sin(a) * ry * radii[i];
+                const x = Math.cos(a) * (root.keepRound ? round : rx) * radii[i];
+                const y = Math.sin(a) * (root.keepRound ? round : ry) * radii[i];
                 if (i === 0)
                     ctx.moveTo(x, y);
                 else

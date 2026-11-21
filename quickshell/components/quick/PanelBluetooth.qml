@@ -1,5 +1,6 @@
 import QtQuick
 import ".."
+import "../expressive"
 import "../../singletons"
 
 // Панель Bluetooth: поиск, сохранённые (спаренные) устройства и найденные.
@@ -8,6 +9,9 @@ import "../../singletons"
 //
 // Вся логика — в BluetoothBackend: здесь только привязки к его свойствам,
 // моделям и методам.
+//
+// Expressive: устройства — крупные строки-пилюли (подключённое — tertiary-
+// контейнер), секции сгруппированы формой и цветом, разделителей нет.
 Item {
     id: root
 
@@ -109,13 +113,6 @@ Item {
             onActionRequested: BluetoothBackend.toggleDiscoverable()
         }
 
-        // Разделитель шапки m3 — outline-variant.
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.outlineVariant
-        }
-
         // Ошибка подключения/удаления: причина, подсказка что делать и
         // кнопка повтора. Гаснет сама, чтобы не висеть поверх списка.
         PanelWarning {
@@ -175,58 +172,78 @@ Item {
             spacing: 0
 
             // Режим обнаружения: пока включён, устройство видно другим.
+            // Expressive: крупная пилюля secondary-контейнера с орбом.
             Item {
                 width: parent.width
-                height: BluetoothBackend.discoverable ? Theme.touchTarget : 0
+                height: BluetoothBackend.discoverable ? 56 : 0
                 visible: height > 0
                 clip: true
 
-                // Тональная плашка m3: surface-container-high, радиус medium.
-                Rectangle {
+                MorphShape {
                     anchors.fill: parent
-                    anchors.leftMargin: Theme.space.lg
-                    anchors.rightMargin: Theme.space.lg
+                    anchors.leftMargin: Theme.space.xs
+                    anchors.rightMargin: Theme.space.xs
                     anchors.topMargin: Theme.space.xs
                     anchors.bottomMargin: Theme.space.xs
-                    radius: Theme.shape.sm
-                    color: Theme.surfaceContainerHigh
+                    shape: "pill"
+                    color: Theme.secondaryContainer
+                    modulation: 0.35
+                }
 
-                    Row {
-                        anchors.left: parent.left
-                        anchors.leftMargin: Theme.space.md
+                Row {
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.space.md
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Theme.space.sm
+
+                    MorphShape {
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: Theme.space.sm
+                        width: 32
+                        height: 32
+                        shape: "sunny"
+                        color: Theme.primaryContainer
+                        modulation: 1
 
-                        // Постоянное состояние — иконка, а не крутящийся индикатор.
                         Text {
-                            id: discoverIcon
-                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.centerIn: parent
                             text: "\uf06e"
-                            color: Theme.primary
+                            color: Theme.scheme.onPrimaryContainer
                             font.family: Theme.iconFontFamily
-                            font.pixelSize: Theme.iconSize.md
+                            font.pixelSize: Theme.iconSize.sm
                         }
+                    }
 
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Discoverable — visible to nearby devices"
-                            color: Theme.scheme.onSurfaceVariant
-                            font: Theme.typeBodyMedium
-                        }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Discoverable — visible to nearby devices"
+                        color: Theme.scheme.onSecondaryContainer
+                        font: Theme.typeLabelLarge
                     }
                 }
             }
 
-            PanelSection {
-                text: "My devices"
+            // Заголовок секции Expressive: крупнее и жирнее обычной подписи.
+            Item {
+                width: parent.width
+                height: 40
                 visible: BluetoothBackend.pairedDevices.count > 0
-                height: visible ? implicitHeight : 0
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.space.xs
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: Theme.space.xs
+                    text: "My devices"
+                    color: Theme.primary
+                    font: Theme.typeEmphasizedTitleMedium
+                }
             }
 
             PanelList {
                 width: parent.width
                 visible: BluetoothBackend.pairedDevices.count > 0
                 height: visible ? implicitHeight : 0
+                rowHeight: 62
                 model: BluetoothBackend.pairedDevices
 
                 delegate: BluetoothRow {
@@ -237,32 +254,59 @@ Item {
             }
 
             // Пусто в «Сохранённых» — подсказываем, как добавить устройство.
+            // Expressive: не строка текста, а форма-клякса с подписью.
             Item {
                 width: parent.width
-                height: BluetoothBackend.pairedDevices.count === 0 ? Theme.touchTarget : 0
+                height: BluetoothBackend.pairedDevices.count === 0 ? 64 : 0
                 visible: height > 0
 
-                Text {
+                MorphShape {
+                    id: emptyBlob
                     anchors.left: parent.left
                     anchors.leftMargin: Theme.space.lg
                     anchors.verticalCenter: parent.verticalCenter
+                    width: 36
+                    height: 36
+                    shape: "blob"
+                    color: Theme.withAlpha(Theme.primary, 0.16)
+                    modulation: 1
+                }
+
+                Text {
+                    anchors.left: emptyBlob.right
+                    anchors.leftMargin: Theme.space.md
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.space.lg
+                    anchors.verticalCenter: parent.verticalCenter
+                    elide: Text.ElideRight
                     text: "No saved devices yet"
                     color: Theme.scheme.onSurfaceVariant
                     font: Theme.typeBodyMedium
                 }
             }
 
-            PanelSection {
-                text: "Available"
+            Item {
+                width: parent.width
+                height: 40
                 // Заголовок показываем, если есть что показать в секции:
                 // либо именованные, либо свёрнутые безымянные устройства.
                 visible: BluetoothBackend.newDevices.count > 0
                          || BluetoothBackend.unnamedDevices.count > 0
-                height: visible ? implicitHeight : 0
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.space.xs
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: Theme.space.xs
+                    text: "Available"
+                    color: Theme.primary
+                    font: Theme.typeEmphasizedTitleMedium
+                }
             }
 
             PanelList {
                 width: parent.width
+                rowHeight: 62
                 model: BluetoothBackend.newDevices
 
                 delegate: BluetoothRow {
@@ -272,27 +316,25 @@ Item {
             }
 
             // Устройства без имени (только MAC) не забивают список: они
-            // свёрнуты под этой строкой.
+            // свёрнуты под этой строкой. Expressive: пилюля-раскрывашка.
             Item {
                 id: unnamedToggle
                 width: parent.width
-                height: BluetoothBackend.unnamedDevices.count > 0 ? Theme.touchTarget : 0
+                height: BluetoothBackend.unnamedDevices.count > 0 ? 52 : 0
                 visible: height > 0
 
                 readonly property bool expanded: UiState.btShowUnnamed
+                readonly property bool hovered: toggleHover.containsMouse
 
-                // Строка-раскрывашка m3: hover — state layer on-surface.
-                Rectangle {
+                MorphShape {
                     anchors.fill: parent
-                    anchors.leftMargin: Theme.space.sm
-                    anchors.rightMargin: Theme.space.sm
-                    anchors.topMargin: Theme.space.xs
-                    anchors.bottomMargin: Theme.space.xs
-                    radius: Theme.shape.sm
-                    color: toggleHover.containsMouse
-                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
-                           : "transparent"
-                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                    anchors.margins: Theme.space.xs
+                    shape: unnamedToggle.hovered ? "squircle" : "pill"
+                    color: unnamedToggle.hovered ? Theme.surfaceContainerHighest
+                                                 : Theme.surfaceContainerHigh
+                    modulation: 0.35
+
+                    Behavior on color { ColorAnimation { duration: 140 } }
                 }
 
                 Text {
@@ -303,17 +345,20 @@ Item {
                     text: unnamedToggle.expanded ? "\uf077" : "\uf078"
                     color: Theme.scheme.onSurfaceVariant
                     font.family: Theme.iconFontFamily
-                    font.pixelSize: Theme.iconSize.sm
+                    font.pixelSize: Theme.iconSize.md
                 }
 
                 Text {
                     anchors.left: toggleIcon.right
                     anchors.leftMargin: Theme.space.sm
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.space.lg
                     anchors.verticalCenter: parent.verticalCenter
+                    elide: Text.ElideRight
                     text: (unnamedToggle.expanded ? "Скрыть безымянные" : "Показать ещё")
                           + " (" + BluetoothBackend.unnamedDevices.count + ")"
-                    color: Theme.scheme.onSurfaceVariant
-                    font: Theme.typeBodyMedium
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeEmphasizedLabelLarge
                 }
 
                 MouseArea {
@@ -329,6 +374,7 @@ Item {
                 width: parent.width
                 visible: UiState.btShowUnnamed
                 height: visible ? implicitHeight : 0
+                rowHeight: 62
                 model: BluetoothBackend.unnamedDevices
 
                 delegate: BluetoothRow {

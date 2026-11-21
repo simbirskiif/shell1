@@ -406,7 +406,8 @@ Item {
             color: root.fg
             font.family: root.ctx.fontFamily
             font.bold: true
-            font.pixelSize: Math.max(12, Math.round(root.ctx.dp * 15))
+            font.pixelSize: Math.max(13, Math.round(root.ctx.dp * 16))
+            font.letterSpacing: -0.2
         }
         Text {
             width: parent.width
@@ -417,6 +418,7 @@ Item {
             color: root.fgDim
             font.family: root.ctx.fontFamily
             font.pixelSize: Math.max(10, Math.round(root.ctx.dp * 12))
+            font.letterSpacing: 0.2
         }
 
         Item {

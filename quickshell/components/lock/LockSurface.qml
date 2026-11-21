@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import Quickshell
-import ".."
+import "../expressive"
 import "../../singletons"
 import "../../widgets/core"
 
@@ -11,6 +11,12 @@ import "../../widgets/core"
 //
 // Компонент — обычный Item (не WlSessionLockSurface): его можно показать
 // в отдельном окне для проверки разметки, не блокируя сессию.
+//
+// Оформление — Material 3 Expressive: гигантские часы DisplayLarge с
+// emphasized-весом, аватар в форме cookie/clover на tertiary-container,
+// крупное поле-пилюля, орб отпечатка с пульсацией на пружине и большая
+// плашка статуса. Безопасность не затронута: это только визуальные свойства,
+// все условия/сигналы/таймеры аутентификации остались прежними.
 Item {
     id: root
 
@@ -18,11 +24,20 @@ Item {
     // 1600p крупнее, на 768p мельче, но не настолько, чтобы поле ввода
     // теряло читаемость.
     readonly property real scale: Math.max(0.82, Math.min(1.30, root.height / 1080))
-    readonly property int fieldWidth: Math.round(340 * root.scale)
-    readonly property int fieldHeight: Math.round(54 * root.scale)
-    readonly property int fingerprintSize: Math.round(54 * root.scale)
+    readonly property int fieldWidth: Math.round(400 * root.scale)
+    readonly property int fieldHeight: Math.round(64 * root.scale)
+    readonly property int fingerprintSize: Math.round(64 * root.scale)
     readonly property int contentWidth: root.fieldWidth + root.fingerprintSize
                                         + Math.round(10 * root.scale)
+    // Часы — герой-текст экрана: DisplayLarge, но ещё крупнее и с
+    // emphasized-весом (wght 820, узкая ширина), чтобы читались «гигантскими».
+    readonly property font clockFont: Qt.font({
+        family: Theme.fontFamily,
+        pixelSize: Math.round(Theme.typescale.displayLarge.size * 1.5 * root.scale),
+        weight: Theme.weightEmphasized,
+        letterSpacing: -1.5 * root.scale,
+        variableAxes: ({ "wght": Theme.weightEmphasized, "wdth": Theme.widthTight, "opsz": 64 })
+    })
 
     // Смещение для тряски при неверном пароле.
     property real shakeOffset: 0
@@ -114,18 +129,8 @@ Item {
         opacity: LockState.unlocking ? 0 : 1
         scale: LockState.unlocking ? 1.04 : 1
 
-        Behavior on opacity {
-            MotionNumber {
-                duration: Theme.motionMedium2
-                curve: Theme.curveEmphasizedAccelerate
-            }
-        }
-        Behavior on scale {
-            MotionNumber {
-                duration: Theme.motionMedium2
-                curve: Theme.curveEmphasizedDecelerate
-            }
-        }
+        Behavior on opacity { SpringEffects {} }
+        Behavior on scale { SpringSpatial {} }
 
         Column {
             id: column
@@ -133,48 +138,50 @@ Item {
             width: parent.width
             opacity: root.intro
 
-            // Часы — displayLarge: самый крупный уровень шкалы M3, он же
-            // герой-текст экрана блокировки.
+            // Часы — герой-текст: самый крупный и жирный уровень экрана.
             Text {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 text: clock.date.toLocaleTimeString(Qt.locale(), "HH:mm")
                 color: Theme.scheme.onSurface
-                font: Theme.typeDisplayLarge
+                font: root.clockFont
             }
 
-            // Дата — titleLarge: следующий по иерархии уровень.
+            // Дата — labelLarge: следующий по иерархии, но спокойный уровень.
             Text {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 topPadding: Math.round(2 * root.scale)
                 text: clock.date.toLocaleDateString(Qt.locale(), "dddd, d MMMM")
                 color: Theme.scheme.onSurfaceVariant
-                font: Theme.typeTitleLarge
+                font: Theme.typeLabelLarge
             }
 
             Item { width: 1; height: Math.round(46 * root.scale) }
 
-            // Аватар: инициал пользователя. ~/.face может не быть, а
-            // AccountsService в Wayland-сессии не гарантирован.
+            // Аватар: инициал пользователя в выразительной форме. ~/.face
+            // может не быть, а AccountsService в Wayland-сессии не гарантирован.
             Item {
                 width: parent.width
-                height: Math.round(76 * root.scale)
+                height: Math.round(96 * root.scale)
 
-                Rectangle {
+                MorphShape {
+                    id: avatarShape
+
                     anchors.centerIn: parent
-                    width: Math.round(76 * root.scale)
+                    width: Math.round(92 * root.scale)
                     height: width
-                    radius: width / 2
-                    color: Theme.veil(Theme.surfaceContainerHighest, 0.55)
-                    border.width: 1
-                    border.color: Theme.outlineVariant
+                    // Разблокировка читается и формой: cookie → clover.
+                    shape: LockState.unlocking ? "clover" : "cookie"
+                    color: Theme.tertiaryContainer
+                    rotation: LockState.unlocking ? 12 : 0
+                    Behavior on rotation { SpringSpatial {} }
 
                     Text {
                         anchors.centerIn: parent
                         text: LockState.avatarLetter
-                        color: Theme.scheme.onSurface
-                        font: Theme.typeHeadlineLarge
+                        color: Theme.scheme.onTertiaryContainer
+                        font: Theme.typeEmphasizedHeadlineSmall
                     }
                 }
             }
@@ -186,12 +193,12 @@ Item {
                 height: root.fieldHeight
 
                 // Карточка входа: тональная surface-container-high с низкой
-                // альфой и радиусом shape.xl — поле и сканер читаются как
+                // альфой и радиусом-пилюлей — поле и сканер читаются как
                 // одна поверхность M3.
                 Rectangle {
                     anchors.fill: inputRow
                     anchors.margins: -Theme.space.sm
-                    radius: Theme.shape.xl
+                    radius: height / 2
                     color: Theme.veil(Theme.surfaceContainerHigh, 0.55)
                 }
 
@@ -202,47 +209,50 @@ Item {
                     spacing: Math.round(10 * root.scale)
                     transform: Translate { x: root.shakeOffset }
 
-                    // Поле пароля — заполненное поле M3: контейнер
-                    // surface-container-highest, радиус shape.xs, обводка
-                    // outline, в фокусе — primary толщиной 2.
+                    // Поле пароля — крупная пилюля с толстой обводкой
+                    // primary; иконка замка живёт в цветном орбе, который
+                    // при фокусе морфится в «печенье».
                     Rectangle {
                         id: field
 
                         width: root.fieldWidth
                         height: root.fieldHeight
-                        radius: Theme.shape.xs
+                        radius: Theme.shape.full
                         color: Theme.veil(Theme.surfaceContainerHighest, 0.92)
                         border.width: passwordInput.activeFocus
-                                      ? Math.max(1, Math.round(2 * root.scale)) : 1
-                        border.color: passwordInput.activeFocus
-                                      ? Theme.primary : Theme.outline
+                                      ? Math.max(3, Math.round(4 * root.scale))
+                                      : Math.max(2, Math.round(3 * root.scale))
+                        border.color: Theme.primary
 
                         Behavior on border.color {
                             ColorAnimation { duration: Theme.motionShort3 }
                         }
 
-                        Text {
-                            id: lockIcon
+                        MorphShape {
+                            id: lockOrb
 
                             anchors.left: parent.left
-                            anchors.leftMargin: Math.round(18 * root.scale)
+                            anchors.leftMargin: Math.round(12 * root.scale)
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "\uf023"
-                            color: passwordInput.activeFocus
-                                   ? Theme.primary : Theme.scheme.onSurfaceVariant
-                            font.family: Theme.iconFontFamily
-                            font.pixelSize: Theme.iconSize.lg
+                            width: Math.round(38 * root.scale)
+                            height: width
+                            shape: passwordInput.activeFocus ? "cookie" : "circle"
+                            color: Theme.primaryContainer
 
-                            Behavior on color {
-                                ColorAnimation { duration: Theme.motionShort3 }
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\uf023"
+                                color: Theme.scheme.onPrimaryContainer
+                                font.family: Theme.iconFontFamily
+                                font.pixelSize: Math.round(18 * root.scale)
                             }
                         }
 
                         TextInput {
                             id: passwordInput
 
-                            anchors.left: lockIcon.right
-                            anchors.leftMargin: Math.round(11 * root.scale)
+                            anchors.left: lockOrb.right
+                            anchors.leftMargin: Math.round(12 * root.scale)
                             anchors.right: parent.right
                             anchors.rightMargin: Math.round(18 * root.scale)
                             anchors.verticalCenter: parent.verticalCenter
@@ -254,7 +264,7 @@ Item {
                             selectionColor: Theme.primary
                             selectedTextColor: Theme.scheme.onPrimary
                             color: Theme.scheme.onSurface
-                            font: Theme.typeBodyLarge
+                            font: Theme.typeTitleMedium
                             inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText
                                               | Qt.ImhNoAutoUppercase
                             enabled: !LockState.authenticating && !LockState.unlocking
@@ -285,29 +295,33 @@ Item {
                         }
                     }
 
-                    // Кнопка сканера — иконка-кнопка M3: контейнер
-                    // surface-container-highest, при сканировании —
-                    // обводка primary толщиной 2 и пульсация, чтобы было
-                    // видно, что сканер «слушает».
-                    Rectangle {
+                    // Кнопка сканера — выразительный орб. Сканирование
+                    // читается формой (burst), цветом и пульсацией размера
+                    // на пружине, чтобы было видно, что сканер «слушает».
+                    Item {
                         id: fingerprintButton
+
+                        property bool pulseOn: false
 
                         visible: LockState.fingerprintState !== "unavailable"
                         width: root.fingerprintSize
                         height: root.fingerprintSize
-                        radius: Theme.shape.full
-                        color: fingerprintHover.containsMouse
-                               ? Theme.surfaceContainerHigh
-                               : Theme.veil(Theme.surfaceContainerHighest, 0.92)
-                        border.width: LockState.fingerprintState === "scanning" ? 2 : 1
-                        border.color: LockState.fingerprintState === "scanning"
-                                      ? Theme.primary : Theme.outline
+                        scale: pulseOn ? 1.10 : 1
+                        Behavior on scale { SpringSpatial {} }
 
-                        Behavior on color {
-                            ColorAnimation { duration: Theme.motionShort3 }
-                        }
-                        Behavior on border.color {
-                            ColorAnimation { duration: Theme.motionShort3 }
+                        MorphShape {
+                            anchors.fill: parent
+                            shape: LockState.fingerprintState === "scanning" ? "burst"
+                                 : fingerprintHover.containsMouse ? "squircle"
+                                 : LockState.fingerprintState === "retry" ? "clover"
+                                 : "cookie"
+                            color: LockState.fingerprintState === "scanning"
+                                   ? Theme.primaryContainer
+                                   : fingerprintHover.containsMouse
+                                     ? Theme.surfaceContainerHigh
+                                     : Theme.surfaceContainerHighest
+                            borderWidth: LockState.fingerprintState === "scanning" ? 0 : 1
+                            borderColor: Theme.outlineVariant
                         }
 
                         Text {
@@ -316,35 +330,28 @@ Item {
                             anchors.centerIn: parent
                             text: String.fromCodePoint(0xF0237)
                             color: LockState.fingerprintState === "scanning"
-                                   ? Theme.primary
+                                   ? Theme.scheme.onPrimaryContainer
                                    : Theme.withAlpha(Theme.scheme.onSurface,
                                                      LockState.fingerprintState === "checking"
                                                      ? Theme.disabledContent : 0.85)
                             font.family: Theme.iconFontFamily
-                            font.pixelSize: Theme.iconSize.lg
+                            font.pixelSize: Math.round(27 * root.scale)
+                        }
 
-                            SequentialAnimation {
-                                id: fingerprintPulse
+                        // Пульсация ожидания — не мигание прозрачности:
+                        // форма «дышит» размером, а кадры дорисовывает
+                        // spatial-пружина.
+                        SequentialAnimation {
+                            id: fingerprintPulse
 
-                                running: LockState.fingerprintState === "scanning"
-                                loops: Animation.Infinite
-                                onStopped: fingerprintIcon.opacity = 1
+                            running: LockState.fingerprintState === "scanning"
+                            loops: Animation.Infinite
+                            onStopped: fingerprintButton.pulseOn = false
 
-                                NumberAnimation {
-                                    target: fingerprintIcon
-                                    property: "opacity"
-                                    to: 0.45
-                                    duration: 700
-                                    easing.type: Easing.InOutQuad
-                                }
-                                NumberAnimation {
-                                    target: fingerprintIcon
-                                    property: "opacity"
-                                    to: 1.0
-                                    duration: 700
-                                    easing.type: Easing.InOutQuad
-                                }
-                            }
+                            PauseAnimation { duration: 580 }
+                            PropertyAction { target: fingerprintButton; property: "pulseOn"; value: true }
+                            PauseAnimation { duration: 580 }
+                            PropertyAction { target: fingerprintButton; property: "pulseOn"; value: false }
                         }
 
                         MouseArea {
@@ -361,14 +368,14 @@ Item {
 
             Item { width: 1; height: Math.round(14 * root.scale) }
 
-            // Строка статуса: ошибка — тональная плашка error-container
+            // Строка статуса — крупная плашка: ошибка — error-container
             // с текстом on-error-container, остальные состояния — нейтральная
             // полупрозрачная подложка.
             Rectangle {
                 width: parent.width
-                height: statusLine.implicitHeight + Theme.space.sm * 2
+                height: statusLine.implicitHeight + Theme.space.md * 2
                 visible: root.statusText !== ""
-                radius: Theme.shape.xs
+                radius: Theme.shape.full
                 color: root.statusPlateColor
 
                 Behavior on color {
@@ -381,13 +388,13 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.leftMargin: Theme.space.md
-                    anchors.rightMargin: Theme.space.md
+                    anchors.leftMargin: Theme.space.lg
+                    anchors.rightMargin: Theme.space.lg
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.Wrap
                     text: root.statusText
                     color: root.statusColor
-                    font: Theme.typeBodyMedium
+                    font: Theme.typeTitleMedium
 
                     Behavior on color {
                         ColorAnimation { duration: Theme.motionShort3 }
@@ -473,14 +480,16 @@ Item {
         }
     }
 
-    SequentialAnimation {
+    // Тряска — пружинный импульс: from задаёт сдвиг, spatial-пружина
+    // возвращает карточку с затухающим перелётом. Никаких покадровых
+    // NumberAnimation.
+    SpringSpatial {
         id: shake
 
-        NumberAnimation { target: root; property: "shakeOffset"; to: -Math.round(7 * root.scale); duration: 55 }
-        NumberAnimation { target: root; property: "shakeOffset"; to: Math.round(7 * root.scale); duration: 70 }
-        NumberAnimation { target: root; property: "shakeOffset"; to: -Math.round(5 * root.scale); duration: 65 }
-        NumberAnimation { target: root; property: "shakeOffset"; to: Math.round(4 * root.scale); duration: 60 }
-        NumberAnimation { target: root; property: "shakeOffset"; to: 0; duration: 70 }
+        target: root
+        property: "shakeOffset"
+        from: Math.round(12 * root.scale)
+        to: 0
     }
 
     Component.onCompleted: {
@@ -488,15 +497,14 @@ Item {
         introAnimation.start();
     }
 
-    NumberAnimation {
+    // Вход контента — effects-пружина по прозрачности: без перелёта, поэтому
+    // появление не мигает.
+    SpringEffects {
         id: introAnimation
 
         target: root
         property: "intro"
         from: 0
         to: 1
-        duration: Theme.motionLong1
-        easing.type: Easing.Bezier
-        easing.bezierCurve: Theme.curveEmphasizedDecelerate
     }
 }

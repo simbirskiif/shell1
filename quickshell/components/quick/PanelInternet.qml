@@ -1,9 +1,14 @@
 import QtQuick
 import ".."
+import "../expressive"
 import "../../singletons"
 
 // Панель «Интернет»: подключённый Ethernet, списки сетей Wi-Fi и диалог
 // пароля. Данные и действия — в NetworkService; здесь только отображение.
+//
+// Expressive: списки — крупные строки-пилюли с воздухом вместо разделителей,
+// заголовки секций — typeEmphasizedTitleMedium, подключённое соединение и
+// выбранная сеть выделены контейнерами.
 Item {
     id: root
 
@@ -33,13 +38,6 @@ Item {
             onRefreshRequested: NetworkService.scanWifi()
         }
 
-        // Разделитель шапки m3 — outline-variant.
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.outlineVariant
-        }
-
         // --- список сетей ------------------------------------------------
         Column {
             width: parent.width
@@ -62,20 +60,28 @@ Item {
             }
 
             // Подключённый модем / проводное соединение — виден всегда.
+            // Expressive: это выбранное подключение, поэтому строка — крупная
+            // пилюля primary-container с орбом «печенье» tertiary-контейнера.
             Item {
                 id: ethernetRow
                 width: parent.width
-                height: NetworkService.ethernetConnected ? Theme.listItemHeight : 0
+                height: NetworkService.ethernetConnected ? 64 : 0
                 visible: height > 0
                 clip: true
 
-                // Строка списка m3: hover — state layer on-surface.
-                Rectangle {
+                readonly property bool hovered: ethernetHover.containsMouse
+                readonly property bool pressed: ethernetHover.pressed
+
+                scale: pressed ? 0.98 : 1
+                Behavior on scale { SpringSpatialFast {} }
+
+                MorphShape {
                     anchors.fill: parent
-                    color: ethernetHover.containsMouse
-                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
-                           : "transparent"
-                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                    anchors.topMargin: 1
+                    anchors.bottomMargin: 1
+                    shape: ethernetRow.hovered ? "squircle" : "pill"
+                    color: Theme.primaryContainer
+                    modulation: 0.35
                 }
 
                 MouseArea {
@@ -86,25 +92,36 @@ Item {
                     onClicked: NetworkService.requestEthernet()
                 }
 
-                PanelIcon {
-                    id: ethernetIcon
+                MorphShape {
+                    id: ethernetOrb
                     anchors.left: parent.left
                     anchors.leftMargin: Theme.space.md
                     anchors.verticalCenter: parent.verticalCenter
-                    icon: "\uf1e6"
-                    connected: NetworkService.internetViaEthernet
+                    width: 42
+                    height: 42
+                    shape: "cookie"
+                    color: Theme.tertiaryContainer
+                    modulation: 1
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "\uf1e6"
+                        color: Theme.scheme.onTertiaryContainer
+                        font.family: Theme.iconFontFamily
+                        font.pixelSize: 20
+                    }
                 }
 
                 Text {
-                    anchors.left: ethernetIcon.right
+                    anchors.left: ethernetOrb.right
                     anchors.leftMargin: Theme.space.md
                     anchors.right: ethernetSummary.left
                     anchors.rightMargin: Theme.space.md
                     anchors.verticalCenter: parent.verticalCenter
                     elide: Text.ElideRight
                     text: NetworkService.ethernetName
-                    color: Theme.scheme.onSurface
-                    font: Theme.typeBodyLarge
+                    color: Theme.scheme.onPrimaryContainer
+                    font: Theme.typeEmphasizedLabelLarge
                 }
 
                 Text {
@@ -113,8 +130,8 @@ Item {
                     anchors.rightMargin: Theme.space.lg
                     anchors.verticalCenter: parent.verticalCenter
                     text: NetworkService.ethernetSummary
-                    color: Theme.scheme.onSurfaceVariant
-                    font: Theme.typeBodyMedium
+                    color: Theme.withAlpha(Theme.scheme.onPrimaryContainer, 0.75)
+                    font: Theme.typeLabelLarge
                 }
             }
 
@@ -154,10 +171,25 @@ Item {
                 height: shown ? implicitHeight : 0
                 spacing: 0
 
-                PanelSection { text: "Saved" }
+                // Заголовок секции Expressive: крупнее и жирнее обычной подписи.
+                Item {
+                    width: parent.width
+                    height: 40
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: Theme.space.xs
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: Theme.space.xs
+                        text: "Saved"
+                        color: Theme.primary
+                        font: Theme.typeEmphasizedTitleMedium
+                    }
+                }
 
                 PanelList {
                     width: parent.width
+                    rowHeight: 62
                     model: NetworkService.savedWifiNetworks
 
                     delegate: WifiRow {
@@ -173,10 +205,24 @@ Item {
                     }
                 }
 
-                PanelSection { text: "Available" }
+                Item {
+                    width: parent.width
+                    height: 40
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: Theme.space.xs
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: Theme.space.xs
+                        text: "Available"
+                        color: Theme.primary
+                        font: Theme.typeEmphasizedTitleMedium
+                    }
+                }
 
                 PanelList {
                     width: parent.width
+                    rowHeight: 62
                     model: NetworkService.wifiNetworks
 
                     delegate: WifiRow {

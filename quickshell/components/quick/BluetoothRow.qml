@@ -1,11 +1,16 @@
 import QtQuick
 import ".."
+import "../expressive"
 import "../../singletons"
 
 // Строка Bluetooth-устройства: значок устройства слева, подключённое
-// обведено кольцом, справа — заряд (если BlueZ его отдаёт) и индикатор
-// подключения.
-Rectangle {
+// выделено крупной пилюлей, справа — заряд (если BlueZ его отдаёт) и
+// индикатор подключения.
+//
+// Expressive: подключённое устройство — tertiary-container пилюля, орб 42
+// с формой «клевер»; остальные строки прозрачные с hover-слоем squircle.
+// Тонких разделителей нет.
+Item {
     id: root
 
     required property string name
@@ -22,19 +27,32 @@ Rectangle {
     // Координаты — локальные для окна панели: меню живёт в том же окне.
     signal contextRequested(real x, real y)
 
-    // m3 divider между строками списка: у последней строки линии нет.
-    readonly property bool separatorVisible: ListView.view !== null
-        && (root.y + root.height) < ListView.view.contentHeight
+    readonly property bool showBattery: root.batteryPercent >= 0
+    readonly property bool hovered: rowHover.containsMouse && !root.connecting
+    readonly property bool pressed: rowHover.pressed && !root.connecting
+
+    readonly property color rowColor: root.connected ? Theme.tertiaryContainer
+                                     : root.hovered ? Theme.surfaceContainerHigh
+                                     : "transparent"
+    readonly property color ink: root.connected ? Theme.scheme.onTertiaryContainer
+                                                : Theme.scheme.onSurface
 
     width: ListView.view ? ListView.view.width : implicitWidth
-    height: Theme.listItemHeight
-    // Состояние M3: прозрачный контейнер, hover — state layer поверх.
-    color: rowHover.containsMouse && !root.connecting
-           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover) : "transparent"
-    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+    height: 62
 
-    // Пока идёт подключение, меню не открывается: операция уже в работе.
-    readonly property bool showBattery: root.batteryPercent >= 0
+    scale: root.pressed ? 0.98 : 1
+    Behavior on scale { SpringSpatialFast {} }
+
+    MorphShape {
+        anchors.fill: parent
+        anchors.topMargin: 1
+        anchors.bottomMargin: 1
+        shape: root.connected ? "pill" : "squircle"
+        color: root.rowColor
+        modulation: 0.35
+
+        Behavior on color { ColorAnimation { duration: 140 } }
+    }
 
     MouseArea {
         id: rowHover
@@ -53,18 +71,35 @@ Rectangle {
         }
     }
 
-    PanelIcon {
-        id: iconSlot
+    // Орб устройства: выключенное — круг на тональной поверхности,
+    // подключённое — «клевер» primary-контейнера внутри tertiary-строки.
+    MorphShape {
+        id: iconOrb
         anchors.left: parent.left
         anchors.leftMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
-        icon: root.icon
-        connected: root.connected
+        width: 42
+        height: 42
+        shape: root.connected ? "clover" : "circle"
+        color: root.connected ? Theme.primaryContainer : Theme.surfaceContainerHighest
+        modulation: 1
+
+        Behavior on color { ColorAnimation { duration: 140 } }
+
+        Text {
+            anchors.centerIn: parent
+            text: root.icon
+            color: root.connected ? Theme.scheme.onPrimaryContainer
+                                  : Theme.scheme.onSurfaceVariant
+            font.family: Theme.iconFontFamily
+            font.pixelSize: 20
+            Behavior on color { ColorAnimation { duration: 140 } }
+        }
     }
 
     Text {
         id: nameText
-        anchors.left: iconSlot.right
+        anchors.left: iconOrb.right
         anchors.leftMargin: Theme.space.md
         // Заряд уходит вправо, поэтому имя не должно заезжать под него.
         anchors.right: root.showBattery ? batteryText.left : spinnerSlot.left
@@ -72,8 +107,9 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         elide: Text.ElideRight
         text: root.name
-        color: Theme.scheme.onSurface
-        font: Theme.typeBodyLarge
+        color: root.ink
+        font: root.connected ? Theme.typeEmphasizedLabelLarge : Theme.typeBodyLarge
+        Behavior on color { ColorAnimation { duration: 140 } }
     }
 
     // Заряд: только когда он реально известен (подключённое устройство
@@ -85,8 +121,9 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         visible: root.showBattery
         text: root.batteryPercent + "%"
-        color: Theme.scheme.onSurfaceVariant
-        font: Theme.typeBodyMedium
+        color: root.connected ? Theme.withAlpha(Theme.scheme.onTertiaryContainer, 0.85)
+                              : Theme.scheme.onSurfaceVariant
+        font: Theme.typeLabelLarge
     }
 
     LoadingIndicator {
@@ -94,20 +131,11 @@ Rectangle {
         anchors.right: parent.right
         anchors.rightMargin: Theme.space.lg
         anchors.verticalCenter: parent.verticalCenter
-        width: Theme.iconSize.sm
-        height: Theme.iconSize.sm
+        width: Theme.iconSize.md
+        height: Theme.iconSize.md
         visible: root.connecting
+        accent: root.connected ? Theme.scheme.onTertiaryContainer : Theme.primary
     }
 
-    // Разделитель m3: outline-variant, толщина 1, отступ 16 по краям.
-    Rectangle {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.leftMargin: Theme.space.lg
-        anchors.rightMargin: Theme.space.lg
-        height: 1
-        color: Theme.outlineVariant
-        visible: root.separatorVisible
-    }
+    // Раскрывающаяся пилюля под список «ещё» — без разделителя.
 }

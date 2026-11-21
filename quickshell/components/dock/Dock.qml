@@ -1,5 +1,6 @@
 import QtQuick
 import ".."
+import "../expressive"
 import "../../singletons"
 
 // Карточка дока. Окно под ней имеет постоянный размер и прозрачный фон,
@@ -7,9 +8,14 @@ import "../../singletons"
 // кадр не требует пересоздания поверхности композитором.
 //
 // Компактная полоса и большая панель — два слоя одной карточки. При
-// раскрытии ширина/высота едут Behavior'ами, а содержимое перетекает
+// раскрытии ширина/высота едут пружинами, а содержимое перетекает
 // кроссфейдом. Если раскрытие вызвано у скрытого дока, DockState сначала
 // доводит появление, и только потом включает expanded — панель не прыгает.
+//
+// Expressive: док — плавающая пилюля (радиус full) с лёгким градиентом
+// к tertiary, высотой 76, без тонких рамок и теней. Larger card radius
+// перетекает в радиус листа при раскрытии — это тот же morph, что у
+// контейнеров M3, но на spatial-пружине.
 Item {
     id: root
 
@@ -49,17 +55,15 @@ Item {
 
     // 0..1 — насколько карточка выехала из-за нижней кромки.
     property real reveal: root.shown ? 1 : 0
-    Behavior on reveal {
-        MotionNumber {
-            duration: Theme.dockRevealDuration
-            curve: root.shown ? Theme.curveDockExpressive : Theme.curveDockExit
-        }
-    }
+    Behavior on reveal { SpringSpatial {} }
 
     // Размеры считаются от содержимого, поэтому полоса подстраивается под
     // число избранных приложений, а панель ограничена экраном.
     readonly property int favoriteCount: DockApps.favorites.length
-    readonly property real baseButtonSize: DockSettings.iconSize + 18
+    // Кнопка приложения — 48–52: ниже иконка теряет воздух, выше ряд
+    // перестаёт помещаться в предел ширины и ужимается целиком.
+    readonly property real baseButtonSize: Math.round(Math.max(48,
+        Math.min(52, DockSettings.iconSize + 16)))
     // Ширина ряда без шкалирования; её считает DockCompactRow, чтобы
     // положение кнопки (слева/справа) не дублировало арифметику здесь.
     readonly property real rowBaseWidth: compactRow.implicitWidth
@@ -107,48 +111,49 @@ Item {
     transformOrigin: Item.Bottom
     visible: root.reveal > 0.001
 
-    // m3 container transform: размер и радиус меняются вместе. Кривая без
-    // overshoot: карточка не должна вылезать за маску ввода.
-    Behavior on width {
-        MotionNumber {
-            duration: Theme.dockMorphDuration
-            curve: Theme.curveEmphasizedDecelerate
-        }
-    }
+    // m3 container transform на spatial-пружине: размер и радиус меняются
+    // вместе. Перелёт пружины держим в пределах окна — поверхность не
+    // пересоздаётся, поэтому размер карточки может «дышать».
+    Behavior on width { SpringSpatial {} }
+    Behavior on height { SpringSpatial {} }
 
-    Behavior on height {
-        MotionNumber {
-            duration: (DockSettings.fitPanelToContent && root.expanded)
-                      ? Theme.dockResizeDuration : Theme.dockMorphDuration
-            curve: (DockSettings.fitPanelToContent && root.expanded)
-                   ? Theme.curveDockResize : Theme.curveEmphasizedDecelerate
-        }
-    }
-
-    property real cardRadius: root.expanded ? Theme.dockPanelRadius : Theme.dockRadius
-    Behavior on cardRadius {
-        MotionNumber {
-            duration: Theme.dockMorphDuration
-            curve: Theme.curveEmphasized
-        }
-    }
+    // Компактный док — пилюля (радиус = половина высоты), раскрытый —
+    // лист shape.xl. Пружина делает переход мягким, без «срезания» угла.
+    property real cardRadius: root.expanded ? Theme.dockPanelRadius : root.compactHeight / 2
+    Behavior on cardRadius { SpringSpatial {} }
 
     // Сдвиг вниз на высоту карточки: при reveal = 0 она целиком за кромкой.
     transform: Translate {
         y: (1 - root.reveal) * (root.height + Theme.dockBottomMargin + 20)
     }
 
-    // Карточка дока — M3 navigation bar: тональная поверхность
-    // surfaceContainerHigh (Theme.sheetSurface), радиус shape.xl, без рамки
+    // Карточка дока — плавающий toolbar: тональная поверхность
+    // surfaceContainerHigh (Theme.sheetSurface), радиус full, без рамки
     // и без тени. В раскрытом виде лист тонально опускается до
-    // surfaceContainerLow (Theme.panelSurface) — как панель поверх карточки.
+    // surfaceContainerLow (Theme.panelSurface).
     Rectangle {
         id: card
         anchors.fill: parent
         radius: root.cardRadius
         color: root.expanded ? Theme.panelSurface : Theme.sheetSurface
         clip: true
-        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        Behavior on color { ColorAnimation { duration: 140 } }
+
+        // Экспрессивный градиент: поверхность плавно уходит в tertiary к
+        // правому краю. Это не рамка и не тень — цветовая иерархия, как у
+        // бара; справа док «теплее», чем слева.
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            opacity: root.expanded ? 0.45 : 0.65
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.55; color: "transparent" }
+                GradientStop { position: 1.0; color: Theme.withAlpha(Theme.tertiaryContainer, 0.5) }
+            }
+            Behavior on opacity { SpringEffects {} }
+        }
 
         DockCompactRow {
             id: compactRow
@@ -161,20 +166,10 @@ Item {
             opacity: root.expanded ? 0 : 1
             // Уход полосы быстрее прихода: панель должна проявиться раньше,
             // чем пустое место успеет броситься в глаза.
-            Behavior on opacity {
-                MotionNumber {
-                    duration: root.expanded ? Theme.dockFadeDuration : Theme.dockMorphDuration
-                    curve: Theme.curveEmphasized
-                }
-            }
+            Behavior on opacity { SpringEffects {} }
             // Два множителя: уход при раскрытии и ужимание при переполнении.
             scale: (root.expanded ? 0.9 : 1) * root.compactFitScale
-            Behavior on scale {
-                MotionNumber {
-                    duration: Theme.dockMorphDuration
-                    curve: Theme.curveEmphasized
-                }
-            }
+            Behavior on scale { SpringSpatial {} }
 
             onExpandRequested: DockState.expand(root.screenName, false)
         }
@@ -249,12 +244,7 @@ Item {
             enabled: root.panelShown || DockState.keyboardActive
             opacity: root.panelShown ? 1 : 0
             visible: root.panelShown || DockState.keyboardActive || opacity > 0.001
-            Behavior on opacity {
-                MotionNumber {
-                    duration: Theme.dockFadeDuration
-                    curve: Theme.curveEmphasized
-                }
-            }
+            Behavior on opacity { SpringEffects {} }
         }
     }
 

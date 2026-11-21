@@ -28,8 +28,7 @@ Item {
 
     MorphShape {
         anchors.fill: parent
-        shape: root.opened ? "cookie" : "pill"
-        modulation: 0.6
+        shape: "pill"
         color: root.opened ? Theme.secondaryContainer
              : root.hovered ? Theme.surfaceContainerHighest
              : Theme.withAlpha(Theme.surfaceContainerHigh, 0.55)
@@ -54,7 +53,7 @@ Item {
             glyphSize: 18
             offMode: !root.wifiEnabled
             signal: root.wifiSignal
-            dim: !root.wifiEnabled
+            dim: !root.wifiConnected
         }
 
         Text {

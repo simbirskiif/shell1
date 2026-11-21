@@ -1,29 +1,25 @@
 import QtQuick
+import "quick"
+import "expressive"
 import "../singletons"
 
-// Индикатор громкости и яркости — компактная M3-поверхность: иконка 24 слева,
-// название источника по центру, процент справа, снизу — дорожка уровня с
-// ручкой, как у слайдера M3. Оболочка (окно, выезд, позиция) — в OsdPopup,
-// здесь только содержимое.
+// Индикатор громкости и яркости в духе Material 3 Expressive: не тонкая
+// M3-полоска, а крупная карточка-пилюля. Слева — иконка в морфящейся форме
+// (cookie/clover на primary/tertiary-контейнере), справа — крупный процент,
+// снизу — волнистый PanelSlider. Оболочка (окно, выезд, позиция) — в
+// OsdPopup, здесь только содержимое.
 OsdPopup {
     id: root
 
     shown: Osd.shown
-    cardWidth: 520
-    // Компактно: строка подписи (24) + дорожка слайдера с ручкой (24) и поля.
-    // Высота выросла с 44 только затем, чтобы ручка слайдера не обрезалась
-    // формой карточки.
-    cardHeight: 60
+    cardWidth: 540
+    // Крупная пилюля: орб 48 + крупный процент, снизу волнистая дорожка.
+    cardHeight: 96
 
-    // Значение, которое догоняет Osd.value: и полоска, и процент едут
-    // анимацией, а не прыгают.
+    // Значение, которое догоняет Osd.value: и волна, и процент едут
+    // пружиной, а не прыгают.
     property real displayValue: 0
-    Behavior on displayValue {
-        MotionNumber {
-            duration: Theme.motionMedium1
-            curve: Theme.curveStandard
-        }
-    }
+    Behavior on displayValue { SpringSpatial {} }
 
     Connections {
         target: Osd
@@ -39,31 +35,59 @@ OsdPopup {
 
     Component.onCompleted: root.displayValue = Osd.muted ? 0 : Osd.value
 
-    // Строка подписи: иконка 24, название источника labelLarge и процент.
+    // --- визуальные роли -----------------------------------------------------
+    readonly property bool brightnessKind: Osd.kind === "brightness"
+    // Яркость — tertiary (второй акцент панели), звук — primary.
+    readonly property color accent: root.brightnessKind ? Theme.tertiary : Theme.primary
+    readonly property color orbColor: Osd.muted ? Theme.surfaceContainerHighest
+                                      : root.brightnessKind ? Theme.tertiaryContainer
+                                      : Theme.primaryContainer
+    readonly property color orbInk: Osd.muted ? Theme.scheme.onSurfaceVariant
+                                   : root.brightnessKind ? Theme.scheme.onTertiaryContainer
+                                   : Theme.scheme.onPrimaryContainer
+    readonly property string kindIcon: Osd.muted ? "\uf026"
+        : Osd.kind === "input" ? "\uf130"
+        : root.brightnessKind ? "\uf185"
+        : "\uf028"
+    // Форма иконки-орба: громкость/яркость — «печенье», микрофон — клевер.
+    readonly property string orbShape: Osd.kind === "input" ? "clover" : "cookie"
+
+    // Строка подписи: иконка-орб 48, название источника emphasized,
+    // крупный процент справа.
     Item {
         id: headerRow
 
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.leftMargin: Theme.space.lg
-        anchors.rightMargin: Theme.space.lg
-        anchors.topMargin: Theme.space.xs
-        height: Theme.iconSize.lg
+        anchors.leftMargin: 28
+        anchors.rightMargin: 28
+        anchors.topMargin: 6
+        height: 48
 
-        Text {
-            id: icon
+        Item {
+            id: orb
 
+            width: 48
+            height: 48
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            text: Osd.muted ? "\uf026"
-                : Osd.kind === "input" ? "\uf130"
-                : Osd.kind === "brightness" ? "\uf185"
-                : "\uf028"
-            // Активный источник — primary, выключенный — вторичный тон.
-            color: Osd.muted ? Theme.scheme.onSurfaceVariant : Theme.primary
-            font.family: Theme.iconFontFamily
-            font.pixelSize: Theme.iconSize.lg
+
+            MorphShape {
+                anchors.fill: parent
+                shape: root.orbShape
+                color: root.orbColor
+                modulation: 0.9
+                Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                text: root.kindIcon
+                color: root.orbInk
+                font.family: Theme.iconFontFamily
+                font.pixelSize: 24
+            }
         }
 
         Text {
@@ -71,78 +95,42 @@ OsdPopup {
 
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            width: 52
+            width: 96
             horizontalAlignment: Text.AlignRight
+            // Крупное число — акцент Expressive: читается боковым зрением.
             text: Osd.muted ? "Выкл." : Math.round(root.displayValue * 100) + "%"
-            color: Theme.scheme.onSurfaceVariant
-            font: Theme.typeLabelLarge
+            color: Osd.muted ? Theme.scheme.onSurfaceVariant : root.accent
+            font: Osd.muted ? Theme.typeEmphasizedTitleMedium : Theme.typeEmphasizedTitleLarge
         }
 
         // Имя источника по центру: «Speaker», «Digital Microphone», «eDP-1».
         Text {
-            anchors.left: icon.right
+            anchors.left: orb.right
             anchors.leftMargin: Theme.space.md
             anchors.right: percent.left
             anchors.rightMargin: Theme.space.md
             anchors.verticalCenter: parent.verticalCenter
-            horizontalAlignment: Text.AlignHCenter
             text: Osd.title
             elide: Text.ElideRight
-            color: Theme.scheme.onSurface
-            font: Theme.typeLabelLarge
+            color: Osd.muted ? Theme.scheme.onSurfaceVariant : Theme.scheme.onSurface
+            font: Theme.typeEmphasizedTitleMedium
         }
     }
 
-    // Уровень — M3-слайдер без управления: дорожка 4, ручка 4×24 по значению.
-    Item {
+    // Волнистая дорожка PanelSlider — та же, что в панели яркости. Это
+    // индикатор, а не контрол: ввод отключён, значение ведёт Osd.
+    PanelSlider {
         id: slider
 
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.leftMargin: Theme.space.lg
-        anchors.rightMargin: Theme.space.lg
-        anchors.bottomMargin: Theme.space.sm
-        height: Theme.iconSize.lg
-
-        // Неактивная дорожка.
-        Rectangle {
-            id: track
-
-            anchors.verticalCenter: parent.verticalCenter
-            width: parent.width
-            height: 4
-            radius: height / 2
-            color: Theme.surfaceContainerHighest
-        }
-
-        // Активная часть — от начала до ручки.
-        Rectangle {
-            width: Math.max(track.height, track.width * root.displayValue)
-            height: track.height
-            radius: height / 2
-            anchors.verticalCenter: parent.verticalCenter
-            color: Theme.primary
-        }
-
-        // Конечная отметка M3 у правого края дорожки.
-        Rectangle {
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            width: 4
-            height: 4
-            radius: width / 2
-            color: Theme.outline
-        }
-
-        // Ручка: вертикальная пилюля, как в M3.
-        Rectangle {
-            width: 4
-            height: Theme.iconSize.lg
-            radius: width / 2
-            x: track.width * root.displayValue - width / 2
-            anchors.verticalCenter: parent.verticalCenter
-            color: Theme.primary
-        }
+        anchors.leftMargin: 28
+        anchors.rightMargin: 28
+        anchors.bottomMargin: 6
+        height: 36
+        value: root.displayValue
+        accent: root.accent
+        enabled: false
     }
 }

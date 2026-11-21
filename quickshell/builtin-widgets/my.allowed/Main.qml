@@ -11,7 +11,9 @@ Item {
         anchors.centerIn: parent
         color: root.ctx.colors.onSurface
         font.family: root.ctx.fontFamily
-        font.pixelSize: Math.max(11, Math.round(root.ctx.dp * 14))
+        font.pixelSize: Math.max(12, Math.round(root.ctx.dp * 15))
+        font.weight: 720
+        font.letterSpacing: -0.2
         text: root.ctx.cols + " × " + root.ctx.rows
     }
 
@@ -21,6 +23,8 @@ Item {
         color: root.ctx.colors.onSurfaceVariant
         font.family: root.ctx.fontFamily
         font.pixelSize: Math.max(9, Math.round(root.ctx.dp * 10))
+        font.weight: 620
+        font.letterSpacing: 0.4
         text: "allowed"
     }
 }

@@ -25,6 +25,7 @@ Item {
     MorphShape {
         anchors.fill: parent
         shape: root.unread ? "cookie" : "circle"
+        keepRound: true
         modulation: 0.75
         color: root.unread ? Theme.secondaryContainer
              : root.hovered ? Theme.surfaceContainerHighest

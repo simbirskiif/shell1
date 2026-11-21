@@ -82,11 +82,12 @@ Rectangle {
     // контур; нажатие на миг возвращает к squircle и обратно.
     MorphShape {
         anchors.fill: parent
+        // Фон плитки — только «прямоугольные» формы (squircle/pill):
+        // радиальные cookie/clover на широкой плитке растянулись бы в овал.
         shape: root.pressedDown ? "squircle"
-             : root.active ? root.expressiveShape
+             : root.active ? "pill"
              : "squircle"
         color: root.containerColor
-        modulation: 0.5
         // Тонкий контур только у выключенной плитки: активная держится
         // цветом, а не обводкой.
         borderWidth: root.active ? 0 : 1
@@ -112,6 +113,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         width: 38
         height: 38
+        keepRound: true
         shape: root.active
                ? (root.expressiveShape === "sunny" || root.expressiveShape === "burst"
                   || root.expressiveShape === "clover" || root.expressiveShape === "blob"

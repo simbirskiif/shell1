@@ -85,7 +85,7 @@ Item {
 
                 MorphShape {
                     anchors.fill: parent
-                    shape: segment.pressed ? "squircle" : (segment.active ? "pill" : "circle")
+                    shape: segment.pressed ? "squircle" : "pill"
                     color: segment.active ? root.activeContainer
                          : segment.hovered ? Theme.surfaceContainerHighest
                          : "transparent"

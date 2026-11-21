@@ -2,9 +2,12 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
+import "expressive"
 import "../singletons"
 
-// Выбор профиля Hyprland: оверлей по центру экрана.
+// Выбор профиля Hyprland: оверлей по центру экрана в духе M3 Expressive
+// menu. Крупные пункты 56: активный — форма cookie на tertiaryContainer,
+// остальные — спокойная пилюля; наведение даёт слой состояния той же формы.
 // Открывается биндом из профиля через IPC target "hyprProfile";
 // сам ничего не пишет в конфиг — переключение делает hypr-profile.
 PanelWindow {
@@ -74,17 +77,16 @@ PanelWindow {
         onClicked: ProfileState.close()
     }
 
-    // Меню M3: тональный контейнер surfaceContainer, радиус xl.
+    // Меню Expressive: тональная поверхность, крупное скругление 32, без
+    // обводки — контейнер отделяется тоном и воздухом.
     Rectangle {
         id: card
 
         anchors.centerIn: parent
-        width: 340
+        width: 372
         height: column.implicitHeight + Theme.notificationPadding * 2
-        radius: Theme.shape.xl
-        color: Theme.surfaceContainer
-        border.width: 1
-        border.color: Theme.outlineVariant
+        radius: Theme.shape.xlIncreased
+        color: Theme.sheetSurface
 
         // Клики по карточке не должны закрывать её.
         MouseArea {
@@ -101,7 +103,7 @@ PanelWindow {
             Text {
                 text: "Профиль Hyprland"
                 color: Theme.scheme.onSurface
-                font: Theme.typeTitleMedium
+                font: Theme.typeEmphasizedTitleMedium
             }
 
             Text {
@@ -122,10 +124,11 @@ PanelWindow {
                 width: parent.width
                 height: Math.min(contentHeight, 320)
                 model: ProfileState.profiles
+                spacing: Theme.space.xs
                 boundsBehavior: Flickable.StopAtBounds
                 clip: true
 
-                delegate: Rectangle {
+                delegate: Item {
                     id: row
 
                     required property string modelData
@@ -134,56 +137,69 @@ PanelWindow {
                     readonly property bool selected: row.index === root.cursor
 
                     width: list.width
-                    // Пункт M3-меню: высота 48, радиус md.
-                    height: Theme.touchTarget
-                    radius: Theme.shape.md
-                    color: row.selected ? Theme.secondaryContainer : "transparent"
-                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+                    // Крупный пункт меню: 56 вместо прежних 48.
+                    height: Theme.listItemHeight
+                    // Нажатие сжимает пункт пружиной; выбор читается формой.
+                    scale: rowMouse.pressed ? 0.97 : 1
+                    Behavior on scale { SpringSpatialFast {} }
 
-                    HoverHandler {
-                        id: hover
+                    // Активный пункт — «печенье» на tertiaryContainer,
+                    // неактивные — спокойная пилюля без контейнера.
+                    MorphShape {
+                        anchors.fill: parent
+                        shape: row.selected ? "pill" : "squircle"
+                        color: row.selected ? Theme.tertiaryContainer : "transparent"
+                        modulation: row.selected ? 0.5 : 0.25
+                        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
                     }
 
-                    // Слой состояния M3 при наведении — под подписями.
-                    Rectangle {
+                    // Слой состояния при наведении — той же морфящейся
+                    // формой, чтобы не выходить за волнистый контур.
+                    MorphShape {
                         anchors.fill: parent
-                        radius: parent.radius
-                        color: Theme.stateLayer(row.selected
-                                                ? Theme.scheme.onSecondaryContainer
-                                                : Theme.scheme.onSurface,
-                                                Theme.stateHover)
-                        opacity: hover.hovered ? 1 : 0
-                        Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            root.cursor = row.index;
-                            root.accept();
-                        }
+                        shape: row.selected ? "pill" : "squircle"
+                        modulation: row.selected ? 0.5 : 0.25
+                        color: row.selected
+                               ? Theme.withAlpha(Theme.scheme.onTertiaryContainer, Theme.stateHover)
+                               : Theme.withAlpha(Theme.scheme.onSurface, Theme.stateHover)
+                        opacity: rowMouse.containsMouse ? 1 : 0
+                        Behavior on opacity { SpringEffects {} }
                     }
 
                     Text {
                         anchors.left: parent.left
-                        anchors.leftMargin: Theme.space.lg
+                        anchors.leftMargin: Theme.space.xl
                         anchors.verticalCenter: parent.verticalCenter
                         text: row.modelData
-                        color: row.selected ? Theme.scheme.onSecondaryContainer
+                        color: row.selected ? Theme.scheme.onTertiaryContainer
                                             : Theme.scheme.onSurface
-                        font: Theme.typeBodyLarge
+                        font: row.selected ? Theme.typeEmphasizedTitleMedium
+                                           : Theme.typeBodyLarge
+                        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
                     }
 
                     Text {
                         anchors.right: parent.right
-                        anchors.rightMargin: Theme.space.lg
+                        anchors.rightMargin: Theme.space.xl
                         anchors.verticalCenter: parent.verticalCenter
                         visible: row.modelData === ProfileState.current
                         text: "текущий"
                         color: row.selected
-                               ? Theme.withAlpha(Theme.scheme.onSecondaryContainer, 0.8)
+                               ? Theme.withAlpha(Theme.scheme.onTertiaryContainer, 0.8)
                                : Theme.scheme.onSurfaceVariant
                         font: Theme.typeLabelMedium
+                    }
+
+                    MouseArea {
+                        id: rowMouse
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.cursor = row.index;
+                            root.accept();
+                        }
                     }
                 }
             }

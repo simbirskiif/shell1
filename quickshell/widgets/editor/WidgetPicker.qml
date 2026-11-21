@@ -1,14 +1,16 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import "../../components/expressive"
 import "../../singletons"
 import "../core"
 
 // Каталог виджетов (раздел 8.5 ТЗ): поиск, превью, добавление тапом,
 // drag-and-drop на сетку, список пользовательских путей и «Добавить папку…».
 //
-// Оформление — M3 side sheet: surface-container-low, шапка top app bar
-// (titleLarge + иконка 40), поиск — filled-поле, действия — пилюли 40 px.
+// Expressive: side sheet с крупной squircle-формой, заголовок
+// typeEmphasized*, поиск — крупная пилюля 56, карточки — цветные
+// контейнеры, действия — пилюли 48. Появление/уход — на пружинах.
 Item {
     id: root
 
@@ -25,18 +27,8 @@ Item {
     opacity: root.hiding ? 0 : (PickerState.active ? 0.34 : 1)
     transform: Translate { x: root.slideOffset }
 
-    Behavior on opacity {
-        NumberAnimation {
-            duration: Theme.motionShort4
-            easing.bezierCurve: Theme.curveStandard
-        }
-    }
-    Behavior on slideOffset {
-        NumberAnimation {
-            duration: Theme.motionShort4
-            easing.bezierCurve: Theme.curveStandard
-        }
-    }
+    Behavior on opacity { SpringEffects {} }
+    Behavior on slideOffset { SpringSpatial {} }
 
     Timer {
         id: closeTimer
@@ -116,16 +108,16 @@ Item {
         }
     }
 
+    // Крупная форма листа: большой левый радиус (для высокой панели
+    // MorphShape даёт слишком круглые углы и режет шапку).
     Rectangle {
         anchors.fill: parent
-        topLeftRadius: Theme.shape.xl
-        bottomLeftRadius: Theme.shape.xl
+        topLeftRadius: Theme.shape.xlIncreased
+        bottomLeftRadius: Theme.shape.xlIncreased
         topRightRadius: 0
         bottomRightRadius: 0
         color: Theme.panelSurface
-        border.width: 1
-        border.color: Theme.outlineVariant
-        clip: true
+        border.width: 0
     }
 
     Column {
@@ -133,7 +125,7 @@ Item {
         anchors.margins: Theme.space.lg
         spacing: Theme.space.sm
 
-        // Шапка — M3 top app bar: заголовок titleLarge и иконка 40.
+        // Шапка — Expressive top app bar: крупный заголовок и icon-кнопка.
         Item {
             width: parent.width
             height: Theme.appBarHeight
@@ -144,75 +136,46 @@ Item {
                 anchors.rightMargin: Theme.space.sm
                 anchors.verticalCenter: parent.verticalCenter
                 color: Theme.scheme.onSurface
-                font: Theme.typeTitleLarge
+                font: Theme.typeEmphasizedTitleLarge
                 elide: Text.ElideRight
                 text: "Виджеты"
             }
 
-            Item {
+            HostIconButton {
                 id: headerClose
 
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                width: Theme.iconButtonSize
-                height: Theme.iconButtonSize
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: width / 2
-                    color: headerCloseHover.containsMouse
-                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
-                           : "transparent"
-                    Behavior on color {
-                        ColorAnimation { duration: Theme.motionShort3 }
-                    }
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "✕"
-                    color: Theme.scheme.onSurface
-                    font.family: Theme.fontFamily
-                    font.pixelSize: Theme.iconSize.lg
-                }
-
-                MouseArea {
-                    id: headerCloseHover
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.dismiss()
-                }
+                text: "✕"
+                onClicked: root.dismiss()
             }
         }
 
-        // Поиск — M3 filled-поле: surface-container-highest, radius xs,
-        // обводка outline (в фокусе — primary).
+        // Поиск — крупная Expressive-пилюля 56: тональная заливка без
+        // постоянной обводки, в фокусе — primary-контур.
         Item {
             width: parent.width
-            height: 48
+            height: 56
 
-            Rectangle {
+            MorphShape {
                 anchors.fill: parent
-                radius: Theme.shape.xs
+                shape: search.activeFocus ? "squircle" : "pill"
+                modulation: 0.35
                 color: Theme.surfaceContainerHighest
-                border.width: search.activeFocus ? 2 : 1
-                border.color: search.activeFocus ? Theme.primary : Theme.outline
-                Behavior on border.color {
-                    ColorAnimation { duration: Theme.motionShort3 }
-                }
+                borderWidth: search.activeFocus ? 2 : 0
+                borderColor: Theme.primary
+                Behavior on color { ColorAnimation { duration: 140 } }
             }
 
             TextInput {
                 id: search
 
                 anchors.fill: parent
-                leftPadding: Theme.space.md
-                rightPadding: Theme.space.md
+                leftPadding: Theme.space.xl
+                rightPadding: Theme.space.xl
                 verticalAlignment: TextInput.AlignVCenter
                 color: Theme.scheme.onSurface
-                font: Theme.typeBodyMedium
+                font: Theme.typeBodyLarge
                 selectionColor: Theme.primary
                 selectedTextColor: Theme.scheme.onPrimary
                 clip: true
@@ -225,11 +188,11 @@ Item {
 
                 Text {
                     anchors.fill: parent
-                    anchors.leftMargin: Theme.space.md
+                    anchors.leftMargin: Theme.space.xl
                     verticalAlignment: Text.AlignVCenter
                     visible: search.text.length === 0
                     color: Theme.scheme.onSurfaceVariant
-                    font: Theme.typeBodyMedium
+                    font: Theme.typeBodyLarge
                     text: "Поиск по имени или id"
                 }
             }
@@ -257,6 +220,9 @@ Item {
 
                         required property var modelData
 
+                        // Две карточки ровно по ширине листа: без пустого
+                        // правого края, который читался как обрезанный ряд.
+                        width: Math.max(140, Math.floor((cards.width - cards.spacing) / 2))
                         widget: modelData
                         metrics: root.metrics
                         screenName: root.screen.name
@@ -279,7 +245,7 @@ Item {
         Text {
             width: parent.width
             color: Theme.scheme.onSurfaceVariant
-            font: Theme.typeBodySmall
+            font: Theme.typeLabelMedium
             text: "Доступно: " + root.filtered.length
         }
 
@@ -293,15 +259,11 @@ Item {
             text: root.message
         }
 
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.outlineVariant
-        }
-
+        // Группировка цветом и воздухом вместо тонкого разделителя.
         Text {
-            color: Theme.scheme.onSurfaceVariant
-            font: Theme.typeLabelLarge
+            topPadding: Theme.space.sm
+            color: Theme.scheme.onSurface
+            font: Theme.typeEmphasizedLabelLarge
             text: "Пользовательские пути"
         }
 
@@ -319,30 +281,37 @@ Item {
             }
         }
 
-        // Кнопка-пилюля 40 px (tonal): раскрывает поле ввода пути.
-        Rectangle {
+        // Кнопка-пилюля 48 (tonal): раскрывает поле ввода пути. Форма —
+        // tertiary-контейнер, на hover перетекает в cookie, на press сжимается.
+        Item {
             id: pathToggle
 
-            width: pathToggleLabel.implicitWidth + Theme.space.xl * 2
-            height: Theme.buttonHeight
-            radius: Theme.shape.full
-            color: Theme.secondaryContainer
+            width: pathToggleLabel.implicitWidth + Theme.space.xxl
+            height: 48
+            scale: pathToggleHover.pressed ? 0.95 : (pathToggleHover.containsMouse ? 1.03 : 1)
+            Behavior on scale { SpringSpatial {} }
+
+            MorphShape {
+                anchors.fill: parent
+                shape: pathToggleHover.pressed ? "squircle"
+                     : pathToggleHover.containsMouse ? "cookie"
+                     : "pill"
+                modulation: 0.4
+                color: pathToggleHover.containsMouse ? Theme.tertiaryContainer
+                                                     : Theme.secondaryContainer
+                borderWidth: 0
+                Behavior on color { ColorAnimation { duration: 140 } }
+            }
 
             Text {
                 id: pathToggleLabel
 
                 anchors.centerIn: parent
                 text: root.showPathInput ? "Скрыть ввод пути" : "Добавить папку…"
-                color: Theme.scheme.onSecondaryContainer
-                font: Theme.typeLabelLarge
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                radius: parent.radius
-                color: Theme.stateLayer(Theme.scheme.onSecondaryContainer,
-                                        Theme.stateHover)
-                visible: pathToggleHover.containsMouse
+                color: pathToggleHover.containsMouse ? Theme.scheme.onTertiaryContainer
+                                                     : Theme.scheme.onSecondaryContainer
+                font: Theme.typeEmphasizedLabelLarge
+                Behavior on color { ColorAnimation { duration: 140 } }
             }
 
             MouseArea {
@@ -360,28 +329,26 @@ Item {
             visible: root.showPathInput
             spacing: Theme.space.sm
 
-            // Поле пути — такое же M3 filled-поле, как поиск.
+            // Поле пути — такая же крупная пилюля, как поиск.
             Item {
                 width: Math.max(80, parent.width - 124)
-                height: Theme.buttonHeight
+                height: 48
 
-                Rectangle {
+                MorphShape {
                     anchors.fill: parent
-                    radius: Theme.shape.xs
+                    shape: pathInput.activeFocus ? "squircle" : "pill"
+                    modulation: 0.35
                     color: Theme.surfaceContainerHighest
-                    border.width: pathInput.activeFocus ? 2 : 1
-                    border.color: pathInput.activeFocus ? Theme.primary : Theme.outline
-                    Behavior on border.color {
-                        ColorAnimation { duration: Theme.motionShort3 }
-                    }
+                    borderWidth: pathInput.activeFocus ? 2 : 0
+                    borderColor: Theme.primary
                 }
 
                 TextInput {
                     id: pathInput
 
                     anchors.fill: parent
-                    leftPadding: Theme.space.md
-                    rightPadding: Theme.space.md
+                    leftPadding: Theme.space.lg
+                    rightPadding: Theme.space.lg
                     verticalAlignment: TextInput.AlignVCenter
                     color: Theme.scheme.onSurface
                     font: Theme.typeBodyMedium
@@ -391,7 +358,7 @@ Item {
 
                     Text {
                         anchors.fill: parent
-                        anchors.leftMargin: Theme.space.md
+                        anchors.leftMargin: Theme.space.lg
                         verticalAlignment: Text.AlignVCenter
                         visible: pathInput.text.length === 0
                         color: Theme.scheme.onSurfaceVariant
@@ -401,13 +368,25 @@ Item {
                 }
             }
 
-            Rectangle {
+            Item {
                 id: pathAdd
 
-                width: pathAddLabel.implicitWidth + Theme.space.xl * 2
-                height: Theme.buttonHeight
-                radius: Theme.shape.full
-                color: Theme.primary
+                width: pathAddLabel.implicitWidth + Theme.space.xxl
+                height: 48
+                scale: pathAddHover.pressed ? 0.94 : (pathAddHover.containsMouse ? 1.04 : 1)
+                Behavior on scale { SpringSpatial {} }
+
+                MorphShape {
+                    anchors.fill: parent
+                    shape: pathAddHover.pressed ? "squircle" : "pill"
+                    modulation: 0.4
+                    color: pathAddHover.containsMouse
+                           ? Theme.mix(Theme.primary, Theme.scheme.onPrimary,
+                                       Theme.stateHover)
+                           : Theme.primary
+                    borderWidth: 0
+                    Behavior on color { ColorAnimation { duration: 140 } }
+                }
 
                 Text {
                     id: pathAddLabel
@@ -415,14 +394,7 @@ Item {
                     anchors.centerIn: parent
                     text: "Добавить"
                     color: Theme.scheme.onPrimary
-                    font: Theme.typeLabelLarge
-                }
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: parent.radius
-                    color: Theme.stateLayer(Theme.scheme.onPrimary, Theme.stateHover)
-                    visible: pathAddHover.containsMouse
+                    font: Theme.typeEmphasizedLabelLarge
                 }
 
                 MouseArea {

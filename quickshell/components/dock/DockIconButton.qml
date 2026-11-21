@@ -1,11 +1,14 @@
 import QtQuick
-import ".."
+import "../expressive"
 import "../../singletons"
 
-// Круглая кнопка дока: раскрытие панели, настройки, закрытие. M3 icon button:
-// круг shape.full, контейнер — прозрачный или tonal (secondaryContainer),
-// наведение — state layer. Наведение слегка поднимает и увеличивает кнопку —
-// тот же отклик, что у иконок приложений, поэтому полоса не «статична».
+// Кнопка-иконка дока: настройки, закрытие, переключение вида.
+//
+// Expressive: контейнер — морфящаяся форма, а не просто круг. Акцентная
+// кнопка — «печенье» tertiary-контейнера, обычная в покое прозрачна, при
+// наведении превращается в squircle тональной поверхности. Нажатие
+// сжимает кнопку на spatial-пружине; тонкая обводка не используется —
+// состояние читается формой и цветом.
 Item {
     id: root
 
@@ -13,7 +16,7 @@ Item {
 
     property int size: Theme.iconButtonSize
     property int glyphSize: Theme.iconSize.md
-    // Акцентная заливка (кнопка раскрытия панели).
+    // Акцентная заливка (кнопка настроек панели).
     property bool accented: false
 
     signal clicked()
@@ -21,42 +24,36 @@ Item {
     implicitWidth: root.size
     implicitHeight: root.size
 
-    scale: hover.pressed ? 0.92 : (hover.containsMouse ? 1.08 : 1)
-    Behavior on scale {
-        MotionNumber {
-            duration: Theme.motionShort3
-            curve: Theme.curveDockExpressive
-        }
-    }
+    readonly property bool hovered: hover.containsMouse
+    readonly property bool pressed: hover.pressed
 
-    // Тональный контейнер M3: акцентная кнопка — secondaryContainer,
-    // обычная — прозрачная (поверхность карточки остаётся видна).
-    Rectangle {
-        anchors.fill: parent
-        radius: Theme.shape.full
-        color: root.accented ? Theme.secondaryContainer : "transparent"
-        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
-    }
+    scale: root.pressed ? 0.9 : (root.hovered ? 1.06 : 1)
+    Behavior on scale { SpringSpatialFast {} }
 
-    // Слой состояния M3: наведение/нажатие поверх контейнера.
-    Rectangle {
+    // Контейнер-форма: акцент — cookie на tertiary-container, наведение —
+    // squircle тональной поверхности, в покое формы нет.
+    MorphShape {
         anchors.fill: parent
-        radius: Theme.shape.full
-        color: Theme.stateLayer(root.accented ? Theme.scheme.onSecondaryContainer
-                                              : Theme.scheme.onSurface,
-                                hover.pressed ? Theme.statePressed : Theme.stateHover)
-        opacity: hover.containsMouse ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+        shape: root.pressed ? "squircle"
+             : root.accented ? "cookie"
+             : (root.hovered ? "squircle" : "circle")
+        modulation: 0.8
+        color: root.accented ? Theme.tertiaryContainer
+             : root.hovered ? Theme.surfaceContainerHighest
+             : "transparent"
+        Behavior on color { ColorAnimation { duration: 140 } }
     }
 
     Text {
         anchors.centerIn: parent
         text: root.icon
-        color: root.accented ? Theme.scheme.onSecondaryContainer
+        color: root.accented ? Theme.scheme.onTertiaryContainer
                              : Theme.scheme.onSurfaceVariant
         font.family: Theme.iconFontFamily
         font.pixelSize: root.glyphSize
-        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+        scale: root.pressed ? 0.92 : 1
+        Behavior on color { ColorAnimation { duration: 140 } }
+        Behavior on scale { SpringSpatialFast {} }
     }
 
     MouseArea {

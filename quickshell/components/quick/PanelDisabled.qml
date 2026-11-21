@@ -1,9 +1,14 @@
 import QtQuick
 import ".."
+import "../expressive"
 import "../../singletons"
 
 // Единый экран «модуль выключен»: показывается вместо списков,
 // когда Wi-Fi/Bluetooth выключены.
+//
+// Expressive: вместо строки-заглушки — крупная форма (cookie для иконки,
+// blob-пятно за ней), заголовок typeEmphasizedTitleLarge, тело bodyMedium
+// и большая кнопка-пилюля. Тонких рамок нет.
 Item {
     id: root
 
@@ -19,38 +24,67 @@ Item {
 
     signal actionRequested()
 
+    readonly property bool actionHovered: actionHover.containsMouse
+    readonly property bool actionPressed: actionHover.pressed
+
     implicitWidth: Theme.quickWidth
-    implicitHeight: Theme.space.xxxl * 5
+    implicitHeight: 264
+
+    // Фоновое пятно: группирует заглушку формой, а не рамкой.
+    MorphShape {
+        anchors.centerIn: parent
+        anchors.verticalCenterOffset: -Theme.space.xl
+        width: 210
+        height: 210
+        shape: "blob"
+        color: Theme.withAlpha(Theme.tertiaryContainer, 0.4)
+        modulation: 0.55
+    }
 
     Column {
         anchors.centerIn: parent
         width: parent.width - Theme.space.xxxl - Theme.space.sm
         spacing: Theme.space.sm
 
-        Text {
+        // Крупный орб-«печенье» с иконкой: состояние читается формой.
+        Item {
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: !root.wifiIcon
-            text: root.icon
-            color: Theme.scheme.onSurfaceVariant
-            font.family: Theme.iconFontFamily
-            font.pixelSize: Theme.iconSize.xl
+            width: 92
+            height: 92
+
+            MorphShape {
+                anchors.fill: parent
+                shape: "cookie"
+                color: Theme.secondaryContainer
+                modulation: 0.7
+            }
+
+            Text {
+                anchors.centerIn: parent
+                visible: !root.wifiIcon
+                text: root.icon
+                color: Theme.scheme.onSecondaryContainer
+                font.family: Theme.iconFontFamily
+                font.pixelSize: 38
+            }
+
+            WifiStatusIcon {
+                anchors.centerIn: parent
+                visible: root.wifiIcon
+                width: 54
+                height: 54
+                glyphSize: 34
+                offMode: true
+            }
         }
 
-        WifiStatusIcon {
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: root.wifiIcon
-            width: Theme.iconSize.xl + Theme.space.sm
-            height: Theme.iconSize.xl + Theme.space.sm
-            glyphSize: Theme.iconSize.xl
-            offMode: true
-            dim: true
-        }
-
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
             text: root.title
             color: Theme.scheme.onSurface
-            font: Theme.typeTitleMedium
+            font: Theme.typeEmphasizedTitleLarge
         }
 
         Text {
@@ -67,22 +101,23 @@ Item {
             height: root.showAction ? Theme.space.sm : 0
         }
 
-        // Кнопка m3 filled button: пилюля primary, hover — state layer on-primary.
-        Rectangle {
+        // Кнопка Expressive: крупная пилюля primary, hover меняет форму на
+        // squircle, нажатие пружинно сжимает.
+        Item {
             id: button
             anchors.horizontalCenter: parent.horizontalCenter
-            width: buttonLabel.implicitWidth + Theme.space.xl * 2
-            height: root.showAction ? Theme.buttonHeight : 0
+            width: root.showAction ? buttonLabel.implicitWidth + Theme.space.xxl : 0
+            height: root.showAction ? 48 : 0
             visible: root.showAction
-            radius: Theme.shape.full
-            color: Theme.primary
+            scale: root.actionPressed ? 0.94 : (root.actionHovered ? 1.03 : 1)
 
-            Rectangle {
+            Behavior on scale { SpringSpatialFast {} }
+
+            MorphShape {
                 anchors.fill: parent
-                radius: parent.radius
-                color: Theme.stateLayer(Theme.scheme.onPrimary, Theme.stateHover)
-                opacity: buttonHover.containsMouse ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+                shape: root.actionHovered ? "squircle" : "pill"
+                color: Theme.primary
+                modulation: 0.4
             }
 
             Text {
@@ -90,11 +125,11 @@ Item {
                 anchors.centerIn: parent
                 text: root.actionText
                 color: Theme.scheme.onPrimary
-                font: Theme.typeLabelLarge
+                font: Theme.typeEmphasizedLabelLarge
             }
 
             MouseArea {
-                id: buttonHover
+                id: actionHover
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor

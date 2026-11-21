@@ -405,7 +405,7 @@ Item {
             // текcтовая «отмена» и залитая «сохранить» — все формы-пилюли.
             Item {
                 width: parent.width
-                height: Theme.touchTarget
+                height: 56
 
                 // m3 tonal button: secondary-container + on-secondary-container,
                 // hover — state layer поверх заливки.
@@ -415,9 +415,11 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: !root.editing
                     width: editRow.implicitWidth + Theme.space.xl * 2
-                    height: Theme.buttonHeight
+                    height: 48
                     radius: Theme.shape.full
                     color: Theme.secondaryContainer
+                    scale: editHover.pressed ? 0.93 : (editHover.containsMouse ? 1.04 : 1)
+                    Behavior on scale { SpringSpatial {} }
 
                     Rectangle {
                         anchors.fill: parent
@@ -445,7 +447,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Изменить"
                             color: Theme.scheme.onSecondaryContainer
-                            font: Theme.typeLabelLarge
+                            font: Theme.typeEmphasizedLabelLarge
                         }
                     }
 
@@ -673,7 +675,10 @@ Item {
         readonly property string icon: "\uf0ac"
         // С проводом — глобус, без провода — состояние Wi-Fi делениями.
         readonly property bool wifiTile: !NetworkService.internetViaEthernet
-        readonly property bool active: NetworkService.wifiEnabled || NetworkService.internetViaEthernet
+        // Плитка «включена» только при реальном подключении: сама по себе
+        // включённая радиомодуляция ещё не интернет, и плитка не должна
+        // гореть постоянно.
+        readonly property bool active: NetworkService.wifiConnected || NetworkService.internetViaEthernet
         readonly property string subtitle: NetworkService.internetSummary
         readonly property Component view: Component { PanelInternet {} }
 

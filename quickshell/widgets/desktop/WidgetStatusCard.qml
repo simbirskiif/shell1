@@ -1,4 +1,5 @@
 import QtQuick
+import "../../components/expressive"
 import "../../singletons"
 import "../core"
 
@@ -6,9 +7,9 @@ import "../core"
 // «виджет недоступен». Ужимается до размера маленькой клетки: в компактном
 // режиме остаются иконка, имя и кнопки-символы.
 //
-// Оформление — M3 card: tonal surface high, радиус md (у крупной — lg),
-// без тени; обводка — outline-variant. Выбранное/активное состояние тут не
-// нужно: карточка сама сообщает об ошибке цветом error.
+// Оформление — Expressive: проблемная карточка целиком в error-контейнере
+// (форма «печенье», в компактном размере — спокойный squircle), заголовок
+// typeEmphasized*, иконка крупнее текста, кнопки — HostButton-пилюли.
 Item {
     id: root
 
@@ -21,16 +22,17 @@ Item {
     signal deleteRequested()
 
     readonly property bool compact: width < 120 || height < 110
-    readonly property int cardRadius: root.compact ? Theme.shape.md : Theme.shape.lg
+    readonly property int cardRadius: root.compact ? Theme.shape.lg : Theme.shape.xl
     readonly property int cardPadding: root.compact ? Theme.space.sm : Theme.space.lg
 
-    // Подложка — M3 card. Тень не нужна: глубину задаёт тон поверхности.
-    Rectangle {
+    // Компактная карточка — спокойный squircle; крупная — «печенье»,
+    // чтобы проблему было видно боковым зрением.
+    MorphShape {
         anchors.fill: parent
-        radius: root.cardRadius
-        color: Theme.surfaceContainerHigh
-        border.width: 1
-        border.color: Theme.outlineVariant
+        shape: root.compact ? "squircle" : "cookie"
+        modulation: 0.42
+        color: Theme.errorContainer
+        borderWidth: 0
     }
 
     Column {
@@ -42,18 +44,20 @@ Item {
         Text {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            color: Theme.error
+            color: Theme.scheme.onErrorContainer
             font.family: Theme.fontFamily
             font.pixelSize: root.compact ? Theme.typescale.titleMedium.size
-                                         : Theme.typescale.headlineSmall.size
+                                         : Theme.typescale.headlineMedium.size
             text: root.icon
+            scale: root.compact ? 0.9 : 1
         }
 
         Text {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            color: Theme.scheme.onSurface
-            font: root.compact ? Theme.typeTitleSmall : Theme.typeTitleMedium
+            color: Theme.scheme.onErrorContainer
+            font: root.compact ? Theme.typeEmphasizedLabelLarge
+                               : Theme.typeEmphasizedTitleMedium
             elide: Text.ElideRight
             text: root.title
         }
@@ -62,7 +66,7 @@ Item {
             width: parent.width
             visible: !root.compact && root.message.length > 0
             horizontalAlignment: Text.AlignHCenter
-            color: Theme.scheme.onSurfaceVariant
+            color: Theme.withAlpha(Theme.scheme.onErrorContainer, 0.78)
             font: Theme.typeBodySmall
             wrapMode: Text.WordWrap
             maximumLineCount: 3
@@ -76,6 +80,7 @@ Item {
 
             HostButton {
                 text: root.compact ? "↻" : "Перезагрузить"
+                prominent: true
                 visible: root.showReload
                 onClicked: root.reloadRequested()
             }

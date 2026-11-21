@@ -4,6 +4,7 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 import Quickshell.Services.Polkit
 import "quick"
+import "expressive"
 import "../singletons"
 
 // Модальное окно агента Polkit: пароль или биометрия.
@@ -21,6 +22,10 @@ import "../singletons"
 //
 // Отдельная поверхность на весь экран, как у PasswordDialog: попап быстрого
 // меню не может забрать клавиатурный фокус, а PanelWindow — может.
+//
+// Оформление — Material 3 Expressive: карточка радиуса 32, акцентный орб
+// (cookie → burst при ошибке), высокое поле-пилюля, плашки с крупным
+// радиусом и кнопки на пружине.
 PanelWindow {
     id: root
 
@@ -63,6 +68,9 @@ PanelWindow {
     readonly property bool waitingMode: root.flow !== null && !root.textMode
                                          && !root.isSubmitting && root.supplementary === ""
                                          && root.waitingForModule
+    // Ошибка (своя или от PAM) — акцент карточки становится error-container,
+    // а форма орба «взрывается» в burst.
+    readonly property bool errorAccent: root.hasFailed || root.supplementaryIsError
 
     readonly property string title: root.flow !== null && root.flow.message !== ""
                                     ? root.flow.message : "Требуется аутентификация"
@@ -215,16 +223,12 @@ PanelWindow {
         color: Theme.scrimOverlay
         opacity: 0
 
-        NumberAnimation {
+        SpringEffects {
             id: showFade
 
             target: backdrop
             property: "opacity"
-            from: 0
             to: 1
-            duration: Theme.motionShort4
-            easing.type: Easing.Bezier
-            easing.bezierCurve: Theme.curveStandardDecelerate
         }
 
         // Клик мимо карточки — отказ от аутентификации.
@@ -233,47 +237,40 @@ PanelWindow {
             onClicked: root.cancel()
         }
 
-        // Карточка диалога: surface-container-high и радиус shape.xl.
+        // Карточка диалога: surface-container-high и крупный радиус 32.
         Rectangle {
             id: card
 
             anchors.centerIn: parent
-            width: Math.min(380, parent.width - 32)
+            width: Math.min(400, parent.width - 32)
             implicitHeight: cardColumn.implicitHeight + Theme.space.xl * 2
             height: implicitHeight
-            radius: Theme.shape.xl
+            radius: Theme.shape.xlIncreased
             color: Theme.surfaceContainerHigh
             transform: Translate { x: root.shakeOffset }
 
             // При переходе «сканер → пароль» в колонке появляется поле ввода,
-            // и карточка мягко раскрывается под него.
-            Behavior on implicitHeight {
-                MotionNumber {
-                    duration: Theme.motionMedium1
-                    curve: Theme.curveEmphasized
-                }
-            }
+            // и карточка упруго раскрывается под него.
+            Behavior on implicitHeight { SpringSpatial {} }
 
-            NumberAnimation {
+            SpringSpatial {
                 id: cardIn
 
                 target: card
                 property: "scale"
                 from: Theme.motionFadeThroughScale
                 to: 1
-                duration: Theme.motionShort4
-                easing.type: Easing.Bezier
-                easing.bezierCurve: Theme.curveEmphasizedDecelerate
             }
 
-            SequentialAnimation {
+            // Неверный пароль — карточка коротко «дёргается»: смещение задаёт
+            // from, а возвращает spatial-пружина с затухающим перелётом.
+            SpringSpatial {
                 id: shake
 
-                NumberAnimation { target: root; property: "shakeOffset"; to: -8; duration: 50; easing.type: Easing.OutQuad }
-                NumberAnimation { target: root; property: "shakeOffset"; to: 8; duration: 60; easing.type: Easing.InOutQuad }
-                NumberAnimation { target: root; property: "shakeOffset"; to: -5; duration: 60; easing.type: Easing.InOutQuad }
-                NumberAnimation { target: root; property: "shakeOffset"; to: 5; duration: 60; easing.type: Easing.InOutQuad }
-                NumberAnimation { target: root; property: "shakeOffset"; to: 0; duration: 70; easing.type: Easing.OutQuad }
+                target: root
+                property: "shakeOffset"
+                from: Theme.space.md
+                to: 0
             }
 
             // Клики по карточке не должны её закрывать.
@@ -288,31 +285,37 @@ PanelWindow {
                 anchors.right: parent.right
                 anchors.top: parent.top
                 anchors.margins: Theme.space.xl
-                spacing: Theme.space.sm
+                spacing: Theme.space.md
 
-                // Шапка: иконка действия от Polkit и текст запроса.
+                // Шапка: крупный орб-акцент с иконкой действия Polkit.
+                // Ошибка читается формой: cookie/clover → burst.
                 Item {
                     width: parent.width
-                    implicitHeight: headerColumn.implicitHeight
+                    implicitHeight: Math.max(headerOrb.height, headerColumn.implicitHeight)
 
-                    Item {
-                        id: headerIcon
+                    MorphShape {
+                        id: headerOrb
 
-                        width: Theme.iconSize.lg
-                        height: Theme.iconSize.lg
+                        width: Theme.touchTarget + Theme.space.md
+                        height: width
                         anchors.left: parent.left
-                        anchors.top: parent.top
-                        anchors.topMargin: 1
+                        anchors.verticalCenter: parent.verticalCenter
+                        shape: root.errorAccent ? "burst"
+                             : root.biometricMode ? "clover"
+                             : "cookie"
+                        color: root.errorAccent ? Theme.errorContainer : Theme.primaryContainer
 
                         Image {
                             id: actionIconImage
 
-                            anchors.fill: parent
+                            anchors.centerIn: parent
+                            width: Theme.iconSize.lg + Theme.space.xs
+                            height: width
                             // hasThemeIcon ещё не гарантирует, что файл иконки
                             // читается: при ошибке показываем глиф замка.
                             visible: root.hasActionIcon && actionIconImage.status !== Image.Error
                             source: root.actionIcon
-                            sourceSize: Qt.size(Theme.iconSize.lg, Theme.iconSize.lg)
+                            sourceSize: Qt.size(width, height)
                             fillMode: Image.PreserveAspectFit
                         }
 
@@ -321,25 +324,27 @@ PanelWindow {
                             anchors.centerIn: parent
                             visible: !root.hasActionIcon || actionIconImage.status === Image.Error
                             text: "\uf023"
-                            color: Theme.primary
+                            color: root.errorAccent ? Theme.scheme.onErrorContainer
+                                                    : Theme.scheme.onPrimaryContainer
                             font.family: Theme.iconFontFamily
-                            font.pixelSize: Theme.iconSize.lg
+                            font.pixelSize: Theme.iconSize.lg + Theme.space.xs
                         }
                     }
 
                     Column {
                         id: headerColumn
 
-                        anchors.left: headerIcon.right
-                        anchors.leftMargin: Theme.space.sm
+                        anchors.left: headerOrb.right
+                        anchors.leftMargin: Theme.space.lg
                         anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
                         spacing: Theme.space.xs / 2
 
                         Text {
                             width: parent.width
                             text: root.title
                             color: Theme.scheme.onSurface
-                            font: Theme.typeHeadlineSmall
+                            font: Theme.typeEmphasizedHeadlineSmall
                             wrapMode: Text.WordWrap
                         }
 
@@ -361,7 +366,7 @@ PanelWindow {
                     width: parent.width
                     height: supplementaryLabel.implicitHeight + Theme.space.md * 2
                     visible: root.textMode && root.supplementary !== ""
-                    radius: Theme.shape.xs
+                    radius: Theme.shape.lg
                     color: root.supplementaryIsError ? Theme.errorContainer
                                                      : Theme.surfaceContainerHighest
 
@@ -371,8 +376,8 @@ PanelWindow {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.leftMargin: Theme.space.md
-                        anchors.rightMargin: Theme.space.md
+                        anchors.leftMargin: Theme.space.lg
+                        anchors.rightMargin: Theme.space.lg
                         text: root.supplementary
                         color: root.supplementaryIsError ? Theme.scheme.onErrorContainer
                                                          : Theme.scheme.onSurfaceVariant
@@ -386,7 +391,7 @@ PanelWindow {
                     width: parent.width
                     height: failedLabel.implicitHeight + Theme.space.md * 2
                     visible: root.hasFailed && !(root.textMode && root.supplementaryIsError)
-                    radius: Theme.shape.xs
+                    radius: Theme.shape.lg
                     color: Theme.errorContainer
 
                     Text {
@@ -395,8 +400,8 @@ PanelWindow {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.leftMargin: Theme.space.md
-                        anchors.rightMargin: Theme.space.md
+                        anchors.leftMargin: Theme.space.lg
+                        anchors.rightMargin: Theme.space.lg
                         text: "Не удалось войти, попробуйте ещё раз"
                         color: Theme.scheme.onErrorContainer
                         wrapMode: Text.WordWrap
@@ -405,42 +410,62 @@ PanelWindow {
                 }
 
                 // Статус биометрии: PAM не ждёт текста, но прислал инструкцию.
+                // Орб-отпечаток пульсирует на пружине, пока сканер «слушает».
                 Rectangle {
                     id: biometricBlock
 
                     width: parent.width
-                    height: Math.max(biometricIcon.implicitHeight, biometricText.implicitHeight)
+                    height: Math.max(biometricOrb.height, biometricText.implicitHeight)
                             + Theme.space.xl
                     visible: root.biometricMode
-                    radius: Theme.shape.md
+                    radius: Theme.shape.lg
                     color: root.supplementaryIsError ? Theme.errorContainer
                                                      : Theme.surfaceContainerHighest
 
-                    Text {
-                        id: biometricIcon
+                    MorphShape {
+                        id: biometricOrb
+
+                        property bool pulseOn: false
 
                         anchors.left: parent.left
                         anchors.leftMargin: Theme.space.lg
                         anchors.verticalCenter: parent.verticalCenter
-                        text: root.supplementaryIsError ? "\uf06e" : "\uf0237"
-                        color: root.supplementaryIsError ? Theme.scheme.onErrorContainer
-                                                         : Theme.primary
-                        font.family: Theme.iconFontFamily
-                        font.pixelSize: Theme.iconSize.lg
+                        width: Theme.touchTarget
+                        height: Theme.touchTarget
+                        shape: root.supplementaryIsError ? "burst" : "cookie"
+                        color: root.supplementaryIsError ? Theme.error
+                                                         : Theme.tertiaryContainer
+                        scale: pulseOn ? 1.08 : 1
+                        Behavior on scale { SpringSpatial {} }
 
-                        // Сканер ждёт палец: мягкая пульсация иконки.
-                        SequentialAnimation on opacity {
-                            loops: Animation.Infinite
+                        Text {
+                            id: biometricIcon
+
+                            anchors.centerIn: parent
+                            text: root.supplementaryIsError ? "\uf06e" : "\uf0237"
+                            color: root.supplementaryIsError ? Theme.scheme.onError
+                                                             : Theme.scheme.onTertiaryContainer
+                            font.family: Theme.iconFontFamily
+                            font.pixelSize: Theme.iconSize.lg
+                        }
+
+                        // Сканер ждёт палец: мягкая пульсация формы/размера.
+                        SequentialAnimation {
                             running: root.biometricMode && !root.supplementaryIsError
-                            NumberAnimation { to: 0.35; duration: 700; easing.type: Easing.InOutQuad }
-                            NumberAnimation { to: 1.0; duration: 700; easing.type: Easing.InOutQuad }
+                            loops: Animation.Infinite
+                            onStopped: biometricOrb.pulseOn = false
+
+                            PauseAnimation { duration: 620 }
+                            PropertyAction { target: biometricOrb; property: "pulseOn"; value: true }
+                            PauseAnimation { duration: 620 }
+                            PropertyAction { target: biometricOrb; property: "pulseOn"; value: false }
                         }
                     }
 
                     Text {
                         id: biometricText
 
-                        anchors.left: biometricIcon.right
+                        anchors.left: biometricOrb.right
                         anchors.leftMargin: Theme.space.md
                         anchors.right: parent.right
                         anchors.rightMargin: Theme.space.lg
@@ -459,7 +484,7 @@ PanelWindow {
                     width: parent.width
                     height: Theme.listItemHeight
                     visible: root.waitingMode
-                    radius: Theme.shape.md
+                    radius: Theme.shape.lg
                     color: Theme.surfaceContainerHighest
 
                     Row {
@@ -481,28 +506,27 @@ PanelWindow {
                     }
                 }
 
-                // Поле ввода пароля M3: surface-container-highest, shape.xs,
-                // обводка outline / primary в фокусе / error при ошибке.
+                // Поле ввода пароля Expressive: высокий контейнер-пилюля (56)
+                // с толстой обводкой primary / error.
                 Rectangle {
                     id: field
 
                     width: parent.width
                     height: Theme.listItemHeight
                     visible: root.fieldVisible
-                    radius: Theme.shape.xs
+                    radius: Theme.shape.full
                     color: Theme.surfaceContainerHighest
                     opacity: root.isSubmitting ? 0.6 : 1
-                    border.width: passwordInput.activeFocus ? 2 : 1
-                    border.color: root.hasFailed ? Theme.error
-                                  : (passwordInput.activeFocus ? Theme.primary : Theme.outline)
+                    border.width: root.hasFailed || passwordInput.activeFocus ? 4 : 3
+                    border.color: root.hasFailed ? Theme.error : Theme.primary
                     Behavior on border.color { ColorAnimation { duration: Theme.motionShort3 } }
 
                     TextInput {
                         id: passwordInput
 
                         anchors.fill: parent
-                        anchors.leftMargin: Theme.space.lg
-                        anchors.rightMargin: Theme.space.lg
+                        anchors.leftMargin: Theme.space.xl
+                        anchors.rightMargin: Theme.space.xl
                         verticalAlignment: TextInput.AlignVCenter
                         enabled: root.textMode && !root.isSubmitting
                         echoMode: root.flow && root.flow.responseVisible
@@ -512,122 +536,140 @@ PanelWindow {
                         color: Theme.scheme.onSurface
                         selectionColor: Theme.primary
                         selectedTextColor: Theme.scheme.onPrimary
-                        font: Theme.typeBodyLarge
+                        font: Theme.typeTitleMedium
                         onAccepted: root.submit()
                     }
 
                     Text {
                         anchors.left: parent.left
-                        anchors.leftMargin: Theme.space.lg
+                        anchors.leftMargin: Theme.space.xl
                         anchors.verticalCenter: parent.verticalCenter
                         visible: passwordInput.text === "" && root.textMode && !root.isSubmitting
                         text: root.inputPrompt !== "" ? root.inputPrompt : "Пароль"
                         color: Theme.scheme.onSurfaceVariant
-                        font: Theme.typeBodySmall
+                        font: Theme.typeBodyMedium
                     }
                 }
 
                 Row {
                     width: parent.width
-                    height: Theme.buttonHeight
+                    height: Theme.touchTarget
                     layoutDirection: Qt.RightToLeft
                     spacing: Theme.space.sm
 
-                    DialogButton {
-                        text: "Подтвердить"
-                        primary: true
-                        busy: root.isSubmitting
-                        enabled: root.textMode && passwordInput.text.length > 0 && !root.isSubmitting
-                        onTriggered: root.submit()
+                    // Подтверждение — залитая пилюля на spatial-пружине.
+                    // Пока PAM проверяет пароль, контейнер primary-container:
+                    // морфящаяся клякса индикатора рисуется primary, и на
+                    // primary её было бы не видно.
+                    Rectangle {
+                        id: submitButton
+
+                        readonly property bool canSubmit: root.textMode
+                                                          && passwordInput.text.length > 0
+                                                          && !root.isSubmitting
+
+                        width: (root.isSubmitting ? submitBusyLabel.implicitWidth
+                                                  : submitLabel.implicitWidth) + Theme.space.xl * 2
+                        height: Theme.touchTarget
+                        radius: Theme.shape.full
+                        color: root.isSubmitting
+                               ? Theme.primaryContainer
+                               : (submitButton.canSubmit
+                                  ? Theme.primary
+                                  : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContainer))
+                        scale: submitHover.pressed && submitButton.canSubmit ? 0.93
+                             : (submitHover.containsMouse && submitButton.canSubmit ? 1.03 : 1)
+                        Behavior on scale { SpringSpatialFast {} }
+
+                        // Слой состояния: наведение поверх контейнера.
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: Theme.scheme.onPrimary
+                            opacity: submitHover.containsMouse && submitButton.canSubmit ? Theme.stateHover : 0
+                            Behavior on opacity { SpringEffects {} }
+                        }
+
+                        Text {
+                            id: submitLabel
+
+                            anchors.centerIn: parent
+                            visible: !root.isSubmitting
+                            text: "Подтвердить"
+                            color: submitButton.canSubmit
+                                   ? Theme.scheme.onPrimary
+                                   : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent)
+                            font: Theme.typeEmphasizedLabelLarge
+                        }
+
+                        // Пока кнопка занята, ширину держит невидимая подпись:
+                        // иначе она скакала бы при появлении индикатора.
+                        Text {
+                            id: submitBusyLabel
+
+                            visible: false
+                            text: "Подтвердить"
+                            font: Theme.typeEmphasizedLabelLarge
+                        }
+
+                        LoadingIndicator {
+                            anchors.centerIn: parent
+                            width: Theme.iconSize.md
+                            height: Theme.iconSize.md
+                            visible: root.isSubmitting
+                        }
+
+                        MouseArea {
+                            id: submitHover
+
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            enabled: submitButton.canSubmit
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.submit()
+                        }
                     }
 
-                    DialogButton {
-                        text: "Отмена"
-                        onTriggered: root.cancel()
+                    // Отмена — текстовая кнопка-пилюля с подписью primary.
+                    Rectangle {
+                        id: cancelButton
+
+                        width: cancelLabel.implicitWidth + Theme.space.xl * 2
+                        height: Theme.touchTarget
+                        radius: Theme.shape.full
+                        color: "transparent"
+                        scale: cancelHover.pressed ? 0.94 : (cancelHover.containsMouse ? 1.02 : 1)
+                        Behavior on scale { SpringSpatialFast {} }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: Theme.stateLayer(Theme.primary, Theme.stateHover)
+                            opacity: cancelHover.containsMouse ? 1 : 0
+                            Behavior on opacity { SpringEffects {} }
+                        }
+
+                        Text {
+                            id: cancelLabel
+
+                            anchors.centerIn: parent
+                            text: "Отмена"
+                            color: Theme.primary
+                            font: Theme.typeLabelLarge
+                        }
+
+                        MouseArea {
+                            id: cancelHover
+
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.cancel()
+                        }
                     }
                 }
             }
         }
     }
 
-    component DialogButton: Rectangle {
-        id: button
-
-        property string text: ""
-        property bool primary: false
-        property bool busy: false
-
-        signal triggered()
-
-        // Контейнер и подпись M3: залитая — primary/on-primary, текстовая —
-        // прозрачная с подписью primary; недоступная — 12 %/38 % on-surface.
-        // Пока идёт проверка, контейнер primary-container: круговой индикатор
-        // в оболочке рисуется primary, и на primary его было бы не видно.
-        readonly property color containerColor: {
-            if (!button.primary)
-                return "transparent";
-            if (button.busy)
-                return Theme.primaryContainer;
-            if (!button.enabled)
-                return Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContainer);
-            return Theme.primary;
-        }
-        readonly property color labelColor: {
-            if (!button.enabled)
-                return Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent);
-            return button.primary ? Theme.scheme.onPrimary : Theme.primary;
-        }
-
-        width: (button.busy ? busyLabel.implicitWidth + Theme.space.xl * 2
-                            : label.implicitWidth + Theme.space.xl * 2)
-        height: Theme.buttonHeight
-        radius: Theme.shape.full
-        color: button.containerColor
-
-        // Слой состояния: наведение поверх контейнера.
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            color: button.primary ? Theme.scheme.onPrimary : Theme.primary
-            opacity: buttonHover.containsMouse && button.enabled ? Theme.stateHover : 0
-            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
-        }
-
-        Text {
-            id: label
-
-            anchors.centerIn: parent
-            visible: !button.busy
-            text: button.text
-            color: button.labelColor
-            font: Theme.typeLabelLarge
-        }
-
-        // Пока кнопка занята, ширину держит невидимая подпись: иначе она
-        // скакала бы при появлении спиннера.
-        Text {
-            id: busyLabel
-
-            visible: false
-            text: button.text
-            font: Theme.typeLabelLarge
-        }
-
-        LoadingIndicator {
-            anchors.centerIn: parent
-            width: Theme.iconSize.md
-            height: Theme.iconSize.md
-            visible: button.busy
-        }
-
-        MouseArea {
-            id: buttonHover
-
-            anchors.fill: parent
-            hoverEnabled: true
-            enabled: button.enabled
-            cursorShape: Qt.PointingHandCursor
-            onClicked: button.triggered()
-        }
-    }
 }
