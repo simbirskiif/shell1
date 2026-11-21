@@ -1,15 +1,11 @@
 import QtQuick
 import ".."
-import "../expressive"
 import "../../singletons"
 
 // Панель «Звук»: две вкладки — «Speakers» (вывод) и «Microphone» (вход).
 // На вкладке вывода ещё и громкость каждого приложения: потоки
 // воспроизведения играют в вывод, к микрофону они не относятся.
 // Данные и действия — в AudioService; здесь только отображение.
-//
-// Expressive: громкость — крупный герой-блок с орбом и волнистым слайдером
-// primary-акцента, устройство — залитая пилюля, потоки сгруппированы формой.
 Item {
     id: root
 
@@ -35,6 +31,13 @@ Item {
             onToggled: AudioService.toggleOutputMute()
         }
 
+        // Разделитель шапки m3 — outline-variant.
+        Rectangle {
+            width: parent.width
+            height: 1
+            color: Theme.outlineVariant
+        }
+
         PanelDisabled {
             width: parent.width
             readonly property bool shown: !AudioService.available
@@ -51,7 +54,7 @@ Item {
         Column {
             id: availableContent
             width: parent.width
-            spacing: Theme.space.xs
+            spacing: 0
             readonly property bool shown: AudioService.available
             visible: shown
             height: shown ? implicitHeight : 0
@@ -72,7 +75,7 @@ Item {
             Column {
                 id: outputTab
                 width: parent.width
-                spacing: Theme.space.xs
+                spacing: 0
                 // Своё условие вместо visible: во время жеста скрытый предок
                 // погасил бы и вкладку, и высота панели схлопнулась бы.
                 readonly property bool shown: UiState.soundTab === "output"
@@ -95,54 +98,21 @@ Item {
                     onClicked: UiState.openDetail("sound-output")
                 }
 
-                Item {
-                    width: parent.width
-                    height: 40
+                PanelSection { text: "Applications" }
 
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: Theme.space.xs
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: Theme.space.xs
-                        text: "Applications"
-                        color: Theme.primary
-                        font: Theme.typeEmphasizedTitleMedium
-                    }
-                }
-
-                // Пустой список приложений — не строка, а форма и подпись.
-                Item {
+                Text {
                     width: parent.width
                     // Высоту считаем от своего условия, а не от visible:
                     // visible гаснет и вместе со скрытым предком (вид уезжает
                     // в жесте), и высота панели схлопнулась бы на движении.
                     readonly property bool shown: AudioService.streams.length === 0
                     visible: shown
-                    height: shown ? 64 : 0
-
-                    MorphShape {
-                        id: emptyBlob
-                        anchors.left: parent.left
-                        anchors.leftMargin: Theme.space.lg
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 36
-                        height: 36
-                        shape: "blob"
-                        color: Theme.withAlpha(Theme.primary, 0.16)
-                        modulation: 1
-                    }
-
-                    Text {
-                        anchors.left: emptyBlob.right
-                        anchors.leftMargin: Theme.space.md
-                        anchors.right: parent.right
-                        anchors.rightMargin: Theme.space.lg
-                        anchors.verticalCenter: parent.verticalCenter
-                        elide: Text.ElideRight
-                        text: "No applications are playing audio"
-                        color: Theme.scheme.onSurfaceVariant
-                        font: Theme.typeBodyMedium
-                    }
+                    height: shown ? Theme.touchTarget : 0
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    text: "No applications are playing audio"
+                    color: Theme.scheme.onSurfaceVariant
+                    font: Theme.typeBodyMedium
                 }
 
                 Repeater {
@@ -161,7 +131,7 @@ Item {
             Column {
                 id: inputTab
                 width: parent.width
-                spacing: Theme.space.xs
+                spacing: 0
                 readonly property bool shown: UiState.soundTab === "input"
                 visible: shown
                 height: shown ? implicitHeight : 0

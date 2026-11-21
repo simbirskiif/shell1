@@ -78,63 +78,69 @@ Singleton {
     readonly property real disabledContent: 0.38
     readonly property real disabledContainer: 0.12
 
-    // ===================== Типографика (Expressive) =====================
-    // Roboto Flex — variable-шрифт: играем осями wght (вес), wdth (ширина)
-    // и opsz (оптический размер), а не только кеглем.
-    // Nerd Font — глифы-иконки.
-    readonly property string fontFamily: "Roboto Flex"
+    // ===================== Типографика ==================================
+    // Google Sans — Material-класс; Nerd Font — глифы-иконки.
+    readonly property string fontFamily: "Google Sans"
     readonly property string iconFontFamily: "JetBrainsMono Nerd Font"
 
-    // Оси для акцентных стилей: жирно и узко — характер Expressive.
+    // Числовые метрики M3 (sp, line height, tracking) — для расчётов.
+    readonly property var typescale: ({
+        displayLarge: { size: 57, weight: 400, line: 64, tracking: -0.25 },
+        displayMedium: { size: 45, weight: 400, line: 52, tracking: 0 },
+        displaySmall: { size: 36, weight: 400, line: 44, tracking: 0 },
+        headlineLarge: { size: 32, weight: 400, line: 40, tracking: 0 },
+        headlineMedium: { size: 28, weight: 400, line: 36, tracking: 0 },
+        headlineSmall: { size: 24, weight: 400, line: 32, tracking: 0 },
+        titleLarge: { size: 22, weight: 500, line: 28, tracking: 0 },
+        titleMedium: { size: 16, weight: 500, line: 24, tracking: 0.15 },
+        titleSmall: { size: 14, weight: 500, line: 20, tracking: 0.1 },
+        bodyLarge: { size: 16, weight: 400, line: 24, tracking: 0.5 },
+        bodyMedium: { size: 14, weight: 400, line: 20, tracking: 0.25 },
+        bodySmall: { size: 12, weight: 400, line: 16, tracking: 0.4 },
+        labelLarge: { size: 14, weight: 500, line: 20, tracking: 0.1 },
+        labelMedium: { size: 12, weight: 500, line: 16, tracking: 0.5 },
+        labelSmall: { size: 11, weight: 500, line: 16, tracking: 0.5 }
+    })
+
+    // Готовые font-значения: Text { font: Theme.typeTitleMedium }.
+    readonly property font typeDisplayLarge: Qt.font({ family: root.fontFamily, pixelSize: 57, weight: 400, letterSpacing: -0.25 })
+    readonly property font typeDisplayMedium: Qt.font({ family: root.fontFamily, pixelSize: 45, weight: 400, letterSpacing: 0 })
+    readonly property font typeDisplaySmall: Qt.font({ family: root.fontFamily, pixelSize: 36, weight: 400, letterSpacing: 0 })
+    readonly property font typeHeadlineLarge: Qt.font({ family: root.fontFamily, pixelSize: 32, weight: 400, letterSpacing: 0 })
+    readonly property font typeHeadlineMedium: Qt.font({ family: root.fontFamily, pixelSize: 28, weight: 400, letterSpacing: 0 })
+    readonly property font typeHeadlineSmall: Qt.font({ family: root.fontFamily, pixelSize: 24, weight: 400, letterSpacing: 0 })
+    readonly property font typeTitleLarge: Qt.font({ family: root.fontFamily, pixelSize: 22, weight: 500, letterSpacing: 0 })
+    readonly property font typeTitleMedium: Qt.font({ family: root.fontFamily, pixelSize: 16, weight: 500, letterSpacing: 0.15 })
+    readonly property font typeTitleSmall: Qt.font({ family: root.fontFamily, pixelSize: 14, weight: 500, letterSpacing: 0.1 })
+    readonly property font typeBodyLarge: Qt.font({ family: root.fontFamily, pixelSize: 16, weight: 400, letterSpacing: 0.5 })
+    readonly property font typeBodyMedium: Qt.font({ family: root.fontFamily, pixelSize: 14, weight: 400, letterSpacing: 0.25 })
+    readonly property font typeBodySmall: Qt.font({ family: root.fontFamily, pixelSize: 12, weight: 400, letterSpacing: 0.4 })
+    readonly property font typeLabelLarge: Qt.font({ family: root.fontFamily, pixelSize: 14, weight: 500, letterSpacing: 0.1 })
+    readonly property font typeLabelMedium: Qt.font({ family: root.fontFamily, pixelSize: 12, weight: 500, letterSpacing: 0.5 })
+    readonly property font typeLabelSmall: Qt.font({ family: root.fontFamily, pixelSize: 11, weight: 500, letterSpacing: 0.5 })
+
+    // --- Material 3 Expressive: инфраструктура --------------------------
+    // Оставлена в системе для будущего включения: variable-шрифт, пружины
+    // и emphasized-стили. Текущий UI использует обычные type*-стили выше.
+    readonly property string fontFamilyExpressive: "Roboto Flex"
     readonly property real weightBold: 720
     readonly property real weightEmphasized: 820
     readonly property real widthTight: 90
     readonly property real widthNarrow: 84
 
-    // Числовые метрики (sp, line height, tracking) — для расчётов.
-    readonly property var typescale: ({
-        displayLarge: { size: 57, weight: 740, line: 64, tracking: -0.5 },
-        displayMedium: { size: 45, weight: 740, line: 52, tracking: -0.5 },
-        displaySmall: { size: 36, weight: 720, line: 44, tracking: -0.25 },
-        headlineLarge: { size: 32, weight: 700, line: 40, tracking: -0.25 },
-        headlineMedium: { size: 28, weight: 700, line: 36, tracking: -0.15 },
-        headlineSmall: { size: 24, weight: 680, line: 32, tracking: 0 },
-        titleLarge: { size: 22, weight: 660, line: 28, tracking: 0 },
-        titleMedium: { size: 16, weight: 620, line: 24, tracking: 0.1 },
-        titleSmall: { size: 14, weight: 600, line: 20, tracking: 0.1 },
-        bodyLarge: { size: 16, weight: 420, line: 24, tracking: 0.4 },
-        bodyMedium: { size: 14, weight: 420, line: 20, tracking: 0.25 },
-        bodySmall: { size: 12, weight: 420, line: 16, tracking: 0.35 },
-        labelLarge: { size: 14, weight: 620, line: 20, tracking: 0.1 },
-        labelMedium: { size: 12, weight: 620, line: 16, tracking: 0.4 },
-        labelSmall: { size: 11, weight: 620, line: 16, tracking: 0.4 }
+    readonly property font typeEmphasizedDisplaySmall: Qt.font({ family: root.fontFamilyExpressive, pixelSize: 38, weight: 820, letterSpacing: -0.6, variableAxes: ({ "wght": 820, "wdth": 86, "opsz": 52 }) })
+    readonly property font typeEmphasizedHeadlineSmall: Qt.font({ family: root.fontFamilyExpressive, pixelSize: 26, weight: 800, letterSpacing: -0.2, variableAxes: ({ "wght": 800, "wdth": 86, "opsz": 36 }) })
+    readonly property font typeEmphasizedTitleLarge: Qt.font({ family: root.fontFamilyExpressive, pixelSize: 24, weight: 780, letterSpacing: -0.1, variableAxes: ({ "wght": 780, "wdth": 88, "opsz": 30 }) })
+    readonly property font typeEmphasizedTitleMedium: Qt.font({ family: root.fontFamilyExpressive, pixelSize: 17, weight: 740, letterSpacing: 0.1, variableAxes: ({ "wght": 740, "wdth": 90, "opsz": 26 }) })
+    readonly property font typeEmphasizedLabelLarge: Qt.font({ family: root.fontFamilyExpressive, pixelSize: 14, weight: 720, letterSpacing: 0.15, variableAxes: ({ "wght": 720, "wdth": 90, "opsz": 15 }) })
+
+    readonly property var springs: ({
+        spatial: { spring: 5.5, damping: 0.32 },
+        spatialFast: { spring: 7.0, damping: 0.40 },
+        spatialSlow: { spring: 4.2, damping: 0.28 },
+        effects: { spring: 16.0, damping: 0.80 },
+        effectsFast: { spring: 22.0, damping: 0.90 }
     })
-
-    // Готовые font-значения: Text { font: Theme.typeTitleMedium }.
-    // variableAxes работают на Roboto Flex: wght/wdth/opsz.
-    readonly property font typeDisplayLarge: Qt.font({ family: root.fontFamily, pixelSize: 57, weight: 740, letterSpacing: -0.5, variableAxes: ({ "wght": 740, "wdth": 90, "opsz": 64 }) })
-    readonly property font typeDisplayMedium: Qt.font({ family: root.fontFamily, pixelSize: 45, weight: 740, letterSpacing: -0.5, variableAxes: ({ "wght": 740, "wdth": 90, "opsz": 56 }) })
-    readonly property font typeDisplaySmall: Qt.font({ family: root.fontFamily, pixelSize: 36, weight: 720, letterSpacing: -0.25, variableAxes: ({ "wght": 720, "wdth": 90, "opsz": 48 }) })
-    readonly property font typeHeadlineLarge: Qt.font({ family: root.fontFamily, pixelSize: 32, weight: 700, letterSpacing: -0.25, variableAxes: ({ "wght": 700, "wdth": 92, "opsz": 40 }) })
-    readonly property font typeHeadlineMedium: Qt.font({ family: root.fontFamily, pixelSize: 28, weight: 700, letterSpacing: -0.15, variableAxes: ({ "wght": 700, "wdth": 92, "opsz": 36 }) })
-    readonly property font typeHeadlineSmall: Qt.font({ family: root.fontFamily, pixelSize: 24, weight: 680, letterSpacing: 0, variableAxes: ({ "wght": 680, "wdth": 93, "opsz": 32 }) })
-    readonly property font typeTitleLarge: Qt.font({ family: root.fontFamily, pixelSize: 22, weight: 660, letterSpacing: 0, variableAxes: ({ "wght": 660, "wdth": 94, "opsz": 28 }) })
-    readonly property font typeTitleMedium: Qt.font({ family: root.fontFamily, pixelSize: 16, weight: 620, letterSpacing: 0.1, variableAxes: ({ "wght": 620, "wdth": 96, "opsz": 24 }) })
-    readonly property font typeTitleSmall: Qt.font({ family: root.fontFamily, pixelSize: 14, weight: 600, letterSpacing: 0.1, variableAxes: ({ "wght": 600, "wdth": 97, "opsz": 20 }) })
-    readonly property font typeBodyLarge: Qt.font({ family: root.fontFamily, pixelSize: 16, weight: 420, letterSpacing: 0.4, variableAxes: ({ "wght": 420, "wdth": 100, "opsz": 16 }) })
-    readonly property font typeBodyMedium: Qt.font({ family: root.fontFamily, pixelSize: 14, weight: 420, letterSpacing: 0.25, variableAxes: ({ "wght": 420, "wdth": 100, "opsz": 14 }) })
-    readonly property font typeBodySmall: Qt.font({ family: root.fontFamily, pixelSize: 12, weight: 420, letterSpacing: 0.35, variableAxes: ({ "wght": 420, "wdth": 100, "opsz": 12 }) })
-    readonly property font typeLabelLarge: Qt.font({ family: root.fontFamily, pixelSize: 14, weight: 620, letterSpacing: 0.1, variableAxes: ({ "wght": 620, "wdth": 92, "opsz": 14 }) })
-    readonly property font typeLabelMedium: Qt.font({ family: root.fontFamily, pixelSize: 12, weight: 620, letterSpacing: 0.4, variableAxes: ({ "wght": 620, "wdth": 92, "opsz": 12 }) })
-    readonly property font typeLabelSmall: Qt.font({ family: root.fontFamily, pixelSize: 11, weight: 620, letterSpacing: 0.4, variableAxes: ({ "wght": 620, "wdth": 92, "opsz": 11 }) })
-
-    // Emphasized-варианты: заметно жирнее и шире по характеру, чем обычные
-    // стили того же кегля — для часов, заголовков и активных пунктов.
-    readonly property font typeEmphasizedDisplaySmall: Qt.font({ family: root.fontFamily, pixelSize: 38, weight: 820, letterSpacing: -0.6, variableAxes: ({ "wght": 820, "wdth": 86, "opsz": 52 }) })
-    readonly property font typeEmphasizedHeadlineSmall: Qt.font({ family: root.fontFamily, pixelSize: 26, weight: 800, letterSpacing: -0.2, variableAxes: ({ "wght": 800, "wdth": 86, "opsz": 36 }) })
-    readonly property font typeEmphasizedTitleLarge: Qt.font({ family: root.fontFamily, pixelSize: 24, weight: 780, letterSpacing: -0.1, variableAxes: ({ "wght": 780, "wdth": 88, "opsz": 30 }) })
-    readonly property font typeEmphasizedTitleMedium: Qt.font({ family: root.fontFamily, pixelSize: 17, weight: 740, letterSpacing: 0.1, variableAxes: ({ "wght": 740, "wdth": 90, "opsz": 26 }) })
-    readonly property font typeEmphasizedLabelLarge: Qt.font({ family: root.fontFamily, pixelSize: 14, weight: 720, letterSpacing: 0.15, variableAxes: ({ "wght": 720, "wdth": 90, "opsz": 15 }) })
 
     // ===================== Формы ========================================
     // Токены M3: кнопки/чипы — full, карточки — medium, листы/диалоги — xl.
@@ -171,13 +177,13 @@ Singleton {
     // Высота интерактивных целей M3 (min 40–56 для списков, 48 — тач).
     readonly property int touchTarget: 48
     readonly property int iconButtonSize: 40
-    readonly property int buttonHeight: 44
+    readonly property int buttonHeight: 40
     readonly property int listItemHeight: 56
-    readonly property int appBarHeight: 64
+    readonly property int appBarHeight: 56
 
     // ===================== Поверхности и отступы оболочки ===============
     // Бар
-    readonly property int barHeight: 56
+    readonly property int barHeight: 48
     readonly property int barPadding: 12
     readonly property color barBackground: root.barSurface
     readonly property color barForeground: root.scheme.onSurface
@@ -204,10 +210,10 @@ Singleton {
     readonly property int quickRadius: root.shape.xl
     readonly property int quickPadding: 16
     readonly property int quickCircleSize: 32
-    readonly property int quickTileHeight: 72
+    readonly property int quickTileHeight: 64
     readonly property int quickTileRadius: root.shape.xl
     readonly property int quickTileSpacing: 8
-    readonly property int quickHeaderHeight: 64
+    readonly property int quickHeaderHeight: 56
     readonly property int quickRowHeight: 56
     readonly property int quickSectionHeight: 32
 
@@ -215,12 +221,12 @@ Singleton {
     // Карточка живёт внутри окна постоянного размера: поверхность не меняет
     // размер на кадр анимации (иначе композитор пересоздаёт буфер), поэтому
     // «плавный размер» — это размеры карточки, а не окна.
-    readonly property int dockHeight: 76
+    readonly property int dockHeight: 68
     readonly property int dockPadding: 10
     readonly property int dockSpacing: 8
     // Базовые размеры; пользователь меняет их в DockSettings, а при
     // переполнении ряд ужимается целиком.
-    readonly property int dockButtonSize: 48
+    readonly property int dockButtonSize: 44
     readonly property int dockIconSize: 26
     // Шире док не растёт: дальше уменьшаются иконки.
     readonly property int dockMaxWidth: 520
@@ -277,7 +283,7 @@ Singleton {
     // Карточки уведомлений и Центр уведомлений.
     readonly property int notificationWidth: 380
     readonly property int notificationCenterWidth: 400
-    readonly property int notificationRadius: 32
+    readonly property int notificationRadius: root.shape.xl
     readonly property int notificationPadding: 16
     readonly property int notificationSpacing: 8
 
@@ -367,18 +373,6 @@ Singleton {
     readonly property int motionMedium4: 400
     readonly property int motionLong1: 450
     readonly property int motionLong2: 500
-
-    // ===================== Пружины (M3 Expressive) ======================
-    // В Expressive движение задаёт физика, а не длительности и кривые.
-    // spatial — перемещение/размер/форма: лёгкий перелёт и возврат.
-    // effects — цвет/прозрачность: быстро и без перелёта.
-    readonly property var springs: ({
-        spatial: { spring: 5.5, damping: 0.32 },
-        spatialFast: { spring: 7.0, damping: 0.40 },
-        spatialSlow: { spring: 4.2, damping: 0.28 },
-        effects: { spring: 16.0, damping: 0.80 },
-        effectsFast: { spring: 22.0, damping: 0.90 }
-    })
 
     // Свайп карточки уведомления: улёт за край (accelerate) и упругий
     // возврат (decelerate). Кривые — curveEmphasizedAccelerate/Decelerate.

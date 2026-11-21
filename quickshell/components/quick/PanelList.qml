@@ -6,10 +6,6 @@ import "../../singletons"
 // и сдвига элементов. Высота считается по числу строк, а не по contentHeight:
 // во время анимаций сдвига contentHeight меняется каждый кадр, и окно
 // получало бы новую цель размера на каждом кадре — отсюда лаги.
-//
-// Expressive: строки — крупные пилюли с воздухом между ними, поэтому
-// разделители не нужны. Зазор входит в расчёт высоты, иначе последняя
-// строка обрезалась бы.
 ListView {
     id: root
 
@@ -19,16 +15,13 @@ ListView {
     // не срезало гаснущую строку.
     property real frameHeight: 0
 
-    spacing: 4
-
-    readonly property real rowsHeight: root.count > 0
-        ? root.count * root.rowHeight + (root.count - 1) * root.spacing
-        : 0
+    readonly property real rowsHeight: root.count * root.rowHeight
 
     implicitHeight: Math.max(root.frameHeight, root.rowsHeight)
     height: implicitHeight
     interactive: false
     boundsBehavior: Flickable.StopAtBounds
+    spacing: 0
 
 
     onRowsHeightChanged: {

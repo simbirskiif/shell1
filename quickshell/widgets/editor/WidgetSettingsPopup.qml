@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import "../../components/quick"
-import "../../components/expressive"
 import "../../singletons"
 import "../core"
 
@@ -10,10 +9,10 @@ import "../core"
 // поля из manifest.settings, сброс и удаление. Панель выезжает справа
 // на всю высоту слоя и использует токены панелей оболочки.
 //
-// Expressive: крупный заголовок, секции — emphasized-подписи, материал/цвет —
-// пилюли 40 (активная — tertiary-контейнер-«печенье»), переключатели —
-// ToggleSwitch, поля ввода — крупные пилюли 48, действие — пилюли 48.
-// Тонких разделителей нет: секции сгруппированы цветом и воздухом.
+// Оформление — M3: шапка top app bar (titleLarge + иконка 40), секции
+// labelLarge, выбор материала/цвета — filter chips, переключатели —
+// ToggleSwitch, поля — filled (surface-container-highest, radius xs,
+// обводка outline), строки списка 56 px, действия — пилюли 40 px.
 SidePanel {
     id: root
 
@@ -156,7 +155,7 @@ SidePanel {
         anchors.right: parent.right
         spacing: Theme.space.sm
 
-        // Шапка — Expressive top app bar: крупный заголовок и icon-кнопка.
+        // Шапка — M3 top app bar: заголовок titleLarge и иконка 40.
         Item {
             width: parent.width
             height: Theme.appBarHeight
@@ -167,24 +166,52 @@ SidePanel {
                 anchors.rightMargin: Theme.space.sm
                 anchors.verticalCenter: parent.verticalCenter
                 color: Theme.scheme.onSurface
-                font: Theme.typeEmphasizedTitleLarge
+                font: Theme.typeTitleLarge
                 elide: Text.ElideRight
                 text: root.widget ? root.widget.name : "Настройки"
             }
 
-            HostIconButton {
+            Item {
                 id: headerClose
 
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: "✕"
-                onClicked: EditorState.closeSettings()
+                width: Theme.iconButtonSize
+                height: Theme.iconButtonSize
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    color: headerCloseHover.containsMouse
+                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                           : "transparent"
+                    Behavior on color {
+                        ColorAnimation { duration: Theme.motionShort3 }
+                    }
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "✕"
+                    color: Theme.scheme.onSurface
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.iconSize.lg
+                }
+
+                MouseArea {
+                    id: headerCloseHover
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: EditorState.closeSettings()
+                }
             }
         }
 
         Text {
-            color: Theme.scheme.onSurface
-            font: Theme.typeEmphasizedLabelLarge
+            color: Theme.scheme.onSurfaceVariant
+            font: Theme.typeLabelLarge
             text: "Материал"
         }
 
@@ -192,27 +219,255 @@ SidePanel {
             width: parent.width
             spacing: Theme.space.sm
 
-            HostButton {
-                text: "По умолчанию"
-                height: 40
-                active: root.instanceMaterial.length === 0
-                onClicked: {
-                    LayoutStore.setMaterial(root.uid, "")
-                    root.refreshValues()
+            Rectangle {
+                id: defaultMaterialChip
+
+                readonly property bool selected: root.instanceMaterial.length === 0
+
+                width: defaultMaterialLabel.implicitWidth + Theme.space.lg * 2
+                height: 32
+                radius: Theme.shape.full
+                color: defaultMaterialChip.selected ? Theme.secondaryContainer
+                                                    : "transparent"
+                border.width: 1
+                border.color: defaultMaterialChip.selected ? Theme.secondaryContainer
+                                                           : Theme.outline
+
+                Text {
+                    id: defaultMaterialLabel
+
+                    anchors.centerIn: parent
+                    text: "По умолчанию"
+                    color: defaultMaterialChip.selected
+                           ? Theme.scheme.onSecondaryContainer
+                           : Theme.scheme.onSurfaceVariant
+                    font: Theme.typeLabelLarge
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    color: Theme.stateLayer(defaultMaterialChip.selected
+                                            ? Theme.scheme.onSecondaryContainer
+                                            : Theme.scheme.onSurface,
+                                            Theme.stateHover)
+                    visible: defaultMaterialHover.containsMouse
+                }
+
+                MouseArea {
+                    id: defaultMaterialHover
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        LayoutStore.setMaterial(root.uid, "")
+                        root.refreshValues()
+                    }
                 }
             }
 
             Repeater {
                 model: root.materialChoices()
 
-                delegate: HostButton {
+                delegate: Rectangle {
+                    id: materialChip
+
                     required property var modelData
 
-                    text: modelData.name
-                    height: 40
-                    active: root.instanceMaterial === modelData.id
+                    readonly property bool selected:
+                        root.instanceMaterial === materialChip.modelData.id
+
+                    width: materialChipLabel.implicitWidth + Theme.space.lg * 2
+                    height: 32
+                    radius: Theme.shape.full
+                    color: materialChip.selected ? Theme.secondaryContainer
+                                                : "transparent"
+                    border.width: 1
+                    border.color: materialChip.selected ? Theme.secondaryContainer
+                                                        : Theme.outline
+
+                    Text {
+                        id: materialChipLabel
+
+                        anchors.centerIn: parent
+                        text: materialChip.modelData.name
+                        color: materialChip.selected
+                               ? Theme.scheme.onSecondaryContainer
+                               : Theme.scheme.onSurfaceVariant
+                        font: Theme.typeLabelLarge
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: Theme.stateLayer(materialChip.selected
+                                                ? Theme.scheme.onSecondaryContainer
+                                                : Theme.scheme.onSurface,
+                                                Theme.stateHover)
+                        visible: materialChipHover.containsMouse
+                    }
+
+                    MouseArea {
+                        id: materialChipHover
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            LayoutStore.setMaterial(root.uid, materialChip.modelData.id)
+                            root.refreshValues()
+                        }
+                    }
+                }
+            }
+        }
+
+        Text {
+            color: Theme.scheme.onSurfaceVariant
+            font: Theme.typeLabelLarge
+            text: "Режим цвета"
+        }
+
+        Row {
+            spacing: Theme.space.sm
+
+            Rectangle {
+                id: defaultModeChip
+
+                readonly property bool selected: root.instanceColorMode.length === 0
+
+                width: defaultModeLabel.implicitWidth + Theme.space.lg * 2
+                height: 32
+                radius: Theme.shape.full
+                color: defaultModeChip.selected ? Theme.secondaryContainer : "transparent"
+                border.width: 1
+                border.color: defaultModeChip.selected ? Theme.secondaryContainer
+                                                       : Theme.outline
+
+                Text {
+                    id: defaultModeLabel
+
+                    anchors.centerIn: parent
+                    text: "По умолчанию"
+                    color: defaultModeChip.selected
+                           ? Theme.scheme.onSecondaryContainer
+                           : Theme.scheme.onSurfaceVariant
+                    font: Theme.typeLabelLarge
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    color: Theme.stateLayer(defaultModeChip.selected
+                                            ? Theme.scheme.onSecondaryContainer
+                                            : Theme.scheme.onSurface,
+                                            Theme.stateHover)
+                    visible: defaultModeHover.containsMouse
+                }
+
+                MouseArea {
+                    id: defaultModeHover
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        LayoutStore.setMaterial(root.uid, modelData.id)
+                        LayoutStore.setColorMode(root.uid, "")
+                        root.refreshValues()
+                    }
+                }
+            }
+
+            Rectangle {
+                id: accentChip
+
+                readonly property bool selected: root.instanceColorMode === "accent"
+
+                width: accentChipLabel.implicitWidth + Theme.space.lg * 2
+                height: 32
+                radius: Theme.shape.full
+                color: accentChip.selected ? Theme.secondaryContainer : "transparent"
+                border.width: 1
+                border.color: accentChip.selected ? Theme.secondaryContainer
+                                                  : Theme.outline
+
+                Text {
+                    id: accentChipLabel
+
+                    anchors.centerIn: parent
+                    text: "Акцент"
+                    color: accentChip.selected
+                           ? Theme.scheme.onSecondaryContainer
+                           : Theme.scheme.onSurfaceVariant
+                    font: Theme.typeLabelLarge
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    color: Theme.stateLayer(accentChip.selected
+                                            ? Theme.scheme.onSecondaryContainer
+                                            : Theme.scheme.onSurface,
+                                            Theme.stateHover)
+                    visible: accentChipHover.containsMouse
+                }
+
+                MouseArea {
+                    id: accentChipHover
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        LayoutStore.setColorMode(root.uid, "accent")
+                        root.refreshValues()
+                    }
+                }
+            }
+
+            Rectangle {
+                id: neutralChip
+
+                readonly property bool selected: root.instanceColorMode === "neutral"
+
+                width: neutralChipLabel.implicitWidth + Theme.space.lg * 2
+                height: 32
+                radius: Theme.shape.full
+                color: neutralChip.selected ? Theme.secondaryContainer : "transparent"
+                border.width: 1
+                border.color: neutralChip.selected ? Theme.secondaryContainer
+                                                   : Theme.outline
+
+                Text {
+                    id: neutralChipLabel
+
+                    anchors.centerIn: parent
+                    text: "Нейтральная"
+                    color: neutralChip.selected
+                           ? Theme.scheme.onSecondaryContainer
+                           : Theme.scheme.onSurfaceVariant
+                    font: Theme.typeLabelLarge
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    color: Theme.stateLayer(neutralChip.selected
+                                            ? Theme.scheme.onSecondaryContainer
+                                            : Theme.scheme.onSurface,
+                                            Theme.stateHover)
+                    visible: neutralChipHover.containsMouse
+                }
+
+                MouseArea {
+                    id: neutralChipHover
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        LayoutStore.setColorMode(root.uid, "neutral")
                         root.refreshValues()
                     }
                 }
@@ -220,49 +475,8 @@ SidePanel {
         }
 
         Text {
-            color: Theme.scheme.onSurface
-            font: Theme.typeEmphasizedLabelLarge
-            text: "Режим цвета"
-        }
-
-        Flow {
-            width: parent.width
-            spacing: Theme.space.sm
-
-            HostButton {
-                text: "По умолчанию"
-                height: 40
-                active: root.instanceColorMode.length === 0
-                onClicked: {
-                    LayoutStore.setColorMode(root.uid, "")
-                    root.refreshValues()
-                }
-            }
-
-            HostButton {
-                text: "Акцент"
-                height: 40
-                active: root.instanceColorMode === "accent"
-                onClicked: {
-                    LayoutStore.setColorMode(root.uid, "accent")
-                    root.refreshValues()
-                }
-            }
-
-            HostButton {
-                text: "Нейтральная"
-                height: 40
-                active: root.instanceColorMode === "neutral"
-                onClicked: {
-                    LayoutStore.setColorMode(root.uid, "neutral")
-                    root.refreshValues()
-                }
-            }
-        }
-
-        Text {
-            color: Theme.scheme.onSurface
-            font: Theme.typeEmphasizedLabelLarge
+            color: Theme.scheme.onSurfaceVariant
+            font: Theme.typeLabelLarge
             text: "Затемнение материала"
         }
 
@@ -271,27 +485,69 @@ SidePanel {
             spacing: Theme.space.sm
 
             PanelSlider {
-                width: Math.max(80, parent.width - 56)
-                accent: Theme.tertiary
+                width: Math.max(80, parent.width - 48)
                 value: root.dim
                 onMoved: value => LayoutStore.setDim(root.uid, value)
             }
 
             Text {
-                width: 44
+                width: 40
                 anchors.verticalCenter: parent.verticalCenter
                 horizontalAlignment: Text.AlignRight
-                color: Theme.tertiary
-                font: Theme.typeEmphasizedLabelLarge
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeLabelMedium
                 text: Math.round(root.dim * 100) + "%"
             }
         }
 
-        HostButton {
-            text: "По умолчанию"
-            height: 40
-            active: !root.dimOverridden
-            onClicked: LayoutStore.setDim(root.uid, NaN)
+        Rectangle {
+            id: defaultDimChip
+
+            readonly property bool selected: !root.dimOverridden
+
+            width: defaultDimLabel.implicitWidth + Theme.space.lg * 2
+            height: 32
+            radius: Theme.shape.full
+            color: defaultDimChip.selected ? Theme.secondaryContainer : "transparent"
+            border.width: 1
+            border.color: defaultDimChip.selected ? Theme.secondaryContainer
+                                                  : Theme.outline
+
+            Text {
+                id: defaultDimLabel
+
+                anchors.centerIn: parent
+                text: "По умолчанию"
+                color: defaultDimChip.selected
+                       ? Theme.scheme.onSecondaryContainer
+                       : Theme.scheme.onSurfaceVariant
+                font: Theme.typeLabelLarge
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: Theme.stateLayer(defaultDimChip.selected
+                                        ? Theme.scheme.onSecondaryContainer
+                                        : Theme.scheme.onSurface,
+                                        Theme.stateHover)
+                visible: defaultDimHover.containsMouse
+            }
+
+            MouseArea {
+                id: defaultDimHover
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: LayoutStore.setDim(root.uid, NaN)
+            }
+        }
+
+        Rectangle {
+            width: parent.width
+            height: 1
+            color: Theme.outlineVariant
         }
     }
 
@@ -315,7 +571,7 @@ SidePanel {
             id: settingsColumn
 
             width: parent.width
-            spacing: Theme.space.xs
+            spacing: 0
 
             Repeater {
                 model: root.widget ? root.widget.settingsSchema : []
@@ -334,7 +590,7 @@ SidePanel {
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width * 0.45
-                        color: Theme.scheme.onSurface
+                        color: Theme.scheme.onSurfaceVariant
                         font: Theme.typeBodyMedium
                         elide: Text.ElideRight
                         text: settingRow.modelData.label
@@ -353,55 +609,97 @@ SidePanel {
                     Row {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: Theme.space.xs
+                        spacing: Theme.space.sm
                         visible: settingRow.modelData.type === "enum"
 
                         Repeater {
                             model: settingRow.modelData.options || []
 
-                            delegate: HostButton {
+                            delegate: Rectangle {
+                                id: optionChip
+
                                 required property var modelData
 
-                                text: String(modelData)
-                                height: 40
-                                active: String(root.values[settingRow.modelData.key])
-                                        === String(modelData)
-                                onClicked: root.setValue(settingRow.modelData.key,
-                                                         modelData)
+                                readonly property bool selected:
+                                    String(root.values[settingRow.modelData.key])
+                                    === String(optionChip.modelData)
+
+                                width: optionChipLabel.implicitWidth + Theme.space.lg * 2
+                                height: 32
+                                radius: Theme.shape.full
+                                color: optionChip.selected ? Theme.secondaryContainer
+                                                           : "transparent"
+                                border.width: 1
+                                border.color: optionChip.selected
+                                              ? Theme.secondaryContainer : Theme.outline
+
+                                Text {
+                                    id: optionChipLabel
+
+                                    anchors.centerIn: parent
+                                    text: String(optionChip.modelData)
+                                    color: optionChip.selected
+                                           ? Theme.scheme.onSecondaryContainer
+                                           : Theme.scheme.onSurfaceVariant
+                                    font: Theme.typeLabelLarge
+                                }
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: parent.radius
+                                    color: Theme.stateLayer(optionChip.selected
+                                                            ? Theme.scheme.onSecondaryContainer
+                                                            : Theme.scheme.onSurface,
+                                                            Theme.stateHover)
+                                    visible: optionChipHover.containsMouse
+                                }
+
+                                MouseArea {
+                                    id: optionChipHover
+
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.setValue(settingRow.modelData.key,
+                                                             optionChip.modelData)
+                                }
                             }
                         }
                     }
 
-                    // Крупное Expressive-поле: пилюля surface-container-highest,
-                    // в фокусе — squircle с primary-контуром.
+                    // M3 filled-поле: контейнер surface-container-highest,
+                    // радиус xs, обводка outline (в фокусе — primary, 2).
                     Item {
                         id: fieldBox
 
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        width: Math.max(96, parent.width * 0.5)
+                        width: Math.max(80, parent.width * 0.5)
                         height: 48
                         visible: settingRow.modelData.type !== "bool"
                                  && settingRow.modelData.type !== "enum"
 
-                        MorphShape {
+                        Rectangle {
                             anchors.fill: parent
-                            shape: field.activeFocus ? "squircle" : "pill"
-                            modulation: 0.35
+                            radius: Theme.shape.xs
                             color: Theme.surfaceContainerHighest
-                            borderWidth: field.activeFocus ? 2 : 0
-                            borderColor: Theme.primary
+                            border.width: field.activeFocus ? 2 : 1
+                            border.color: field.activeFocus ? Theme.primary
+                                                            : Theme.outline
+                            Behavior on border.color {
+                                ColorAnimation { duration: Theme.motionShort3 }
+                            }
                         }
 
                         TextInput {
                             id: field
 
                             anchors.fill: parent
-                            leftPadding: Theme.space.lg
-                            rightPadding: Theme.space.lg
+                            leftPadding: Theme.space.md
+                            rightPadding: Theme.space.md
                             verticalAlignment: TextInput.AlignVCenter
                             color: Theme.scheme.onSurface
-                            font: Theme.typeBodyLarge
+                            font: Theme.typeBodyMedium
                             clip: true
                             selectionColor: Theme.primary
                             selectedTextColor: Theme.scheme.onPrimary
@@ -423,49 +721,69 @@ SidePanel {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: 48
+        height: Theme.buttonHeight
 
         Row {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             spacing: Theme.space.sm
 
-            HostButton {
-                text: "Сбросить"
-                height: 48
-                onClicked: root.reset()
+            Rectangle {
+                id: resetAction
+
+                width: resetActionLabel.implicitWidth + Theme.space.xl * 2
+                height: Theme.buttonHeight
+                radius: Theme.shape.full
+                color: "transparent"
+
+                Text {
+                    id: resetActionLabel
+
+                    anchors.centerIn: parent
+                    text: "Сбросить"
+                    color: Theme.primary
+                    font: Theme.typeLabelLarge
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    color: Theme.stateLayer(Theme.primary, Theme.stateHover)
+                    visible: resetActionHover.containsMouse
+                }
+
+                MouseArea {
+                    id: resetActionHover
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.reset()
+                }
             }
 
-            // Удаление — единственное действие с error-ролью: заметный
-            // error-контейнер, а не красный текст без подложки.
-            Item {
+            Rectangle {
                 id: deleteAction
 
-                width: deleteActionLabel.implicitWidth + Theme.space.xxl
-                height: 48
-                scale: deleteActionHover.pressed ? 0.94
-                     : (deleteActionHover.containsMouse ? 1.04 : 1)
-                Behavior on scale { SpringSpatial {} }
-
-                MorphShape {
-                    anchors.fill: parent
-                    shape: deleteActionHover.pressed ? "squircle" : "pill"
-                    modulation: 0.4
-                    color: deleteActionHover.containsMouse
-                           ? Theme.mix(Theme.errorContainer,
-                                       Theme.scheme.onErrorContainer, Theme.stateHover)
-                           : Theme.errorContainer
-                    borderWidth: 0
-                    Behavior on color { ColorAnimation { duration: 140 } }
-                }
+                width: deleteActionLabel.implicitWidth + Theme.space.xl * 2
+                height: Theme.buttonHeight
+                radius: Theme.shape.full
+                color: "transparent"
 
                 Text {
                     id: deleteActionLabel
 
                     anchors.centerIn: parent
                     text: "Удалить"
-                    color: Theme.scheme.onErrorContainer
-                    font: Theme.typeEmphasizedLabelLarge
+                    color: Theme.error
+                    font: Theme.typeLabelLarge
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    color: Theme.stateLayer(Theme.error, Theme.stateHover)
+                    visible: deleteActionHover.containsMouse
                 }
 
                 MouseArea {
@@ -483,13 +801,40 @@ SidePanel {
             }
         }
 
-        HostButton {
+        Rectangle {
+            id: closeAction
+
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            text: "Закрыть"
-            height: 48
-            prominent: true
-            onClicked: EditorState.closeSettings()
+            width: closeActionLabel.implicitWidth + Theme.space.xl * 2
+            height: Theme.buttonHeight
+            radius: Theme.shape.full
+            color: Theme.primary
+
+            Text {
+                id: closeActionLabel
+
+                anchors.centerIn: parent
+                text: "Закрыть"
+                color: Theme.scheme.onPrimary
+                font: Theme.typeLabelLarge
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: Theme.stateLayer(Theme.scheme.onPrimary, Theme.stateHover)
+                visible: closeActionHover.containsMouse
+            }
+
+            MouseArea {
+                id: closeActionHover
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: EditorState.closeSettings()
+            }
         }
     }
 }

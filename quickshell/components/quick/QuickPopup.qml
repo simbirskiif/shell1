@@ -159,7 +159,7 @@ PopupWindow {
             }
         }
         clip: true
-        radius: 28
+        radius: Theme.quickRadius
         color: Theme.quickBackground
 
         // Появление: лёгкий рост из угла кнопки.

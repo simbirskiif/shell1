@@ -1,14 +1,12 @@
 import QtQuick
 import Quickshell
 import "../quick"
-import "../expressive"
 import "../../singletons"
 
 // Настройки дока внутри раскрытой панели. Значения живут в DockSettings
-// и сохраняются в общем settings.json. Оформление — M3 Expressive settings:
-// строки 56 с переключателем (ToggleSwitch уже expressive), подписи
-// bodyMedium, слайдеры с волнистой дорожкой, а чипы провайдеров и позиции —
-// пилюли на tertiary-container, которые деформируются при нажатии.
+// и сохраняются в общем settings.json. Оформление — M3 settings list:
+// строки 56 с переключателем, подписи bodyMedium на onSurfaceVariant,
+// слайдеры и чипы на токенах формы и цвета.
 Item {
     id: root
 
@@ -20,12 +18,6 @@ Item {
         / (DockSettings.maxSearchHeight - DockSettings.minSearchHeight)
     readonly property real panelNorm: (DockSettings.panelMaxHeight - DockSettings.minPanelHeight)
         / (DockSettings.maxPanelHeightLimit - DockSettings.minPanelHeight)
-
-    // Общий вид чипа-пилюли: выбранный — tertiary-container, обычный —
-    // тональная поверхность. При нажатии контур становится squircle, а
-    // чип сжимается: отклик читается формой, а не обводкой.
-    // (Вложенные объекты вместо `component` — inline-компоненты в этой
-    // сборке ломают конфиг.)
 
     Flickable {
         id: scroller
@@ -95,42 +87,24 @@ Item {
                 }
 
                 // Предупреждение и одновременно объяснение fallback-а.
-                // Мягкий цветной контейнер без тонкой обводки — состояние
-                // читается заливкой и маркером, а не рамкой.
-                Item {
+                Rectangle {
                     width: parent.width
                     height: warningText.implicitHeight + Theme.space.lg
+                    radius: Theme.shape.md
                     visible: DockSearch.elephantEnabled && !DockSearch.probing
                              && !DockSearch.serviceStarting
                              && (!DockSearch.elephantAvailable
                                  || DockSearch.enabledProviders.length === 0)
-
-                    MorphShape {
-                        anchors.fill: parent
-                        shape: "squircle"
-                        modulation: 0.3
-                        color: Theme.withAlpha(Theme.warningColor, 0.16)
-                    }
-
-                    MorphShape {
-                        anchors.left: parent.left
-                        anchors.leftMargin: Theme.space.md
-                        anchors.top: parent.top
-                        anchors.topMargin: Theme.space.sm + 2
-                        width: 8
-                        height: 8
-                        shape: "cookie"
-                        color: Theme.warningColor
-                    }
+                    color: Theme.withAlpha(Theme.warningColor, 0.12)
+                    border.width: 1
+                    border.color: Theme.withAlpha(Theme.warningColor, 0.35)
 
                     Text {
                         id: warningText
                         anchors.left: parent.left
-                        anchors.leftMargin: Theme.space.xl
                         anchors.right: parent.right
-                        anchors.rightMargin: Theme.space.md
                         anchors.top: parent.top
-                        anchors.topMargin: Theme.space.sm
+                        anchors.margins: Theme.space.sm
                         wrapMode: Text.WordWrap
                         text: !DockSearch.elephantAvailable
                               ? (DockSearch.installed
@@ -142,33 +116,30 @@ Item {
                     }
                 }
 
-                // Тональная кнопка M3: tertiary-container + on-tertiary-container.
-                // Нажатие деформирует пилюлю, поэтому это не «плоский» chip.
-                Item {
-                    width: 116
+                // Тональная кнопка M3: secondary-container + on-secondary-container.
+                Rectangle {
+                    width: 108
                     height: Theme.buttonHeight
+                    radius: Theme.shape.full
                     visible: DockSearch.elephantEnabled && DockSearch.installed
                              && !DockSearch.elephantAvailable
                              && !DockSearch.probing && !DockSearch.serviceStarting
+                    color: Theme.secondaryContainer
+                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
-                    readonly property bool hovered: startHover.containsMouse
-                    readonly property bool pressed: startHover.pressed
-
-                    scale: pressed ? 0.95 : (hovered ? 1.03 : 1)
-                    Behavior on scale { SpringSpatialFast {} }
-
-                    MorphShape {
+                    Rectangle {
                         anchors.fill: parent
-                        shape: startHover.pressed ? "squircle" : "pill"
-                        modulation: 0.45
-                        color: Theme.tertiaryContainer
-                        Behavior on color { ColorAnimation { duration: 140 } }
+                        radius: parent.radius
+                        color: Theme.stateLayer(Theme.scheme.onSecondaryContainer,
+                                                Theme.stateHover)
+                        opacity: startHover.containsMouse ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
                     }
 
                     Text {
                         anchors.centerIn: parent
                         text: "Запустить"
-                        color: Theme.scheme.onTertiaryContainer
+                        color: Theme.scheme.onSecondaryContainer
                         font: Theme.typeLabelLarge
                     }
 
@@ -197,45 +168,41 @@ Item {
                     Repeater {
                         model: DockSearch.providers
 
-                        delegate: Item {
-                            id: providerChip
-
+                        delegate: Rectangle {
                             required property var modelData
 
                             readonly property bool selected: DockSearch.hasProvider(modelData)
-                            readonly property bool hovered: providerHover.containsMouse
-                            readonly property bool pressed: providerHover.pressed
 
-                            width: providerLabel.implicitWidth + Theme.space.xl + Theme.space.sm
-                            height: 40
+                            width: providerLabel.implicitWidth + Theme.space.xl
+                            height: Theme.space.xxl
+                            radius: Theme.shape.full
+                            color: selected ? Theme.secondaryContainer : "transparent"
+                            border.width: 1
+                            // M3 filter chip: выбранный — тональный, обычный —
+                            // только обводка outline-variant.
+                            border.color: selected ? Theme.secondaryContainer
+                                                   : Theme.outlineVariant
+                            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
-                            scale: pressed ? 0.94 : (hovered ? 1.03 : 1)
-                            Behavior on scale { SpringSpatialFast {} }
-
-                            // Пилюля-чип: активный — tertiary-container,
-                            // обычный — тональная поверхность; при нажатии
-                            // контур схлопывается в squircle.
-                            MorphShape {
+                            Rectangle {
                                 anchors.fill: parent
-                                shape: providerHover.pressed ? "squircle" : "pill"
-                                modulation: providerHover.pressed ? 0.6 : 0.35
-                                color: providerChip.selected ? Theme.tertiaryContainer
-                                     : providerChip.hovered ? Theme.surfaceContainerHighest
-                                     : Theme.surfaceContainerHigh
-                                Behavior on color { ColorAnimation { duration: 140 } }
+                                radius: parent.radius
+                                color: Theme.stateLayer(selected ? Theme.scheme.onSecondaryContainer
+                                                                 : Theme.scheme.onSurface,
+                                                        Theme.stateHover)
+                                opacity: providerHover.containsMouse ? 1 : 0
+                                Behavior on opacity {
+                                    NumberAnimation { duration: Theme.motionShort3 }
+                                }
                             }
 
                             Text {
                                 id: providerLabel
                                 anchors.centerIn: parent
-                                text: DockSearch.providerLabel(providerChip.modelData)
-                                color: providerChip.selected ? Theme.scheme.onTertiaryContainer
-                                                             : Theme.scheme.onSurfaceVariant
-                                font: providerChip.selected ? Theme.typeEmphasizedLabelLarge
-                                                            : Theme.typeLabelLarge
-                                scale: providerChip.pressed ? 0.96 : 1
-                                Behavior on color { ColorAnimation { duration: 140 } }
-                                Behavior on scale { SpringSpatialFast {} }
+                                text: DockSearch.providerLabel(modelData)
+                                color: selected ? Theme.scheme.onSecondaryContainer
+                                                : Theme.scheme.onSurfaceVariant
+                                font: Theme.typeLabelLarge
                             }
 
                             MouseArea {
@@ -244,7 +211,7 @@ Item {
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onContainsMouseChanged: if (containsMouse) DockState.keepAlive()
-                                onClicked: DockSearch.toggleProvider(providerChip.modelData)
+                                onClicked: DockSearch.toggleProvider(modelData)
                             }
                         }
                     }
@@ -278,7 +245,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: DockSettings.iconSize + " px"
                             color: Theme.primary
-                            font: Theme.typeEmphasizedLabelLarge
+                            font: Theme.typeLabelLarge
                         }
                     }
 
@@ -344,7 +311,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: DockSettings.searchHeight + " px"
                             color: Theme.primary
-                            font: Theme.typeEmphasizedLabelLarge
+                            font: Theme.typeLabelLarge
                         }
                     }
 
@@ -365,42 +332,40 @@ Item {
                             { key: true, label: "Снизу" }
                         ]
 
-                        delegate: Item {
-                            id: positionChip
-
+                        delegate: Rectangle {
                             required property var modelData
 
                             readonly property bool selected:
                                 DockSettings.searchAtBottom === modelData.key
-                            readonly property bool hovered: positionHover.containsMouse
-                            readonly property bool pressed: positionHover.pressed
 
-                            width: 100
+                            width: 92
                             height: Theme.buttonHeight
+                            radius: Theme.shape.full
+                            // M3 segmented choice: выбранный — secondary-container.
+                            color: selected ? Theme.secondaryContainer : "transparent"
+                            border.width: 1
+                            border.color: selected ? Theme.secondaryContainer
+                                                   : Theme.outlineVariant
+                            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
-                            scale: pressed ? 0.94 : (hovered ? 1.03 : 1)
-                            Behavior on scale { SpringSpatialFast {} }
-
-                            MorphShape {
+                            Rectangle {
                                 anchors.fill: parent
-                                shape: positionHover.pressed ? "squircle" : "pill"
-                                modulation: positionHover.pressed ? 0.6 : 0.35
-                                color: positionChip.selected ? Theme.tertiaryContainer
-                                     : positionChip.hovered ? Theme.surfaceContainerHighest
-                                     : Theme.surfaceContainerHigh
-                                Behavior on color { ColorAnimation { duration: 140 } }
+                                radius: parent.radius
+                                color: Theme.stateLayer(selected ? Theme.scheme.onSecondaryContainer
+                                                                 : Theme.scheme.onSurface,
+                                                        Theme.stateHover)
+                                opacity: positionHover.containsMouse ? 1 : 0
+                                Behavior on opacity {
+                                    NumberAnimation { duration: Theme.motionShort3 }
+                                }
                             }
 
                             Text {
                                 anchors.centerIn: parent
-                                text: positionChip.modelData.label
-                                color: positionChip.selected ? Theme.scheme.onTertiaryContainer
-                                                            : Theme.scheme.onSurfaceVariant
-                                font: positionChip.selected ? Theme.typeEmphasizedLabelLarge
-                                                            : Theme.typeLabelLarge
-                                scale: positionChip.pressed ? 0.96 : 1
-                                Behavior on color { ColorAnimation { duration: 140 } }
-                                Behavior on scale { SpringSpatialFast {} }
+                                text: modelData.label
+                                color: selected ? Theme.scheme.onSecondaryContainer
+                                                : Theme.scheme.onSurfaceVariant
+                                font: Theme.typeLabelLarge
                             }
 
                             MouseArea {
@@ -409,7 +374,7 @@ Item {
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onContainsMouseChanged: if (containsMouse) DockState.keepAlive()
-                                onClicked: DockSettings.setSearchAtBottom(positionChip.modelData.key)
+                                onClicked: DockSettings.setSearchAtBottom(modelData.key)
                             }
                         }
                     }
@@ -442,7 +407,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: DockSettings.panelMaxHeight + " px"
                             color: Theme.primary
-                            font: Theme.typeEmphasizedLabelLarge
+                            font: Theme.typeLabelLarge
                         }
                     }
 
@@ -499,42 +464,39 @@ Item {
                             { key: "right", label: "Справа" }
                         ]
 
-                        delegate: Item {
-                            id: sideChip
-
+                        delegate: Rectangle {
                             required property var modelData
 
                             readonly property bool selected:
                                 DockSettings.buttonSide === modelData.key
-                            readonly property bool hovered: sideHover.containsMouse
-                            readonly property bool pressed: sideHover.pressed
 
-                            width: 100
+                            width: 92
                             height: Theme.buttonHeight
+                            radius: Theme.shape.full
+                            color: selected ? Theme.secondaryContainer : "transparent"
+                            border.width: 1
+                            border.color: selected ? Theme.secondaryContainer
+                                                   : Theme.outlineVariant
+                            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
-                            scale: pressed ? 0.94 : (hovered ? 1.03 : 1)
-                            Behavior on scale { SpringSpatialFast {} }
-
-                            MorphShape {
+                            Rectangle {
                                 anchors.fill: parent
-                                shape: sideHover.pressed ? "squircle" : "pill"
-                                modulation: sideHover.pressed ? 0.6 : 0.35
-                                color: sideChip.selected ? Theme.tertiaryContainer
-                                     : sideChip.hovered ? Theme.surfaceContainerHighest
-                                     : Theme.surfaceContainerHigh
-                                Behavior on color { ColorAnimation { duration: 140 } }
+                                radius: parent.radius
+                                color: Theme.stateLayer(selected ? Theme.scheme.onSecondaryContainer
+                                                                 : Theme.scheme.onSurface,
+                                                        Theme.stateHover)
+                                opacity: sideHover.containsMouse ? 1 : 0
+                                Behavior on opacity {
+                                    NumberAnimation { duration: Theme.motionShort3 }
+                                }
                             }
 
                             Text {
                                 anchors.centerIn: parent
-                                text: sideChip.modelData.label
-                                color: sideChip.selected ? Theme.scheme.onTertiaryContainer
-                                                         : Theme.scheme.onSurfaceVariant
-                                font: sideChip.selected ? Theme.typeEmphasizedLabelLarge
-                                                        : Theme.typeLabelLarge
-                                scale: sideChip.pressed ? 0.96 : 1
-                                Behavior on color { ColorAnimation { duration: 140 } }
-                                Behavior on scale { SpringSpatialFast {} }
+                                text: modelData.label
+                                color: selected ? Theme.scheme.onSecondaryContainer
+                                                : Theme.scheme.onSurfaceVariant
+                                font: Theme.typeLabelLarge
                             }
 
                             MouseArea {
@@ -543,7 +505,7 @@ Item {
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onContainsMouseChanged: if (containsMouse) DockState.keepAlive()
-                                onClicked: DockSettings.setButtonSide(sideChip.modelData.key)
+                                onClicked: DockSettings.setButtonSide(modelData.key)
                             }
                         }
                     }
@@ -576,7 +538,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: DockSettings.scrollFactor.toFixed(2) + "×"
                             color: Theme.primary
-                            font: Theme.typeEmphasizedLabelLarge
+                            font: Theme.typeLabelLarge
                         }
                     }
 
@@ -598,32 +560,30 @@ Item {
             }
 
             // --- сброс ---
-            Item {
+            Rectangle {
                 id: resetButton
-                width: 116
+                width: 108
                 height: Theme.buttonHeight
+                radius: Theme.shape.full
+                // M3 outlined button: прозрачный контейнер, обводка outline.
+                color: "transparent"
+                border.width: 1
+                border.color: resetHover.containsMouse ? Theme.outline
+                                                      : Theme.outlineVariant
+                Behavior on border.color { ColorAnimation { duration: Theme.motionShort3 } }
 
-                readonly property bool hovered: resetHover.containsMouse
-                readonly property bool pressed: resetHover.pressed
-
-                scale: pressed ? 0.94 : (hovered ? 1.03 : 1)
-                Behavior on scale { SpringSpatialFast {} }
-
-                // Заполненная тональная кнопка вместо outlined: без тонкой
-                // рамки, нажатие деформирует пилюлю в squircle.
-                MorphShape {
+                Rectangle {
                     anchors.fill: parent
-                    shape: resetHover.pressed ? "squircle" : "pill"
-                    modulation: resetHover.pressed ? 0.55 : 0.3
-                    color: resetButton.hovered ? Theme.surfaceContainerHighest
-                                               : Theme.surfaceContainerHigh
-                    Behavior on color { ColorAnimation { duration: 140 } }
+                    radius: parent.radius
+                    color: Theme.stateLayer(Theme.primary, Theme.stateHover)
+                    opacity: resetHover.containsMouse ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
                 }
 
                 Text {
                     anchors.centerIn: parent
                     text: "Сбросить"
-                    color: Theme.scheme.onSurface
+                    color: Theme.primary
                     font: Theme.typeLabelLarge
                 }
 
@@ -639,15 +599,14 @@ Item {
         }
     }
 
-    // Индикатор прокрутки: настройки длиннее панели. Крупная пилюля вместо
-    // тонкой линии — читается и на светлой, и на тёмной теме.
+    // Тонкий индикатор прокрутки: настройки теперь длиннее панели.
     Rectangle {
         id: scrollThumb
         anchors.right: parent.right
         anchors.rightMargin: 1
-        width: Theme.space.xs + 2
-        color: Theme.tertiary
-        opacity: 0.7
+        width: Theme.space.xs
+        color: Theme.outline
+        opacity: 0.55
         radius: Theme.shape.full
         visible: scroller.contentHeight > scroller.height
         height: Math.max(20, scroller.height * scroller.height

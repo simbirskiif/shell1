@@ -1,55 +1,43 @@
 import QtQuick
-import ".."
-import "../expressive"
 import "../../singletons"
 
-// Колокольчик в баре. Есть непрочитанные — кнопка становится «печеньем»
-// на secondary-container; нет — прозрачный круг. Форма и цвет меняются
-// вместе, поэтому состояние видно до чтения цифры.
-Item {
+// Кнопка уведомлений в баре: колокольчик, точка непрочитанного и переход
+// в Центр уведомлений. Форма и поведение — как у прочих кнопок оболочки.
+Rectangle {
     id: root
 
     property bool opened: false
 
     signal clicked()
 
-    implicitWidth: 40
-    implicitHeight: 40
-
-    readonly property bool hovered: hover.containsMouse
-    readonly property bool unread: NotificationService.hasUnread
-
-    scale: hover.pressed ? 0.92 : (root.hovered ? 1.06 : 1)
-    Behavior on scale { SpringSpatialFast {} }
-
-    MorphShape {
-        anchors.fill: parent
-        shape: root.unread ? "cookie" : "circle"
-        keepRound: true
-        modulation: 0.75
-        color: root.unread ? Theme.secondaryContainer
-             : root.hovered ? Theme.surfaceContainerHighest
-             : "transparent"
-    }
+    implicitWidth: Theme.iconButtonSize
+    implicitHeight: Theme.iconButtonSize
+    radius: Theme.controlRadius
+    color: root.opened ? Theme.secondaryContainer
+                       : (hover.containsMouse ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                                        : "transparent")
+    Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
 
     Text {
         anchors.centerIn: parent
+        anchors.verticalCenterOffset: 1
         text: "\uf0f3"
-        color: root.unread ? Theme.scheme.onSecondaryContainer : Theme.scheme.onSurface
+        // Колокольчик не подсвечиваем: о непрочитанном говорит точка.
+        color: root.opened ? Theme.scheme.onSecondaryContainer : Theme.scheme.onSurface
         font.family: Theme.iconFontFamily
-        font.pixelSize: 18
+        font.pixelSize: Theme.iconSize.sm
     }
 
     // Точка непрочитанного.
     Rectangle {
         anchors.right: parent.right
-        anchors.rightMargin: 2
+        anchors.rightMargin: 5
         anchors.top: parent.top
-        anchors.topMargin: 2
-        width: 9
-        height: 9
+        anchors.topMargin: 5
+        width: 8
+        height: 8
         radius: width / 2
-        visible: root.unread
+        visible: NotificationService.hasUnread
         color: Theme.error
         border.width: 1.5
         border.color: Theme.barBackground
@@ -57,6 +45,7 @@ Item {
 
     MouseArea {
         id: hover
+
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor

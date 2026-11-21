@@ -1,14 +1,8 @@
 import QtQuick
 import ".."
-import "../expressive"
 import "../../singletons"
 
 // Настройки оболочки: процент батареи в баре и порядок элементов бара.
-//
-// Expressive: настройки сгруппированы формой — каждая строка это крупный
-// squircle-контейнер на тональной поверхности, заголовки секций —
-// typeEmphasizedTitleMedium. Тонких разделителей нет: группы разделяет
-// воздух, кнопки-стрелки — круги на пружинах.
 Item {
     id: root
 
@@ -31,204 +25,123 @@ Item {
             onBackRequested: root.backRequested()
         }
 
-        // --- Bar ---------------------------------------------------------
-        Item {
+        // Разделитель шапки m3 — outline-variant.
+        Rectangle {
             width: parent.width
-            height: 44
-
-            Text {
-                anchors.left: parent.left
-                anchors.leftMargin: Theme.space.xs
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Theme.space.xs
-                text: "Bar"
-                color: Theme.primary
-                font: Theme.typeEmphasizedTitleMedium
-            }
+            height: 1
+            color: Theme.outlineVariant
         }
+
+        PanelSection { text: "Bar" }
 
         // Двухстрочная строка списка m3: заголовок и подпись.
         Item {
             width: parent.width
-            height: 64
-
-            readonly property bool hovered: batteryRowHover.containsMouse
-
-            MorphShape {
-                anchors.fill: parent
-                anchors.topMargin: Theme.space.xs / 2
-                anchors.bottomMargin: Theme.space.xs / 2
-                shape: "squircle"
-                color: Theme.surfaceContainerHigh
-                modulation: 0.35
-            }
-
-            MouseArea {
-                id: batteryRowHover
-                anchors.fill: parent
-                hoverEnabled: true
-                acceptedButtons: Qt.NoButton
-            }
+            height: Theme.listItemHeight + Theme.space.sm
 
             Column {
                 anchors.left: parent.left
-                anchors.leftMargin: Theme.space.md
+                anchors.leftMargin: Theme.space.lg
                 anchors.right: toggle.left
                 anchors.rightMargin: Theme.space.md
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 0
+                spacing: Theme.space.xs
 
                 Text {
                     text: "Battery percentage"
                     color: Theme.scheme.onSurface
-                    font: Theme.typeEmphasizedLabelLarge
+                    font: Theme.typeBodyLarge
                 }
 
                 Text {
                     text: "Show charge level next to the icon"
                     color: Theme.scheme.onSurfaceVariant
-                    font: Theme.typeBodySmall
+                    font: Theme.typeBodyMedium
                 }
             }
 
             ToggleSwitch {
                 id: toggle
                 anchors.right: parent.right
-                anchors.rightMargin: Theme.space.md
+                anchors.rightMargin: Theme.space.lg
                 anchors.verticalCenter: parent.verticalCenter
                 checked: MockState.showBatteryPercent
                 onToggled: MockState.showBatteryPercent = !MockState.showBatteryPercent
             }
         }
 
-        // --- Notifications ----------------------------------------------
-        Item {
-            width: parent.width
-            height: 48
-
-            Text {
-                anchors.left: parent.left
-                anchors.leftMargin: Theme.space.xs
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Theme.space.xs
-                text: "Notifications"
-                color: Theme.primary
-                font: Theme.typeEmphasizedTitleMedium
-            }
-        }
+        PanelSection { text: "Notifications" }
 
         // Чувствительность горизонтального свайпа: множитель дельты
         // тачпада. 1.00 — карточка идёт ровно за пальцами.
         Item {
             width: parent.width
-            height: 92
+            height: Theme.listItemHeight + Theme.space.lg
 
-            MorphShape {
-                anchors.fill: parent
-                anchors.topMargin: Theme.space.xs / 2
-                anchors.bottomMargin: Theme.space.xs / 2
-                shape: "squircle"
-                color: Theme.surfaceContainerHigh
-                modulation: 0.35
-            }
-
-            Text {
+            Column {
                 anchors.left: parent.left
-                anchors.leftMargin: Theme.space.md
-                anchors.top: parent.top
-                anchors.topMargin: Theme.space.sm
-                text: "Swipe sensitivity"
-                color: Theme.scheme.onSurface
-                font: Theme.typeEmphasizedLabelLarge
-            }
-
-            // Значение — крупная пилюля tertiary-контейнера.
-            MorphShape {
-                anchors.right: parent.right
+                anchors.leftMargin: Theme.space.lg
+                anchors.right: sensitivityValue.left
                 anchors.rightMargin: Theme.space.md
-                anchors.top: parent.top
-                anchors.topMargin: Theme.space.sm - 2
-                width: 64
-                height: 30
-                shape: "pill"
-                color: Theme.tertiaryContainer
-                modulation: 0.4
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Theme.space.sm
 
                 Text {
-                    anchors.centerIn: parent
-                    text: NotificationService.swipeSensitivity.toFixed(2) + "×"
-                    color: Theme.scheme.onTertiaryContainer
-                    font: Theme.typeEmphasizedLabelLarge
+                    text: "Swipe sensitivity"
+                    color: Theme.scheme.onSurface
+                    font: Theme.typeBodyLarge
+                }
+
+                PanelSlider {
+                    width: parent.width
+                    // Ползунок 0..1 — это 0.5..3.0, шаг 0.05.
+                    value: (NotificationService.swipeSensitivity - 0.5) / 2.5
+                    onMoved: v => NotificationService.swipeSensitivity =
+                                 Math.round((0.5 + v * 2.5) * 20) / 20
                 }
             }
 
-            PanelSlider {
-                anchors.left: parent.left
-                anchors.leftMargin: Theme.space.md
-                anchors.right: parent.right
-                anchors.rightMargin: Theme.space.md
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Theme.space.sm
-                height: 24
-                accent: Theme.primary
-                // Ползунок 0..1 — это 0.5..3.0, шаг 0.05.
-                value: (NotificationService.swipeSensitivity - 0.5) / 2.5
-                onMoved: v => NotificationService.swipeSensitivity =
-                             Math.round((0.5 + v * 2.5) * 20) / 20
-            }
-        }
-
-        // --- Кофеин ------------------------------------------------------
-        Item {
-            width: parent.width
-            height: 48
-
             Text {
-                anchors.left: parent.left
-                anchors.leftMargin: Theme.space.xs
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Theme.space.xs
-                text: "Кофеин"
-                color: Theme.primary
-                font: Theme.typeEmphasizedTitleMedium
+                id: sensitivityValue
+
+                anchors.right: parent.right
+                anchors.rightMargin: Theme.space.lg
+                anchors.verticalCenter: parent.verticalCenter
+                text: NotificationService.swipeSensitivity.toFixed(2) + "×"
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeBodyMedium
             }
         }
+
+        PanelSection { text: "Кофеин" }
 
         // Длительности кофеина строкой: "30, 1h, 2h 30m", без единицы —
         // минуты. Правит отдельное окно: попап клавиатуру не получает.
         Item {
             width: parent.width
-            height: 64
+            height: Theme.listItemHeight + Theme.space.sm
 
-            readonly property bool hovered: durationsHover.containsMouse
-            readonly property bool pressed: durationsHover.pressed
-
-            scale: pressed ? 0.99 : 1
-            Behavior on scale { SpringSpatialFast {} }
-
-            MorphShape {
+            // Строка списка m3: hover — state layer on-surface.
+            Rectangle {
                 anchors.fill: parent
-                anchors.topMargin: Theme.space.xs / 2
-                anchors.bottomMargin: Theme.space.xs / 2
-                shape: "squircle"
-                color: parent.hovered ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
-                modulation: 0.35
-
-                Behavior on color { ColorAnimation { duration: 140 } }
+                color: durationsHover.containsMouse
+                       ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                       : "transparent"
+                Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
             }
 
             Column {
                 anchors.left: parent.left
-                anchors.leftMargin: Theme.space.md
+                anchors.leftMargin: Theme.space.lg
                 anchors.right: editIcon.left
                 anchors.rightMargin: Theme.space.md
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 0
+                spacing: Theme.space.xs
 
                 Text {
                     text: "Длительности"
                     color: Theme.scheme.onSurface
-                    font: Theme.typeEmphasizedLabelLarge
+                    font: Theme.typeBodyLarge
                 }
 
                 Text {
@@ -236,33 +149,19 @@ Item {
                     text: CaffeineService.durations !== "" ? CaffeineService.durations : "не заданы"
                     elide: Text.ElideRight
                     color: Theme.scheme.onSurfaceVariant
-                    font: Theme.typeBodySmall
+                    font: Theme.typeBodyMedium
                 }
             }
 
-            // Кнопка-иконка 44: круг, на hover — «печенье» primary-контейнера.
-            MorphShape {
+            Text {
                 id: editIcon
                 anchors.right: parent.right
-                anchors.rightMargin: Theme.space.md
+                anchors.rightMargin: Theme.space.lg
                 anchors.verticalCenter: parent.verticalCenter
-                width: 44
-                height: 44
-                shape: durationsHover.containsMouse ? "cookie" : "circle"
-                color: durationsHover.containsMouse ? Theme.primaryContainer
-                                                   : Theme.surfaceContainerHighest
-                modulation: 1
-
-                Behavior on color { ColorAnimation { duration: 140 } }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "\uf040"
-                    color: durationsHover.containsMouse ? Theme.scheme.onPrimaryContainer
-                                                        : Theme.scheme.onSurfaceVariant
-                    font.family: Theme.iconFontFamily
-                    font.pixelSize: Theme.iconSize.md
-                }
+                text: "\uf040"
+                color: Theme.scheme.onSurfaceVariant
+                font.family: Theme.iconFontFamily
+                font.pixelSize: Theme.iconSize.md
             }
 
             MouseArea {
@@ -276,26 +175,12 @@ Item {
             }
         }
 
-        // --- Bar order ---------------------------------------------------
-        Item {
-            width: parent.width
-            height: 48
-
-            Text {
-                anchors.left: parent.left
-                anchors.leftMargin: Theme.space.xs
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Theme.space.xs
-                text: "Bar order"
-                color: Theme.primary
-                font: Theme.typeEmphasizedTitleMedium
-            }
-        }
+        PanelSection { text: "Bar order" }
 
         // Порядок слева-направо = порядок в модели; стрелки двигают элемент.
         PanelList {
             width: parent.width
-            rowHeight: 56
+            rowHeight: Theme.touchTarget
             model: MockState.barItems
 
             delegate: Item {
@@ -305,36 +190,16 @@ Item {
                 required property string title
                 required property int index
 
-                readonly property bool hovered: rowHover.containsMouse
-
                 width: ListView.view ? ListView.view.width : implicitWidth
-                height: 56
-
-                MorphShape {
-                    anchors.fill: parent
-                    anchors.topMargin: 1
-                    anchors.bottomMargin: 1
-                    shape: "squircle"
-                    color: orderRow.hovered ? Theme.surfaceContainerHigh : "transparent"
-                    modulation: 0.3
-
-                    Behavior on color { ColorAnimation { duration: 140 } }
-                }
+                height: Theme.touchTarget
 
                 Text {
                     anchors.left: parent.left
-                    anchors.leftMargin: Theme.space.md
+                    anchors.leftMargin: Theme.space.lg
                     anchors.verticalCenter: parent.verticalCenter
                     text: orderRow.title
                     color: Theme.scheme.onSurface
-                    font: Theme.typeEmphasizedLabelLarge
-                }
-
-                MouseArea {
-                    id: rowHover
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    acceptedButtons: Qt.NoButton
+                    font: Theme.typeBodyLarge
                 }
 
                 Row {
@@ -343,32 +208,25 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Theme.space.xs
 
-                    // Кнопки-иконки m3: 44×44, круг, hover — primary-контейнер.
-                    MorphShape {
+                    // Кнопки-иконки m3: 40×40, круглые, hover — state layer.
+                    Rectangle {
                         id: upButton
 
                         readonly property bool available: orderRow.index > 0
 
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 44
-                        height: 44
-                        shape: upHover.containsMouse && available ? "cookie" : "circle"
-                        color: upHover.containsMouse && available ? Theme.primaryContainer
-                                                                  : Theme.surfaceContainerHighest
-                        modulation: 1
+                        width: Theme.iconButtonSize
+                        height: Theme.iconButtonSize
+                        radius: Theme.shape.full
+                        color: upHover.containsMouse && available
+                               ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                               : "transparent"
                         opacity: available ? 1 : Theme.disabledContent
-                        scale: upHover.pressed && available ? 0.9 : 1
-
-                        Behavior on color { ColorAnimation { duration: 140 } }
-                        Behavior on opacity { SpringEffects {} }
-                        Behavior on scale { SpringSpatialFast {} }
+                        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
                         Text {
                             anchors.centerIn: parent
                             text: "\uf077"
-                            color: upHover.containsMouse && upButton.available
-                                   ? Theme.scheme.onPrimaryContainer
-                                   : Theme.scheme.onSurface
+                            color: Theme.scheme.onSurface
                             font.family: Theme.iconFontFamily
                             font.pixelSize: Theme.iconSize.md
                         }
@@ -383,31 +241,24 @@ Item {
                         }
                     }
 
-                    MorphShape {
+                    Rectangle {
                         id: downButton
 
                         readonly property bool available: orderRow.index < MockState.barItems.count - 1
 
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 44
-                        height: 44
-                        shape: downHover.containsMouse && available ? "cookie" : "circle"
-                        color: downHover.containsMouse && available ? Theme.primaryContainer
-                                                                    : Theme.surfaceContainerHighest
-                        modulation: 1
+                        width: Theme.iconButtonSize
+                        height: Theme.iconButtonSize
+                        radius: Theme.shape.full
+                        color: downHover.containsMouse && available
+                               ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                               : "transparent"
                         opacity: available ? 1 : Theme.disabledContent
-                        scale: downHover.pressed && available ? 0.9 : 1
-
-                        Behavior on color { ColorAnimation { duration: 140 } }
-                        Behavior on opacity { SpringEffects {} }
-                        Behavior on scale { SpringSpatialFast {} }
+                        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
                         Text {
                             anchors.centerIn: parent
                             text: "\uf078"
-                            color: downHover.containsMouse && downButton.available
-                                   ? Theme.scheme.onPrimaryContainer
-                                   : Theme.scheme.onSurface
+                            color: Theme.scheme.onSurface
                             font.family: Theme.iconFontFamily
                             font.pixelSize: Theme.iconSize.md
                         }

@@ -1,17 +1,12 @@
 import QtQuick
 import QtQuick.Shapes
 import ".."
-import "../expressive"
 import "../../singletons"
 
 // Батарейка в стиле Android 17, без процента внутри.
 // Полупрозрачная колодка + заливка состояния, которую слева-направо
 // проявляет маска (правый край заливки всегда прямой). Носик справа
 // окрашен как колодка. При зарядке справа от батарейки появляется молния.
-//
-// Expressive: колодка — не прямоугольник с рамкой, а мягкая пилюля
-// (MorphShape) с тональной обводкой; у зарядки появляется тёплое свечение,
-// молния — tertiary-акцента и «пружинит» при появлении. API прежний.
 Item {
     id: root
 
@@ -52,33 +47,23 @@ Item {
     implicitWidth: root.bodyWidth + root.nubGap + root.nubWidth + root.boltSlot
     implicitHeight: Math.max(root.bodyHeight, root.boltHeight)
 
-    // Мягкое свечение при зарядке: цвет держит состояние, а не обводка.
-    Rectangle {
-        anchors.left: track.left
-        anchors.leftMargin: -Theme.space.xs
-        anchors.verticalCenter: parent.verticalCenter
-        width: track.width + Theme.space.sm
-        height: root.bodyHeight + Theme.space.sm
-        radius: height / 2
-        color: Theme.withAlpha(root.fillColor, 0.22)
-        opacity: root.charging ? 1 : 0
-        z: -1
-        Behavior on opacity { SpringEffects {} }
-        Behavior on color { ColorAnimation { duration: 140 } }
+    Behavior on boltSlot {
+        MotionNumber {
+            duration: Theme.motionShort4
+            curve: Theme.curveEmphasized
+        }
     }
 
-    // Колодка: мягкая пилюля с тонкой обводкой (без жёсткого прямоугольника).
-    MorphShape {
+    Rectangle {
         id: track
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
         width: root.bodyWidth
         height: root.bodyHeight
-        shape: "pill"
+        radius: root.bodyRadius
         color: "transparent"
-        modulation: 1
-        borderWidth: root.bodyHeight > 20 ? 1.5 : 1
-        borderColor: root.trackColor
+        border.width: 1
+        border.color: root.trackColor
     }
 
     Item {
@@ -89,18 +74,21 @@ Item {
         height: track.height
         clip: true
 
-        Behavior on width { SpringSpatial {} }
+        Behavior on width {
+            MotionNumber {
+                duration: Theme.motionMedium1
+                curve: Theme.curveEmphasized
+            }
+        }
 
-        MorphShape {
+        Rectangle {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             width: track.width
             height: track.height
-            shape: "pill"
+            radius: track.radius
             color: root.fillColor
-            modulation: 1
-
-            Behavior on color { ColorAnimation { duration: 140 } }
+            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
     }
 
@@ -115,8 +103,7 @@ Item {
         color: root.trackColor
     }
 
-    // Молния справа от батарейки (только при зарядке) — tertiary-акцент:
-    // второй цвет в батарейной группе, а не ещё один нейтральный.
+    // Молния справа от батарейки (только при зарядке)
     Shape {
         id: bolt
         anchors.left: nub.right
@@ -125,16 +112,13 @@ Item {
         width: root.boltWidth
         height: root.boltHeight
         opacity: root.charging ? 1 : 0
-        visible: opacity > 0.01
-        scale: root.charging ? 1 : 0.4
-        transformOrigin: Item.Center
+        visible: opacity > 0
         preferredRendererType: Shape.CurveRenderer
 
-        Behavior on opacity { SpringEffects {} }
-        Behavior on scale { SpringSpatial {} }
+        Behavior on opacity { NumberAnimation { duration: Theme.motionShort4 } }
 
         ShapePath {
-            fillColor: Theme.tertiary
+            fillColor: Theme.scheme.onSurface
             strokeColor: "transparent"
             startX: bolt.width * 0.62; startY: 0
             PathLine { x: 0;                    y: bolt.height * 0.58 }

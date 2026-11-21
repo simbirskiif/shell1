@@ -111,9 +111,8 @@ Singleton {
     }
 
     // Wi-Fi включён и есть активное подключение.
-    // Подключение имеет смысл только при включённом радио: при выключении
-    // NM ещё какое-то время отдаёт старый active-SSID, и UI продолжал
-    // показывать сеть подключённой.
+    // Подключение имеет смысл только при включённом радио: NM ещё какое-то
+    // время отдаёт старый active-SSID после выключения.
     readonly property bool wifiConnected: wifiEnabled && connectedSsid !== ""
 
     readonly property ListModel wifiNetworks: availableModel

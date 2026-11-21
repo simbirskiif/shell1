@@ -1,12 +1,13 @@
 import QtQuick
 import ".."
-import "../expressive"
 import "../../singletons"
 
-// Плитка быстрых настроек — спокойный Expressive: одинаковые по форме
-// карточки, один акцентный контейнер для включённого состояния, круглая
-// иконка-орб. Форма меняется только между squircle и pill (широкие формы,
-// которые не растягиваются), состояние читается цветом и контуром.
+// Плитка быстрых настроек в духе Material 3: тональный контейнер,
+// круглая иконка-переключатель слева, двухстрочная подпись справа.
+// Кружок переключает состояние, остальная площадь раскрывает панель.
+// В режиме редактирования плитка чуть уменьшается (визуально, размеры в
+// раскладке не меняются), сверху справа появляется «минус», а перетаскивание
+// меняет порядок плиток.
 Rectangle {
     id: root
 
@@ -14,10 +15,13 @@ Rectangle {
     required property string title
     required property string subtitle
     required property bool active
+    // Плитка Wi-Fi: в кружке деления сигнала вместо обычного глифа.
     property bool wifiStatus: false
 
     property bool editable: false
+    // Показывать ли плитку: скрытая гаснет на месте, а не улетает в угол.
     property bool shown: true
+    // Позиция в сетке (её задаёт панель) — нужна для перетаскивания.
     property int order: -1
     property int columns: 2
     property real stepX: width
@@ -30,31 +34,49 @@ Rectangle {
 
     implicitWidth: Theme.quickWidth / 2
     implicitHeight: Theme.quickTileHeight
-    color: "transparent"
+    radius: Theme.quickTileRadius
+    color: root.active ? Theme.secondaryContainer : Theme.surfaceContainerHigh
+    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
-    readonly property bool hovered: hover.containsMouse
-    readonly property bool pressedDown: dragArea.pressed || hover.pressed
-    readonly property color containerColor: root.active ? Theme.secondaryContainer
-                                                       : Theme.surfaceContainerHigh
-    readonly property color contentColor: root.active ? Theme.scheme.onSecondaryContainer
-                                                      : Theme.scheme.onSurface
+    // В редакторе плитка выглядит меньше, но место занимает то же.
+    // Скрытая плитка уходит по m3 exit: растворяется и сжимается.
+    scale: (root.editable ? 0.92 : 1) * (root.shown ? 1 : Theme.motionElementScale)
+    Behavior on scale {
+        MotionNumber {
+            duration: Theme.motionMedium1
+            curve: Theme.curveEmphasized
+        }
+    }
 
-    scale: (root.editable ? 0.94 : 1) * (root.shown ? 1 : Theme.motionElementScale)
-           * (root.pressedDown ? 0.96 : (root.hovered && !root.editable ? 1.02 : 1))
-    Behavior on scale { SpringSpatial {} }
-    Behavior on x { SpringSpatial {} }
-    Behavior on y { SpringSpatial {} }
-    Behavior on opacity { SpringEffects {} }
+    Behavior on x {
+        MotionNumber {
+            duration: Theme.motionMedium1
+            curve: Theme.curveEmphasized
+        }
+    }
 
-    // Фон: squircle в покое, pill у включённой. Никаких радиальных
-    // контуров на широкой карточке — они превращаются в овал.
-    MorphShape {
+    Behavior on y {
+        MotionNumber {
+            duration: Theme.motionMedium1
+            curve: Theme.curveEmphasized
+        }
+    }
+
+    Behavior on opacity {
+        MotionNumber {
+            duration: Theme.motionShort4
+            curve: Theme.curveEmphasized
+        }
+    }
+
+    // Слой состояния M3: наведение подсвечивает плитку поверх тона.
+    Rectangle {
         anchors.fill: parent
-        shape: root.active ? "pill" : "squircle"
-        color: root.containerColor
-        borderWidth: root.active ? 0 : 1
-        borderColor: Theme.outlineVariant
-        Behavior on color { ColorAnimation { duration: 140 } }
+        radius: parent.radius
+        color: Theme.stateLayer(root.active ? Theme.scheme.onSecondaryContainer
+                                            : Theme.scheme.onSurface, Theme.stateHover)
+        opacity: hover.containsMouse && !root.editable ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
     }
 
     MouseArea {
@@ -66,48 +88,21 @@ Rectangle {
         onClicked: root.expandRequested()
     }
 
-    // Иконка-орб: обычный круг, у включённой — primary/on-primary.
-    Rectangle {
-        id: orb
+    StatusCircle {
+        id: circle
         anchors.left: parent.left
         anchors.leftMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
-        width: 36
-        height: 36
-        radius: width / 2
-        color: root.active ? Theme.secondary : Theme.surfaceContainerHighest
-        Behavior on color { ColorAnimation { duration: 140 } }
-
-        MouseArea {
-            anchors.fill: parent
-            enabled: !root.editable
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.toggled()
-        }
-
-        Text {
-            anchors.centerIn: parent
-            visible: !root.wifiStatus
-            text: root.icon
-            color: root.active ? Theme.scheme.onSecondary : Theme.scheme.onSurfaceVariant
-            font.family: Theme.iconFontFamily
-            font.pixelSize: 18
-        }
-
-        WifiStatusIcon {
-            anchors.centerIn: parent
-            visible: root.wifiStatus
-            width: 24
-            height: 24
-            glyphSize: 18
-            onAccent: root.active
-            offMode: !NetworkService.wifiEnabled
-            signal: NetworkService.connectedSignal
-        }
+        interactive: !root.editable
+        icon: root.icon
+        active: root.active
+        wifiStatus: root.wifiStatus
+        onToggled: root.toggled()
     }
 
     Column {
-        anchors.left: orb.right
+        id: texts
+        anchors.left: circle.right
         anchors.leftMargin: Theme.space.md
         anchors.right: parent.right
         anchors.rightMargin: Theme.space.md
@@ -117,24 +112,26 @@ Rectangle {
         Text {
             width: parent.width
             text: root.title
-            color: root.contentColor
-            font: root.active ? Theme.typeEmphasizedLabelLarge : Theme.typeLabelLarge
+            color: root.active ? Theme.scheme.onSecondaryContainer : Theme.scheme.onSurface
+            font: Theme.typeLabelLarge
             elide: Text.ElideRight
-            Behavior on color { ColorAnimation { duration: 140 } }
+            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
         }
 
         Text {
             width: parent.width
             visible: root.subtitle !== ""
             text: root.subtitle
-            color: root.active ? Theme.withAlpha(Theme.scheme.onSecondaryContainer, 0.78)
+            color: root.active ? Theme.withAlpha(Theme.scheme.onSecondaryContainer, 0.8)
                                : Theme.scheme.onSurfaceVariant
             font: Theme.typeLabelMedium
             elide: Text.ElideRight
-            Behavior on color { ColorAnimation { duration: 140 } }
+            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
         }
     }
 
+    // Перетаскивание в редакторе: меняем порядок, когда курсор уходит
+    // в другую ячейку сетки.
     MouseArea {
         id: dragArea
         anchors.fill: parent
@@ -155,27 +152,29 @@ Rectangle {
         }
     }
 
+    // «Минус» в правом верхнем углу — убрать плитку в доступные.
     Rectangle {
         id: removeButton
         visible: root.editable
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.rightMargin: -4
-        anchors.topMargin: -4
-        width: 28
-        height: 28
+        anchors.rightMargin: -6
+        anchors.topMargin: -6
+        width: 26
+        height: 26
         radius: width / 2
         color: removeHover.containsMouse ? Theme.error : Theme.errorContainer
         border.width: 2
-        border.color: Theme.quickBackground
+        border.color: Theme.surface
         z: 3
+        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
         Text {
             anchors.centerIn: parent
             text: "\uf068"
             color: removeHover.containsMouse ? Theme.scheme.onError : Theme.scheme.onErrorContainer
             font.family: Theme.iconFontFamily
-            font.pixelSize: 12
+            font.pixelSize: 10
         }
 
         MouseArea {

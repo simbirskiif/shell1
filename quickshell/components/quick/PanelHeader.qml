@@ -34,10 +34,11 @@ Item {
         anchors.left: parent.left
         anchors.leftMargin: 4
         anchors.verticalCenter: parent.verticalCenter
-        width: 44
-        height: 44
+        width: Theme.iconButtonSize
+        height: Theme.iconButtonSize
         radius: width / 2
-        color: backHover.containsMouse ? Theme.surfaceContainerHighest : "transparent"
+        color: backHover.containsMouse ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                                 : "transparent"
         Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
         Text {
@@ -45,7 +46,7 @@ Item {
             text: "\uf053"
             color: Theme.scheme.onSurface
             font.family: Theme.iconFontFamily
-            font.pixelSize: 22
+            font.pixelSize: Theme.iconSize.md
         }
 
         MouseArea {
@@ -73,7 +74,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             text: root.title
             color: Theme.scheme.onSurface
-            font: Theme.typeEmphasizedHeadlineSmall
+            font: Theme.typeTitleLarge
             elide: Text.ElideRight
         }
 
@@ -101,8 +102,8 @@ Item {
 
         Item {
             id: actionButton
-            width: root.actionIcon !== "" ? 44 : 0
-            height: 44
+            width: root.actionIcon !== "" ? Theme.iconButtonSize : 0
+            height: Theme.iconButtonSize
             visible: width > 0
 
             Rectangle {
@@ -134,8 +135,8 @@ Item {
 
         Item {
             id: refreshButton
-            width: root.refreshable ? 44 : 0
-            height: 44
+            width: root.refreshable ? Theme.iconButtonSize : 0
+            height: Theme.iconButtonSize
             visible: width > 0
 
             Rectangle {

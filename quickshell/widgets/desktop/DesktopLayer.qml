@@ -1,7 +1,4 @@
-pragma ComponentBehavior: Bound
-
 import QtQuick
-import "../../components/expressive"
 import "../../singletons"
 import Quickshell
 import Quickshell.Wayland
@@ -307,72 +304,43 @@ PanelWindow {
     }
 
     // Призрак drag-and-drop из каталога (раздел 8.5 ТЗ).
-    // Expressive: форма и цвет читают валидность (squircle/primary-контейнер
-    // против burst/error), а позиция и размер доезжают на пружине.
-    Item {
-        id: pickerGhost
-
+    Rectangle {
         visible: PickerState.active
         z: 56
         x: gridMetrics.originX + PickerState.col * (gridMetrics.cell + gridMetrics.gap)
         y: gridMetrics.originY + PickerState.row * (gridMetrics.cell + gridMetrics.gap)
         width: gridMetrics.pixelWidth(PickerState.cols)
         height: gridMetrics.pixelHeight(PickerState.rows)
+        // Призрак — M3 state layer: primary, если место подходит, error — если нет.
+        radius: Theme.shape.lg
+        color: PickerState.valid
+               ? Theme.stateLayer(Theme.primary, 0.14)
+               : Theme.stateLayer(Theme.error, 0.14)
+        border.width: 2
+        border.color: PickerState.valid ? Theme.primary : Theme.error
         enabled: false
-
-        Behavior on x { SpringSpatial {} }
-        Behavior on y { SpringSpatial {} }
-        Behavior on width { SpringSpatial {} }
-        Behavior on height { SpringSpatial {} }
-
-        MorphShape {
-            anchors.fill: parent
-            shape: "squircle"
-            modulation: 0.34
-            color: PickerState.valid
-                   ? Theme.withAlpha(Theme.primaryContainer, 0.55)
-                   : Theme.withAlpha(Theme.errorContainer, 0.6)
-            borderWidth: 2
-            borderColor: PickerState.valid ? Theme.primary : Theme.error
-            Behavior on color { ColorAnimation { duration: 140 } }
-        }
     }
 
     // Призрак будущего положения/размера (раздел 8.3 ТЗ).
-    Item {
-        id: dragGhost
-
+    Rectangle {
         visible: DragController.active
         z: 55
         x: gridMetrics.originX + DragController.col * (gridMetrics.cell + gridMetrics.gap)
         y: gridMetrics.originY + DragController.row * (gridMetrics.cell + gridMetrics.gap)
         width: gridMetrics.pixelWidth(DragController.cols)
         height: gridMetrics.pixelHeight(DragController.rows)
+        radius: Theme.shape.lg
+        color: DragController.valid
+               ? Theme.stateLayer(Theme.primary, 0.14)
+               : Theme.stateLayer(Theme.error, 0.14)
+        border.width: 2
+        border.color: DragController.valid ? Theme.primary : Theme.error
         enabled: false
-
-        // Сетка квантует позицию по клеткам, но призрак едет к ней пружиной —
-        // жест читается как «магнит», а не как прыжки по дискретам.
-        Behavior on x { SpringSpatial {} }
-        Behavior on y { SpringSpatial {} }
-        Behavior on width { SpringSpatial {} }
-        Behavior on height { SpringSpatial {} }
-
-        MorphShape {
-            anchors.fill: parent
-            shape: "squircle"
-            modulation: 0.34
-            color: DragController.valid
-                   ? Theme.withAlpha(Theme.primaryContainer, 0.55)
-                   : Theme.withAlpha(Theme.errorContainer, 0.6)
-            borderWidth: 2
-            borderColor: DragController.valid ? Theme.primary : Theme.error
-            Behavior on color { ColorAnimation { duration: 140 } }
-        }
     }
 
-    // Верхняя панель редактора (раздел 8.2 ТЗ) — Expressive: крупный FAB
-    // «добавить» и кнопки-пилюли 44. Формы морфятся на hover/press
-    // (cookie → squircle), движение — пружины, а не длительности.
+    // Верхняя панель редактора (раздел 8.2 ТЗ) — M3: круглое действие 40
+    // и кнопки-пилюли 40. Живут над обоями, поэтому подложка плотная:
+    // filled — для главного действия, tonal — для второстепенных.
     Row {
         anchors.top: parent.top
         anchors.right: parent.right
@@ -381,32 +349,46 @@ PanelWindow {
         z: 100
         visible: root.editing
 
-        ExpressiveFab {
-            icon: "+"
-            size: 48
-            tone: "primary"
-            shape: "cookie"
-            hoverShape: "squircle"
-            onClicked: EditorState.openPicker(root.screen.name)
+        Rectangle {
+            id: addButton
+
+            width: Theme.iconButtonSize
+            height: Theme.iconButtonSize
+            radius: Theme.shape.full
+            color: Theme.primary
+
+            Text {
+                anchors.centerIn: parent
+                text: "+"
+                color: Theme.scheme.onPrimary
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.iconSize.lg
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: Theme.stateLayer(Theme.scheme.onPrimary, Theme.stateHover)
+                visible: addButtonHover.containsMouse
+            }
+
+            MouseArea {
+                id: addButtonHover
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: EditorState.openPicker(root.screen.name)
+            }
         }
 
-        Item {
+        Rectangle {
             id: commitButton
 
             width: commitLabel.implicitWidth + Theme.space.xl * 2
-            height: 44
-            scale: commitHover.pressed ? 0.94 : (commitHover.containsMouse ? 1.04 : 1)
-            Behavior on scale { SpringSpatial {} }
-
-            MorphShape {
-                anchors.fill: parent
-                shape: commitHover.pressed ? "squircle" : "pill"
-                modulation: 0.4
-                color: commitHover.containsMouse
-                       ? Theme.mix(Theme.primary, Theme.scheme.onPrimary, Theme.stateHover)
-                       : Theme.primary
-                Behavior on color { ColorAnimation { duration: 140 } }
-            }
+            height: Theme.buttonHeight
+            radius: Theme.shape.full
+            color: Theme.primary
 
             Text {
                 id: commitLabel
@@ -414,13 +396,18 @@ PanelWindow {
                 anchors.centerIn: parent
                 text: "✓ Готово"
                 color: Theme.scheme.onPrimary
-                font: Theme.typeEmphasizedLabelLarge
-                scale: commitHover.pressed ? 0.96 : 1
-                Behavior on scale { SpringSpatialFast {} }
+                font: Theme.typeLabelLarge
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: Theme.stateLayer(Theme.scheme.onPrimary, Theme.stateHover)
+                visible: commitButtonHover.containsMouse
             }
 
             MouseArea {
-                id: commitHover
+                id: commitButtonHover
 
                 anchors.fill: parent
                 hoverEnabled: true
@@ -429,24 +416,13 @@ PanelWindow {
             }
         }
 
-        Item {
+        Rectangle {
             id: cancelButton
 
             width: cancelLabel.implicitWidth + Theme.space.xl * 2
-            height: 44
-            scale: cancelHover.pressed ? 0.94 : (cancelHover.containsMouse ? 1.04 : 1)
-            Behavior on scale { SpringSpatial {} }
-
-            MorphShape {
-                anchors.fill: parent
-                shape: cancelHover.pressed ? "squircle" : "pill"
-                modulation: 0.4
-                color: cancelHover.containsMouse
-                       ? Theme.mix(Theme.secondaryContainer, Theme.scheme.onSecondaryContainer,
-                                   Theme.stateHover)
-                       : Theme.secondaryContainer
-                Behavior on color { ColorAnimation { duration: 140 } }
-            }
+            height: Theme.buttonHeight
+            radius: Theme.shape.full
+            color: Theme.secondaryContainer
 
             Text {
                 id: cancelLabel
@@ -454,13 +430,19 @@ PanelWindow {
                 anchors.centerIn: parent
                 text: "✕ Отмена"
                 color: Theme.scheme.onSecondaryContainer
-                font: Theme.typeEmphasizedLabelLarge
-                scale: cancelHover.pressed ? 0.96 : 1
-                Behavior on scale { SpringSpatialFast {} }
+                font: Theme.typeLabelLarge
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: Theme.stateLayer(Theme.scheme.onSecondaryContainer,
+                                        Theme.stateHover)
+                visible: cancelButtonHover.containsMouse
             }
 
             MouseArea {
-                id: cancelHover
+                id: cancelButtonHover
 
                 anchors.fill: parent
                 hoverEnabled: true
@@ -472,9 +454,7 @@ PanelWindow {
 
     // Лоток «Не помещается». Перетаскивание из него появится вместе с пикером;
     // сейчас можно вернуть виджет в первое свободное место или удалить.
-    // Expressive: крупный squircle-контейнер surface-container-high; строки
-    // сгруппированы цветом и формой кнопок, без тонких разделителей.
-    Item {
+    Rectangle {
         id: trayPanel
 
         anchors.left: parent.left
@@ -482,16 +462,13 @@ PanelWindow {
         anchors.margins: Theme.space.md
         width: Math.min(280, parent.width - Theme.space.xl)
         height: Math.min(240, trayColumn.implicitHeight + Theme.space.lg)
+        // Лоток — обычная M3-поверхность над обоями; тени не используем.
+        radius: Theme.shape.xl
+        color: Theme.menuSurfaceSolid
+        border.width: 1
+        border.color: Theme.outlineVariant
         visible: root.editing && root.tray.length > 0
         z: 95
-
-        MorphShape {
-            anchors.fill: parent
-            shape: "squircle"
-            modulation: 0.3
-            color: Theme.menuSurfaceSolid
-            borderWidth: 0
-        }
 
         Column {
             id: trayColumn
@@ -502,7 +479,7 @@ PanelWindow {
 
             Text {
                 color: Theme.scheme.onSurface
-                font: Theme.typeEmphasizedTitleMedium
+                font: Theme.typeTitleSmall
                 text: "Не помещается (" + root.tray.length + ")"
             }
 

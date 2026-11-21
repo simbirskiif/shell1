@@ -1,118 +1,91 @@
 import QtQuick
 import ".."
-import "../expressive"
 import "../../singletons"
 
-// Слайдер Material 3 Expressive: волнистая дорожка и крупная толстая
-// ручка-пилюля. Волна не украшение: по ней видно, что значение живое,
-// а ручка «прыгает» на пружине и растягивается при нажатии.
+// Слайдер Material 3: тонкая дорожка 4dp, активная часть primary,
+// вертикальная ручка-«рукоятка» 4×24 с ореолом состояния при наведении.
+// Компонент «глупый» — значение приходит снаружи, наружу уходит сигнал moved.
 Item {
     id: root
 
     required property real value
-    // Акцент слайдера: громкость — primary, яркость — tertiary.
-    // Принимает и цвет, и имя роли ("primary"/"tertiary"/"secondary"),
-    // чтобы вызывающий код не зависел от типа.
-    property var accent: "primary"
-
-    readonly property color accentColor: {
-        if (typeof root.accent === "string") {
-            if (root.accent === "tertiary")
-                return Theme.tertiary;
-            if (root.accent === "secondary")
-                return Theme.secondary;
-            return Theme.primary;
-        }
-        return root.accent;
-    }
 
     signal moved(real v)
 
-    implicitHeight: 48
+    implicitHeight: 32
 
-    readonly property bool hovered: mouse.containsMouse
-    readonly property bool pressed: mouse.pressed
-    readonly property real trackWidth: width
-    readonly property real handleX: Math.max(0, Math.min(root.trackWidth, root.trackWidth * root.value))
-    readonly property real waveAmplitude: 3.2
-    readonly property real wavelength: 26
-    readonly property real trackThickness: 12
-    readonly property real handleWidth: root.pressed ? 18 : (root.hovered ? 15 : 12)
-    readonly property real handleHeight: root.pressed ? 40 : (root.hovered ? 38 : 34)
+    readonly property real trackHeight: 4
+    readonly property real handleHeight: mouse.containsMouse ? 28 : 24
+    readonly property real handleX: Math.max(0, Math.min(width, track.width * root.value))
 
-    onHandleXChanged: canvas.requestPaint()
-    onValueChanged: canvas.requestPaint()
-    onAccentColorChanged: canvas.requestPaint()
-    onWidthChanged: canvas.requestPaint()
+    // Неактивная дорожка: весь путь до конца.
+    Rectangle {
+        id: track
+        anchors.verticalCenter: parent.verticalCenter
+        width: parent.width
+        height: root.trackHeight
+        radius: height / 2
+        color: Theme.surfaceContainerHighest
+    }
 
-    Canvas {
-        id: canvas
-        anchors.fill: parent
-        antialiasing: true
-
-        onPaint: {
-            const ctx = getContext("2d");
-            ctx.clearRect(0, 0, width, height);
-            const mid = height / 2;
-            const amp = root.waveAmplitude;
-            const len = root.wavelength;
-            const x0 = 8;
-            const x1 = Math.max(x0 + 1, width - 8);
-
-            ctx.lineCap = "round";
-            ctx.lineJoin = "round";
-            ctx.lineWidth = root.trackThickness;
-
-            const wave = function (from, to, color) {
-                if (to <= from)
-                    return;
-                ctx.strokeStyle = color;
-                ctx.beginPath();
-                for (let x = from; x <= to; x += 3) {
-                    const y = mid + amp * Math.sin((x - x0) / len * Math.PI * 2);
-                    if (x === from)
-                        ctx.moveTo(x, y);
-                    else
-                        ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-            };
-
-            // Неактивная волна — тональная, активная — акцентная.
-            wave(x0, x1, Theme.surfaceContainerHighest);
-            wave(x0, root.handleX, root.accentColor);
-
-            // Отметка конца: маленькая точка-«стоп».
-            ctx.fillStyle = Theme.outline;
-            ctx.beginPath();
-            ctx.arc(x1, mid, 2.5, 0, Math.PI * 2);
-            ctx.fill();
+    // Активная часть — от начала до ручки.
+    Rectangle {
+        id: fill
+        anchors.verticalCenter: parent.verticalCenter
+        width: Math.max(root.trackHeight, root.handleX)
+        height: root.trackHeight
+        radius: height / 2
+        color: Theme.primary
+        Behavior on width {
+            MotionNumber {
+                duration: Theme.motionShort3
+                curve: Theme.curveStandard
+            }
         }
     }
 
-    // Ручка: толстая пилюля с точкой внутри; при нажатии тянется.
+    // Конечная отметка M3: маленькая точка у правого края дорожки.
     Rectangle {
-        id: handle
-
+        anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        width: root.handleWidth
-        height: root.handleHeight
+        width: 4
+        height: 4
+        radius: 2
+        color: Theme.outline
+    }
+
+    // Ореол состояния вокруг ручки (M3 state layer).
+    Rectangle {
+        width: 40
+        height: 40
         radius: width / 2
         x: root.handleX - width / 2
-        color: root.accentColor
-        border.width: 2
-        border.color: Theme.withAlpha(Theme.scheme.onPrimary, 0.55)
+        anchors.verticalCenter: parent.verticalCenter
+        color: Theme.stateLayer(Theme.primary, Theme.stateHover)
+        opacity: mouse.containsMouse ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+    }
 
-        Behavior on width { SpringSpatial {} }
-        Behavior on height { SpringSpatial {} }
-        Behavior on x { SpringSpatial {} }
-
-        Rectangle {
-            anchors.centerIn: parent
-            width: 4
-            height: 4
-            radius: 2
-            color: Theme.scheme.onPrimary
+    // Ручка: вертикальная пилюля, как в M3.
+    Rectangle {
+        id: knob
+        width: 4
+        height: root.handleHeight
+        radius: 2
+        anchors.verticalCenter: parent.verticalCenter
+        x: root.handleX - width / 2
+        color: Theme.primary
+        Behavior on height {
+            MotionNumber {
+                duration: Theme.motionShort3
+                curve: Theme.curveEmphasized
+            }
+        }
+        Behavior on x {
+            MotionNumber {
+                duration: Theme.motionShort3
+                curve: Theme.curveStandard
+            }
         }
     }
 
@@ -129,6 +102,6 @@ Item {
     }
 
     function apply(x) {
-        root.moved(Math.max(0, Math.min(1, (x - 8) / Math.max(1, root.trackWidth - 16))));
+        root.moved(Math.max(0, Math.min(1, x / width)));
     }
 }

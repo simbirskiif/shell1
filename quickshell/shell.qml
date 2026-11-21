@@ -16,8 +16,7 @@ import "components/lock"
 ShellRoot {
     id: shellRoot
 
-    // Variable-шрифт Material 3 Expressive: Roboto Flex (wght/wdth/opsz).
-    // Грузим из репозитория, чтобы не зависеть от системных шрифтов.
+    // Variable-шрифт зарезервирован для M3 Expressive (см. Theme.fontFamilyExpressive).
     FontLoader {
         id: robotoFlex
         source: "fonts/RobotoFlex.ttf"
@@ -1069,4 +1068,5 @@ ShellRoot {
         }
     }
 }
+
 

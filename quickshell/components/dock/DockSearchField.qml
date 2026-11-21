@@ -1,15 +1,11 @@
 import QtQuick
-import "../expressive"
 import "../../singletons"
 
 // Поле поиска в раскрытой панели. Своё, а не Controls.TextField: нужно
-// попасть в палитру и motion-токены оболочки.
-//
-// Expressive: контейнер — не прямоугольник, а морфящаяся форма: в покое
-// пилюля, в фокусе — «печенье» с толстой обводкой primary. Текст крупный
-// (titleMedium), поэтому поле читается как главный элемент панели, а не
-// как служебная строка. Кнопка очистки при наведении становится burst'ом.
-Item {
+// попасть в палитру и motion-токены оболочки. M3 filled text field:
+// контейнер surfaceContainerHighest, радиус shape.sm, текст bodyLarge,
+// иконка 20, обводка outline (при фокусе — primary толщиной 2).
+Rectangle {
     id: root
 
     property string placeholder: "Поиск приложений"
@@ -20,10 +16,13 @@ Item {
     signal moveHorizontal(int delta)
     signal submitted()
 
-    implicitHeight: 40
-
-    readonly property bool focused: input.activeFocus
-    readonly property bool hovered: hoverArea.containsMouse
+    implicitHeight: 36
+    radius: Theme.shape.sm
+    color: Theme.surfaceContainerHighest
+    border.width: input.activeFocus ? 2 : 1
+    border.color: input.activeFocus ? Theme.primary : Theme.outline
+    Behavior on border.color { ColorAnimation { duration: Theme.motionShort3 } }
+    Behavior on border.width { NumberAnimation { duration: Theme.motionShort3 } }
 
     function setText(value) {
         if (input.text !== value)
@@ -34,60 +33,40 @@ Item {
         input.forceActiveFocus();
     }
 
-    // Контейнер — пилюля shape.full: на такой широкой строке полярная
-    // форма MorphShape «заостряется» в линзу, поэтому крупную геометрию
-    // держит обычный stadium, а выразительность даёт cookie-орб иконки.
-    // Толстая обводка primary появляется только в фокусе.
-    Rectangle {
-        anchors.fill: parent
-        radius: height / 2
-        color: root.hovered && !root.focused ? Theme.surfaceContainerHigh
-                                             : Theme.surfaceContainerHighest
-        border.width: root.focused ? 3 : 0
-        border.color: Theme.primary
-        Behavior on color { ColorAnimation { duration: 140 } }
-        Behavior on border.width { SpringSpatialFast {} }
-    }
-
     // Фон кликается по всей площади, включая иконку; сам TextInput лежит
     // сверху и забирает клики по тексту.
     MouseArea {
-        id: hoverArea
         anchors.fill: parent
-        hoverEnabled: true
         onClicked: root.focusInput()
-    }
-
-    // Иконка поиска живёт в орбе: в покое — круг тональной поверхности,
-    // в фокусе — cookie tertiary-контейнера. Состояние поля читается
-    // формой, как у остальных expressive-элементов дока.
-    MorphShape {
-        id: searchOrb
-        anchors.left: parent.left
-        anchors.leftMargin: root.focused ? Theme.space.md : Theme.space.sm
-        anchors.verticalCenter: parent.verticalCenter
-        width: 28
-        height: 28
-        shape: root.focused ? "sunny" : "circle"
-        modulation: 0.75
-        color: root.focused ? Theme.tertiaryContainer : Theme.surfaceContainerHigh
-        Behavior on color { ColorAnimation { duration: 140 } }
     }
 
     Text {
         id: searchIcon
-        anchors.centerIn: searchOrb
+        anchors.left: parent.left
+        anchors.leftMargin: Theme.space.md
+        anchors.verticalCenter: parent.verticalCenter
         text: "\uf002"
-        color: root.focused ? Theme.scheme.onTertiaryContainer
-                            : Theme.scheme.onSurfaceVariant
+        color: input.activeFocus ? Theme.primary : Theme.scheme.onSurfaceVariant
         font.family: Theme.iconFontFamily
-        font.pixelSize: Theme.iconSize.sm + 2
-        Behavior on color { ColorAnimation { duration: 140 } }
+        font.pixelSize: Theme.iconSize.md
+        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+    }
+
+    Text {
+        id: placeholderText
+        anchors.left: input.left
+        anchors.right: input.right
+        anchors.verticalCenter: parent.verticalCenter
+        visible: input.text.length === 0
+        text: root.placeholder
+        color: Theme.scheme.onSurfaceVariant
+        font: Theme.typeBodyLarge
+        elide: Text.ElideRight
     }
 
     TextInput {
         id: input
-        anchors.left: searchOrb.right
+        anchors.left: searchIcon.right
         anchors.leftMargin: Theme.space.sm
         anchors.right: clearButton.left
         anchors.rightMargin: Theme.space.xs
@@ -97,7 +76,7 @@ Item {
         color: Theme.scheme.onSurface
         selectionColor: Theme.primary
         selectedTextColor: Theme.scheme.onPrimary
-        font: Theme.typeEmphasizedTitleMedium
+        font: Theme.typeBodyLarge
         selectByMouse: true
         clip: true
         focus: DockState.keyboardActive && !DockState.settingsOpen
@@ -106,24 +85,24 @@ Item {
         onAccepted: root.submitted()
 
         // Поле не двигает каретку стрелками: они листают список.
-        Keys.onUpPressed: function (event) {
+        Keys.onUpPressed: {
             root.navigate(-1);
             event.accepted = true;
         }
-        Keys.onDownPressed: function (event) {
+        Keys.onDownPressed: {
             root.navigate(1);
             event.accepted = true;
         }
 
         // В плиточном виде ←/→ листают иконки, а не каретку поля.
         // В списке они остаются обычным перемещением по тексту.
-        Keys.onLeftPressed: function (event) {
+        Keys.onLeftPressed: {
             if (!DockSettings.tileLayout)
                 return;
             root.moveHorizontal(-1);
             event.accepted = true;
         }
-        Keys.onRightPressed: function (event) {
+        Keys.onRightPressed: {
             if (!DockSettings.tileLayout)
                 return;
             root.moveHorizontal(1);
@@ -131,44 +110,30 @@ Item {
         }
     }
 
-    Text {
-        anchors.left: input.left
-        anchors.right: input.right
-        anchors.verticalCenter: parent.verticalCenter
-        visible: input.text.length === 0
-        text: root.placeholder
-        color: Theme.scheme.onSurfaceVariant
-        font: Theme.typeTitleMedium
-        elide: Text.ElideRight
-    }
-
     Item {
         id: clearButton
         anchors.right: parent.right
-        anchors.rightMargin: Theme.space.sm
+        anchors.rightMargin: Theme.space.xs
         anchors.verticalCenter: parent.verticalCenter
         width: Theme.space.xxl
         height: Theme.space.xxl
         visible: input.text.length > 0
 
-        // Кнопка очистки: круг в покое, «взрыв» при наведении —
-        // мелкая, но выразительная деформация формы.
-        MorphShape {
+        // Круглая цель M3: в покое прозрачна, наведение — state layer.
+        Rectangle {
             anchors.fill: parent
-            shape: clearHover.containsMouse ? "burst" : "circle"
-            modulation: clearHover.containsMouse ? 0.5 : 0.9
-            color: clearHover.containsMouse ? Theme.tertiaryContainer : "transparent"
-            Behavior on color { ColorAnimation { duration: 140 } }
+            radius: Theme.shape.full
+            color: Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+            opacity: clearHover.containsMouse ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
         }
 
         Text {
             anchors.centerIn: parent
             text: "\uf00d"
-            color: clearHover.containsMouse ? Theme.scheme.onTertiaryContainer
-                                            : Theme.scheme.onSurfaceVariant
+            color: Theme.scheme.onSurfaceVariant
             font.family: Theme.iconFontFamily
-            font.pixelSize: Theme.iconSize.md
-            Behavior on color { ColorAnimation { duration: 140 } }
+            font.pixelSize: Theme.iconSize.sm
         }
 
         MouseArea {

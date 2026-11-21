@@ -1,14 +1,9 @@
 import QtQuick
 import ".."
-import "../expressive"
 import "../../singletons"
 
 // Строка экрана в панели яркости: имя, модель и слайдер. Если управлять
 // яркостью нельзя, вместо слайдера показывается причина.
-//
-// Expressive: у управляемого экрана — орб-sunny на tertiary-контейнере,
-// крупный процент и толстый слайдер с tertiary-акцентом (яркость — второй
-// акцент панели).
 Item {
     id: root
 
@@ -22,57 +17,35 @@ Item {
 
     implicitWidth: parent ? parent.width : 0
     // Неуправляемый экран ниже: слайдера в нём нет, лишняя высота не нужна.
-    implicitHeight: root.controllable ? 96 : 68
+    implicitHeight: root.controllable ? Theme.listItemHeight + Theme.space.lg
+                                      : Theme.listItemHeight
     height: implicitHeight
 
-    // Тональный контейнер-группа: строка держится формой и цветом,
-    // а не разделителем.
-    MorphShape {
-        anchors.fill: parent
-        anchors.topMargin: Theme.space.xs / 2
-        anchors.bottomMargin: Theme.space.xs / 2
-        shape: "squircle"
-        color: Theme.surfaceContainerHigh
-        modulation: 0.35
-    }
-
-    // Орб-солнце: у управляемого экрана — tertiary-контейнер, иначе тональная
-    // поверхность. Форма «sunny» читается как источник яркости.
-    MorphShape {
-        id: iconOrb
+    Text {
+        id: icon
         anchors.left: parent.left
-        anchors.leftMargin: Theme.space.md
-        anchors.verticalCenter: parent.verticalCenter
-        width: 44
-        height: 44
-        shape: root.controllable ? "sunny" : "circle"
-        color: root.controllable ? Theme.tertiaryContainer : Theme.surfaceContainerHighest
-        modulation: 1
-
-        Behavior on color { ColorAnimation { duration: 140 } }
-
-        Text {
-            anchors.centerIn: parent
-            text: "\uf185"
-            color: root.controllable ? Theme.scheme.onTertiaryContainer
-                                     : Theme.scheme.onSurfaceVariant
-            font.family: Theme.iconFontFamily
-            font.pixelSize: 22
-        }
+        anchors.leftMargin: Theme.space.lg
+        anchors.verticalCenter: title.verticalCenter
+        text: "\uf185"
+        color: root.controllable ? Theme.scheme.onSurface
+                                 : Theme.scheme.onSurfaceVariant
+        font.family: Theme.iconFontFamily
+        font.pixelSize: Theme.iconSize.md
     }
 
     Text {
         id: title
-        anchors.left: iconOrb.right
+        anchors.left: icon.right
         anchors.leftMargin: Theme.space.md
         anchors.right: percent.left
         anchors.rightMargin: Theme.space.md
         anchors.top: parent.top
-        anchors.topMargin: Theme.space.sm + 2
+        anchors.topMargin: Theme.space.sm
         elide: Text.ElideRight
         text: root.label
-        color: root.controllable ? Theme.scheme.onSurface : Theme.scheme.onSurfaceVariant
-        font: root.controllable ? Theme.typeEmphasizedLabelLarge : Theme.typeLabelLarge
+        color: root.controllable ? Theme.scheme.onSurface
+                                 : Theme.scheme.onSurfaceVariant
+        font: Theme.typeBodyLarge
     }
 
     Text {
@@ -84,8 +57,8 @@ Item {
         width: Theme.space.xxxl
         horizontalAlignment: Text.AlignRight
         text: root.controllable ? Math.round(root.value * 100) + "%" : ""
-        color: root.controllable ? Theme.tertiary : Theme.scheme.onSurfaceVariant
-        font: Theme.typeEmphasizedTitleMedium
+        color: Theme.scheme.onSurfaceVariant
+        font: Theme.typeBodyMedium
     }
 
     Text {
@@ -109,9 +82,8 @@ Item {
         anchors.rightMargin: Theme.space.lg
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Theme.space.xs
-        height: 24
+        height: Theme.iconSize.md
         visible: root.controllable
-        accent: Theme.tertiary
         value: root.value
         onMoved: v => root.moved(v)
     }

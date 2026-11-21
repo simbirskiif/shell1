@@ -1,15 +1,10 @@
 import QtQuick
 import ".."
-import "../expressive"
 import "../../singletons"
 
 // Панель питания: заряд батареи, состояние и время, выбор режима питания.
 // Данные и действия — в PowerService (UPower и power-profiles-daemon).
 // Если демон режимов недоступен, вместо сегментов показывается плашка.
-//
-// Expressive: процент — крупная цифра typeEmphasizedDisplaySmall в цветном
-// контейнере, режимы — деформирующиеся пилюли, заголовки секций —
-// typeEmphasizedTitleMedium, разделителей нет.
 Item {
     id: root
 
@@ -22,27 +17,6 @@ Item {
         || PowerService.powerText !== ""
         || PowerService.healthText !== ""
         || PowerService.model !== ""
-
-    // Режим питания: индексы и веса сегментов. Нажатый сегмент шире, активный
-    // заметно шире остальных — группа «дышит» под пальцем (Expressive).
-    property int pressedIndex: -1
-
-    function segmentWeight(index) {
-        const profile = PowerService.profiles[index];
-        if (!profile)
-            return 1.0;
-        const selected = PowerService.profile === profile.value;
-        if (index === root.pressedIndex)
-            return selected ? 1.6 : 1.18;
-        return selected ? 1.35 : 0.9;
-    }
-
-    readonly property real totalWeight: {
-        let total = 0;
-        for (let i = 0; i < PowerService.profiles.length; ++i)
-            total += root.segmentWeight(i);
-        return total > 0 ? total : 1;
-    }
 
     implicitWidth: Theme.quickWidth
     implicitHeight: column.implicitHeight
@@ -61,92 +35,66 @@ Item {
             onBackRequested: root.backRequested()
         }
 
-        // Заряд: «батарейка» с уровнем и крупный процент в цветном
-        // контейнере — главный акцент панели.
-        Item {
+        // Разделитель шапки m3 — outline-variant.
+        Rectangle {
             width: parent.width
-            height: 204
-
-            MorphShape {
-                anchors.fill: parent
-                anchors.topMargin: Theme.space.xs
-                anchors.bottomMargin: Theme.space.xs
-                shape: "squircle"
-                color: Theme.surfaceContainerHigh
-                modulation: 0.45
-            }
-
-            Column {
-                anchors.centerIn: parent
-                spacing: Theme.space.xs + 2
-
-                // Большая батарейка — тот же дизайн, что и в баре.
-                BatteryIndicator {
-                    id: batteryArt
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    level: PowerService.level
-                    charging: PowerService.charging
-                    bodyWidth: 170
-                    bodyHeight: 62
-                    bodyRadius: 20
-                    nubWidth: 8
-                }
-
-                // Процент: крупная цифра в «печеньке» primary/tertiary-контейнера.
-                MorphShape {
-                    id: percentChip
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: 184
-                    height: 88
-                    shape: PowerService.charging ? "cookie" : "pill"
-                    color: !PowerService.present ? Theme.surfaceContainerHighest
-                         : PowerService.charging ? Theme.tertiaryContainer
-                         : Theme.primaryContainer
-                    modulation: PowerService.charging ? 0.8 : 0.45
-
-                    Behavior on color { ColorAnimation { duration: 140 } }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: PowerService.present ? PowerService.level + "%" : "—"
-                        color: !PowerService.present ? Theme.scheme.onSurfaceVariant
-                             : PowerService.charging ? Theme.scheme.onTertiaryContainer
-                             : Theme.scheme.onPrimaryContainer
-                        font: Theme.typeEmphasizedDisplaySmall
-                        Behavior on color { ColorAnimation { duration: 140 } }
-                    }
-                }
-
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: {
-                        if (!PowerService.present)
-                            return "No battery detected";
-                        if (PowerService.timeText === "")
-                            return PowerService.stateText;
-                        return PowerService.stateText + " · " + PowerService.timeText;
-                    }
-                    color: Theme.scheme.onSurfaceVariant
-                    font: Theme.typeBodyMedium
-                }
-            }
+            height: 1
+            color: Theme.outlineVariant
         }
 
-        // --- Power mode ---------------------------------------------------
+        // Заряд: «батарейка» с уровнем, процент, состояние и время.
         Item {
             width: parent.width
-            height: 44
+            height: 150
+
+            // Большая батарейка — тот же дизайн, что и в баре.
+            BatteryIndicator {
+                id: batteryArt
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                anchors.topMargin: Theme.space.xl
+                level: PowerService.level
+                charging: PowerService.charging
+                bodyWidth: 150
+                bodyHeight: 58
+                bodyRadius: 18
+                nubWidth: 7
+            }
 
             Text {
-                anchors.left: parent.left
-                anchors.leftMargin: Theme.space.xs
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Theme.space.xs
-                text: "Power mode"
-                color: Theme.primary
-                font: Theme.typeEmphasizedTitleMedium
+                id: percentText
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: batteryArt.bottom
+                anchors.topMargin: Theme.space.md
+                text: PowerService.present ? PowerService.level + "%" : "—"
+                color: PowerService.present ? Theme.scheme.onSurface
+                                            : Theme.scheme.onSurfaceVariant
+                font: Theme.typeHeadlineSmall
+            }
+
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: percentText.bottom
+                anchors.topMargin: Theme.space.xs
+                text: {
+                    if (!PowerService.present)
+                        return "No battery detected";
+                    if (PowerService.timeText === "")
+                        return PowerService.stateText;
+                    return PowerService.stateText + " · " + PowerService.timeText;
+                }
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeBodyMedium
             }
         }
+
+        Rectangle {
+            width: parent.width
+            height: 1
+            color: Theme.outlineVariant
+        }
+
+        PanelSection { text: "Power mode" }
 
         // power-profiles-daemon не отвечает: выбор режима невозможен, вместо
         // него — плашка с причиной и кнопкой повторной проверки.
@@ -164,79 +112,52 @@ Item {
             onActionRequested: PowerService.probeProfiles()
         }
 
-        // Режим питания: три Expressive-пилюли — активная шире и залита
-        // tertiary-container, при нажатии группа деформируется. Performance
-        // без поддержки железом неактивен.
+        // Режим питания: три сегмента m3 segmented button — выбранный залит
+        // secondary-container, Performance без поддержки железом неактивен.
         Item {
             width: parent.width
-            height: PowerService.profilesAvailable ? 64 : 0
+            height: PowerService.profilesAvailable ? Theme.listItemHeight : 0
             visible: height > 0
 
+            readonly property real segmentWidth: (width - Theme.space.lg * 2
+                                                 - Theme.space.sm * 2) / 3
+
             Row {
-                id: segmentRow
                 anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: Theme.space.md
-                anchors.rightMargin: Theme.space.md
+                anchors.leftMargin: Theme.space.lg
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.space.xs + 2
+                spacing: Theme.space.sm
 
                 Repeater {
                     model: PowerService.profiles
 
-                    delegate: Item {
+                    delegate: Rectangle {
                         required property var modelData
-                        required property int index
 
                         readonly property bool available: PowerService.isProfileAvailable(modelData.value)
                         readonly property bool selected: PowerService.profile === modelData.value
-                        readonly property bool pressed: root.pressedIndex === index
-                        readonly property bool hovered: segmentHover.containsMouse
 
-                        width: (segmentRow.width - segmentRow.spacing * 2)
-                               * root.segmentWeight(index) / root.totalWeight
-                        height: 54
+                        width: parent.parent.segmentWidth
+                        height: Theme.buttonHeight
+                        radius: Theme.shape.full
+                        color: selected ? Theme.secondaryContainer : Theme.surfaceContainerHigh
                         opacity: available ? 1 : Theme.disabledContent
-
-                        Behavior on width { SpringSpatial {} }
-                        Behavior on opacity { SpringEffects {} }
-
-                        MorphShape {
-                            anchors.fill: parent
-                            anchors.topMargin: 1
-                            anchors.bottomMargin: 1
-                            shape: selected ? "pill" : pressed ? "squircle" : "pill"
-                            modulation: selected ? 0.4 : 0.3
-                            color: selected ? Theme.tertiaryContainer
-                                 : hovered ? Theme.surfaceContainerHighest
-                                 : Theme.surfaceContainerHigh
-
-                            Behavior on color { ColorAnimation { duration: 140 } }
-                        }
+                        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+                        Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
 
                         Text {
                             anchors.centerIn: parent
-                            width: parent.width - Theme.space.sm
-                            horizontalAlignment: Text.AlignHCenter
-                            elide: Text.ElideRight
                             text: modelData.label
-                            color: selected ? Theme.scheme.onTertiaryContainer
+                            color: selected ? Theme.scheme.onSecondaryContainer
                                             : Theme.scheme.onSurface
-                            font: selected ? Theme.typeEmphasizedLabelLarge : Theme.typeLabelLarge
-                            scale: pressed ? 0.96 : 1
-                            Behavior on scale { SpringSpatialFast {} }
-                            Behavior on color { ColorAnimation { duration: 140 } }
+                            font: Theme.typeLabelLarge
+                            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
                         }
 
                         MouseArea {
-                            id: segmentHover
                             anchors.fill: parent
-                            hoverEnabled: true
-                            enabled: available
+                            enabled: parent.available
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onPressed: root.pressedIndex = index
-                            onReleased: root.pressedIndex = -1
-                            onCanceled: root.pressedIndex = -1
                             onClicked: PowerService.setProfile(modelData.value)
                         }
                     }
@@ -251,7 +172,7 @@ Item {
             width: parent.width
             readonly property bool shown: PowerService.profilesAvailable && noteText.text !== ""
             visible: shown
-            height: shown ? noteText.implicitHeight + Theme.space.sm : 0
+            height: shown ? noteText.implicitHeight : 0
 
             Text {
                 id: noteText
@@ -270,11 +191,16 @@ Item {
                     return parts.join(" · ");
                 }
                 color: Theme.scheme.onSurfaceVariant
-                font: Theme.typeBodyMedium
+                font: Theme.typeBodySmall
             }
         }
 
-        // --- Details ------------------------------------------------------
+        Rectangle {
+            width: parent.width
+            height: 1
+            color: Theme.outlineVariant
+        }
+
         // Подробности прячем целиком, если данных нет (нет батареи): пустой
         // заголовок секции выглядел бы недоделкой.
         Column {
@@ -283,22 +209,8 @@ Item {
             visible: shown
             height: shown ? implicitHeight : 0
             spacing: 0
-            topPadding: Theme.space.xs
 
-            Item {
-                width: parent.width
-                height: 44
-
-                Text {
-                    anchors.left: parent.left
-                    anchors.leftMargin: Theme.space.xs
-                    anchors.bottom: parent.bottom
-                    anchors.bottomMargin: Theme.space.xs
-                    text: "Details"
-                    color: Theme.primary
-                    font: Theme.typeEmphasizedTitleMedium
-                }
-            }
+            PanelSection { text: "Details" }
 
             // Строки с пустым значением скрываются сами.
             PanelInfoRow { label: "Source"; value: PowerService.sourceText }

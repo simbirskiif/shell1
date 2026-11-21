@@ -1,6 +1,5 @@
 import QtQuick
 import ".."
-import "../expressive"
 import "../../singletons"
 
 // Содержимое попапа. Один список дескрипторов создаёт и плитки, и дочерние
@@ -124,6 +123,15 @@ Item {
         UiState.moveTile(from, to);
     }
 
+    readonly property Item activeDetail: {
+        for (let i = 0; i < detailViews.count; ++i) {
+            const view = detailViews.itemAt(i);
+            if (view && view.active)
+                return view;
+        }
+        return null;
+    }
+
     implicitWidth: Theme.quickWidth
 
     // Высоты обоих участников жеста: сетки и открытой дочерней панели.
@@ -235,29 +243,30 @@ Item {
             anchors.top: parent.top
             spacing: Theme.quickTileSpacing
 
-            // Шапка: спокойная кнопка настроек, заголовок, нейтральный
-            // чип батареи. Никаких крупных FAB и цветных контейнеров —
-            // Expressive остаётся в движении и типографике.
+            // Шапка в духе M3 top app bar: настройки слева, заголовок,
+            // батарея справа.
             Item {
                 width: parent.width
-                height: 52
+                height: Theme.appBarHeight
 
                 Rectangle {
                     id: settingsButton
                     anchors.left: parent.left
+                    anchors.leftMargin: 0
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 40
-                    height: 40
+                    width: Theme.iconButtonSize
+                    height: Theme.iconButtonSize
                     radius: width / 2
-                    color: settingsHover.containsMouse ? Theme.surfaceContainerHighest
-                                                       : Theme.surfaceContainerHigh
+                    color: settingsHover.containsMouse ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                                                 : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
                     Text {
                         anchors.centerIn: parent
                         text: "\uf013"
                         color: Theme.scheme.onSurface
                         font.family: Theme.iconFontFamily
-                        font.pixelSize: 18
+                        font.pixelSize: Theme.iconSize.md
                     }
 
                     MouseArea {
@@ -271,52 +280,25 @@ Item {
 
                 Text {
                     anchors.left: settingsButton.right
-                    anchors.leftMargin: Theme.space.md
-                    anchors.right: batteryChip.left
+                    anchors.leftMargin: Theme.space.sm
+                    anchors.right: battery.right
                     anchors.rightMargin: Theme.space.sm
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Быстрые настройки"
                     color: Theme.scheme.onSurface
-                    font: Theme.typeEmphasizedTitleLarge
+                    font: Theme.typeTitleMedium
                     elide: Text.ElideRight
                 }
 
-                Rectangle {
-                    id: batteryChip
+                BatteryButton {
+                    id: battery
                     anchors.right: parent.right
+                    anchors.rightMargin: 0
                     anchors.verticalCenter: parent.verticalCenter
                     visible: PowerService.present
-                    width: batteryRow.width + Theme.space.lg
-                    height: 38
-                    radius: height / 2
-                    color: Theme.surfaceContainerHigh
-                    border.width: 1
-                    border.color: Theme.outlineVariant
-
-                    Row {
-                        id: batteryRow
-                        anchors.centerIn: parent
-                        spacing: 6
-
-                        BatteryIndicator {
-                            anchors.verticalCenter: parent.verticalCenter
-                            level: PowerService.level
-                            charging: PowerService.charging
-                        }
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: PowerService.level + "%"
-                            color: Theme.scheme.onSurface
-                            font: Theme.typeLabelLarge
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: batteryEntry.open()
-                    }
+                    level: PowerService.level
+                    charging: PowerService.charging
+                    onClicked: batteryEntry.open()
                 }
             }
 
@@ -373,7 +355,7 @@ Item {
             // текcтовая «отмена» и залитая «сохранить» — все формы-пилюли.
             Item {
                 width: parent.width
-                height: 56
+                height: Theme.touchTarget
 
                 // m3 tonal button: secondary-container + on-secondary-container,
                 // hover — state layer поверх заливки.
@@ -383,11 +365,9 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: !root.editing
                     width: editRow.implicitWidth + Theme.space.xl * 2
-                    height: 48
+                    height: Theme.buttonHeight
                     radius: Theme.shape.full
                     color: Theme.secondaryContainer
-                    scale: editHover.pressed ? 0.93 : (editHover.containsMouse ? 1.04 : 1)
-                    Behavior on scale { SpringSpatial {} }
 
                     Rectangle {
                         anchors.fill: parent
@@ -415,7 +395,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Изменить"
                             color: Theme.scheme.onSecondaryContainer
-                            font: Theme.typeEmphasizedLabelLarge
+                            font: Theme.typeLabelLarge
                         }
                     }
 
@@ -643,9 +623,7 @@ Item {
         readonly property string icon: "\uf0ac"
         // С проводом — глобус, без провода — состояние Wi-Fi делениями.
         readonly property bool wifiTile: !NetworkService.internetViaEthernet
-        // Плитка «включена» только при реальном подключении: сама по себе
-        // включённая радиомодуляция ещё не интернет, и плитка не должна
-        // гореть постоянно.
+        // Активна только при реальном подключении, а не при включённом радио.
         readonly property bool active: NetworkService.wifiConnected || NetworkService.internetViaEthernet
         readonly property string subtitle: NetworkService.internetSummary
         readonly property Component view: Component { PanelInternet {} }

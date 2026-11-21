@@ -1,6 +1,5 @@
 import QtQuick
 import ".."
-import "../expressive"
 import "../../singletons"
 
 // Единая обёртка вида (основная сетка плиток и дочерние панели).
@@ -145,12 +144,15 @@ Item {
         curve: Theme.curveEmphasizedAccelerate
     }
 
-    // Уходящий гаснет быстро — effects-пружина без перелёта.
-    SpringEffects {
+    // Уходящий гаснет быстро (m3: exit — первая часть перехода).
+    NumberAnimation {
         id: fadeOut
         target: root
         property: "fade"
         to: 0
+        duration: 120
+        easing.type: Easing.Bezier
+        easing.bezierCurve: Theme.curveStandardAccelerate
     }
 
     // Приходящий проявляется с задержкой 100 мс и доезжает к концу
@@ -159,11 +161,14 @@ Item {
     SequentialAnimation {
         id: fadeIn
 
-        PauseAnimation { duration: 80 }
-        SpringEffects {
+        PauseAnimation { duration: 100 }
+        NumberAnimation {
             target: root
             property: "fade"
             to: 1
+            duration: Theme.motionMedium2 - 100
+            easing.type: Easing.Bezier
+            easing.bezierCurve: Theme.curveEmphasizedDecelerate
         }
     }
 

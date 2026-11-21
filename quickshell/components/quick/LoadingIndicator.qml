@@ -2,69 +2,71 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Загрузка в Material 3 Expressive: не вращающаяся дуга, а живая
-// морфящаяся клякса. Две волны разной частоты непрерывно перетекают,
-// вторая клякса другого акцента дышит в противофазе.
+// Индикатор загрузки в духе m3 circular progress: дуга вращается и
+// попеременно растягивается/сжимается.
 Item {
     id: root
 
-    implicitWidth: Theme.iconSize.lg
-    implicitHeight: Theme.iconSize.lg
+    implicitWidth: Theme.iconSize.md
+    implicitHeight: Theme.iconSize.md
 
-    // Оставлено для совместимости со старым API индикатора.
     property real sweep: 90
-    property color accent: Theme.primary
-
-    property real phase: 0
-
-    Timer {
-        interval: 16
-        repeat: true
-        running: root.visible
-        onTriggered: root.phase += 0.055
-    }
-
-    onPhaseChanged: canvas.requestPaint()
-    onAccentChanged: canvas.requestPaint()
 
     Canvas {
         id: canvas
         anchors.fill: parent
         antialiasing: true
-
         onPaint: {
             const ctx = getContext("2d");
-            ctx.clearRect(0, 0, width, height);
-            const cx = width / 2;
-            const cy = height / 2;
-            const base = Math.min(width, height) / 2 - 1.5;
+            ctx.reset();
+            // Дуга индикатора — primary, как у m3 circular progress.
+            ctx.strokeStyle = Theme.primary;
+            ctx.lineWidth = 3;
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            const radius = Math.min(width, height) / 2 - 2;
+            ctx.arc(width / 2, height / 2, radius, 0, root.sweep * Math.PI / 180);
+            ctx.stroke();
+        }
 
-            const blob = function (radius, phase, color, wobble) {
-                const n = 48;
-                ctx.beginPath();
-                for (let i = 0; i <= n; ++i) {
-                    const a = i / n * Math.PI * 2;
-                    const r = radius * (1
-                        + 0.16 * Math.sin(3 * a + phase)
-                        + 0.09 * Math.sin(5 * a - phase * 1.4)
-                        + wobble * 0.05 * Math.sin(7 * a + phase * 2));
-                    const x = cx + Math.cos(a) * r;
-                    const y = cy + Math.sin(a) * r;
-                    if (i === 0)
-                        ctx.moveTo(x, y);
-                    else
-                        ctx.lineTo(x, y);
-                }
-                ctx.closePath();
-                ctx.fillStyle = color;
-                ctx.fill();
-            };
+        Connections {
+            target: root
 
-            // Вторая клякса — терракотовый акцент, чуть меньше и сбоку.
-            blob(base * 0.72, root.phase * 1.35 + 1.7,
-                 Theme.withAlpha(Theme.tertiary, 0.85), 0.6);
-            // Основная — акцентная, крупнее.
-            blob(base * 0.9, root.phase, root.accent, 1.0);
+            function onSweepChanged() {
+                canvas.requestPaint();
+            }
+        }
+
+        Connections {
+            target: Theme
+
+            // Индикатор перерисовывается при смене акцентной роли схемы.
+            function onPrimaryChanged() {
+                canvas.requestPaint();
+            }
+        }
+    }
+
+    NumberAnimation on rotation {
+        from: 0
+        to: 360
+        duration: 1300
+        loops: Animation.Infinite
+        running: true
+    }
+
+    SequentialAnimation on sweep {
+        loops: Animation.Infinite
+        running: true
+        MotionNumber {
+            to: 280
+            duration: 650
+            curve: Theme.curveEmphasized
+        }
+        MotionNumber {
+            to: 90
+            duration: 650
+            curve: Theme.curveEmphasized
         }
     }
 }

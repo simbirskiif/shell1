@@ -1,40 +1,28 @@
 import QtQuick
 import ".."
-import "../expressive"
 import "../../singletons"
 
-// Батарея в баре: тональный чип с процентом emphasized-стилем.
-// Наведение мягко поднимает чип, нажатие — сжимает.
+// Батарея для шапки панели и для бара: индикатор, процент и молния
+// при зарядке. Нажатие открывает панель питания.
 Item {
     id: root
 
     required property int level
     required property bool charging
+
+    // В баре процент можно отключить в настройках — иконка остаётся.
     property bool showPercent: true
 
     signal clicked()
 
-    implicitWidth: content.implicitWidth + 22
-    implicitHeight: 34
-
-    readonly property bool hovered: mouse.containsMouse
-
-    scale: mouse.pressed ? 0.94 : (root.hovered ? 1.04 : 1)
-    Behavior on scale { SpringSpatialFast {} }
-
-    Rectangle {
-        anchors.fill: parent
-        radius: height / 2
-        color: root.hovered ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
-        border.width: 1
-        border.color: Theme.outlineVariant
-        Behavior on color { ColorAnimation { duration: 140 } }
-    }
+    // M3: кнопка-пилюля, как соседние действия в баре.
+    implicitWidth: content.implicitWidth + 20
+    implicitHeight: Theme.iconButtonSize
 
     Row {
         id: content
         anchors.centerIn: parent
-        spacing: 7
+        spacing: 8
 
         BatteryIndicator {
             anchors.verticalCenter: parent.verticalCenter
@@ -44,15 +32,26 @@ Item {
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
+            // оптическое выравнивание: строка шрифта выше центра иконки
+            anchors.verticalCenterOffset: 1
             visible: root.showPercent
             text: root.level + "%"
-            color: Theme.scheme.onSurface
-            font: Theme.typeEmphasizedLabelLarge
+            color: Theme.quickText
+            font: Theme.typeLabelLarge
         }
+
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        radius: height / 2
+        color: hover.containsMouse ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                             : "transparent"
+        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
     }
 
     MouseArea {
-        id: mouse
+        id: hover
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor

@@ -1,14 +1,10 @@
 import QtQuick
 import ".."
-import "../expressive"
 import "../../singletons"
 
 // Панель яркости: по строке на каждый экран композитора. Управляемые экраны
 // получают слайдер, остальные — объяснение, почему яркость недоступна
 // (нет backlight, не установлен ddcutil, монитор не умеет DDC/CI).
-//
-// Expressive: строки — крупные блоки с орбом-sunny и волнистым слайдером
-// tertiary-акцента; разделителей нет, группы разделяет воздух.
 Item {
     id: root
 
@@ -31,6 +27,13 @@ Item {
             onBackRequested: root.backRequested()
         }
 
+        // Разделитель шапки m3 — outline-variant.
+        Rectangle {
+            width: parent.width
+            height: 1
+            color: Theme.outlineVariant
+        }
+
         PanelDisabled {
             width: parent.width
             readonly property bool shown: BrightnessService.targets.length === 0
@@ -46,8 +49,7 @@ Item {
         Column {
             id: content
             width: parent.width
-            spacing: Theme.space.xs
-            topPadding: Theme.space.xs
+            spacing: 0
             readonly property bool shown: BrightnessService.targets.length > 0
             visible: shown
             height: shown ? implicitHeight : 0

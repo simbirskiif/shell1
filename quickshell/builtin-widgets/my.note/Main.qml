@@ -26,9 +26,7 @@ Item {
                ? root.ctx.colors.onPrimaryContainer
                : root.ctx.colors.onSurfaceVariant
         font.family: root.ctx.fontFamily
-        font.pixelSize: Math.max(12, Math.round(root.ctx.dp * 14))
-        font.weight: 460
-        font.letterSpacing: 0.2
+        font.pixelSize: Math.max(11, Math.round(root.ctx.dp * 13))
         wrapMode: Text.WordWrap
         elide: Text.ElideRight
         text: root.ctx.settings.text

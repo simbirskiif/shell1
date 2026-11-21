@@ -1,17 +1,13 @@
-pragma ComponentBehavior: Bound
-
 import QtQuick
-import "../../components/expressive"
 import "../../singletons"
 
 // Отладочная отрисовка сетки (этап 1).
 // Не принимает ввод: мышь и касания должны проходить сквозь слой,
 // поэтому здесь нет ни одного MouseArea. Маска ввода задаётся в DesktopLayer.
 //
-// Оформление — Expressive: сетка остаётся тонкой (outline-variant с малой
-// альфой, чтобы не спорить с виджетами), а плашка параметров — заметный
-// tertiary-контейнер-пилюля с emphasised-типографикой, как «ярлык» поверх
-// рабочего стола, а не системный чёрный ящик.
+// Оформление — по M3: сетка рисуется outline-variant с малой альфой, без
+// ярких цветов, а плашка параметров — обычная tonal surface, а не «чёрный
+// ящик» с ручными hex-цветами.
 Item {
     id: root
 
@@ -31,9 +27,9 @@ Item {
         y: root.gridY
         width: root.gridW
         height: root.gridH
-        color: Theme.withAlpha(Theme.scrim, 0.26)
+        color: Theme.withAlpha(Theme.scrim, 0.28)
         border.width: 1
-        border.color: Theme.withAlpha(Theme.outlineVariant, 0.45)
+        border.color: Theme.withAlpha(Theme.outlineVariant, 0.55)
     }
 
     // Вертикальные линии по границам клеток.
@@ -47,8 +43,8 @@ Item {
             y: root.gridY
             width: 1
             height: root.gridH
-            // Сетка декоративная и очень тихая: outline-variant с малой альфой.
-            color: Theme.withAlpha(Theme.outlineVariant, 0.26)
+            // Сетка декоративная: outline-variant с малой альфой.
+            color: Theme.withAlpha(Theme.outlineVariant, 0.38)
         }
     }
 
@@ -63,8 +59,8 @@ Item {
             y: Math.round(root.gridY + index * (root.metrics.cell + root.metrics.gap))
             width: root.gridW
             height: 1
-            // Сетка декоративная и очень тихая: outline-variant с малой альфой.
-            color: Theme.withAlpha(Theme.outlineVariant, 0.26)
+            // Сетка декоративная: outline-variant с малой альфой.
+            color: Theme.withAlpha(Theme.outlineVariant, 0.38)
         }
     }
 
@@ -85,35 +81,29 @@ Item {
             width: 4
             height: 4
             radius: 2
-            color: Theme.withAlpha(Theme.outlineVariant, 0.42)
+            color: Theme.withAlpha(Theme.outlineVariant, 0.55)
         }
     }
 
-    // Плашка с параметрами: выразительный контейнер, а не служебная рамка.
-    // Пилюля с лёгкой волной (modulation 0.5 — читается как ярлык, но не
-    // разваливает строку) и крупной подписью.
-    Item {
+    // Плашка с параметрами: используется при приёмке этапа 1.
+    Rectangle {
         id: info
 
         x: root.gridX + Theme.space.md
         y: root.gridY + Theme.space.md
-        width: infoText.implicitWidth + Theme.space.xl * 2
-        height: 44
-
-        MorphShape {
-            anchors.fill: parent
-            shape: "pill"
-            modulation: 0.5
-            color: Theme.tertiaryContainer
-            borderWidth: 0
-        }
+        width: infoText.implicitWidth + Theme.space.lg * 2
+        height: infoText.implicitHeight + Theme.space.md * 2
+        radius: Theme.shape.md
+        color: Theme.veil(Theme.surfaceContainerHigh, 0.96)
+        border.width: 1
+        border.color: Theme.outlineVariant
 
         Text {
             id: infoText
 
             anchors.centerIn: parent
-            color: Theme.scheme.onTertiaryContainer
-            font: Theme.typeEmphasizedLabelLarge
+            color: Theme.scheme.onSurfaceVariant
+            font: Theme.typeLabelSmall
             text: root.metrics.screenName
                   + "  •  " + root.metrics.cols + " × " + root.metrics.rows + " клеток"
                   + "  •  клетка " + Math.round(root.metrics.cell) + " px = "

@@ -1,17 +1,13 @@
-pragma ComponentBehavior: Bound
-
 import QtQuick
-import "../../components/expressive"
 import "../../singletons"
 import "../core"
 
 // Контекстное меню рабочего стола. Живёт внутри того же DesktopLayer, что и
 // виджеты: отдельного окна/слоя для меню нет.
 //
-// Expressive: крупная squircle-поверхность, строки-пилюли 48 px с морфящейся
-// формой на hover/press. Тонких разделителей нет — пункты сгруппированы
-// цветом: настройки — tertiary-контейнер, «Готово/Изменить» — primary,
-// «Отмена» — error-контейнер. Тень не нужна: глубину задаёт тон поверхности.
+// Оформление — M3 menu: тональная поверхность surface-container, радиус md,
+// строки 44 px, hover — state layer, разделители outline-variant. Тени не
+// используются: глубину задаёт тон поверхности.
 Item {
     id: root
 
@@ -24,16 +20,11 @@ Item {
     signal action(string name)
 
     visible: root.opened
-    width: 252
+    width: 240
     height: menuColumn.implicitHeight + Theme.space.sm * 2
     x: Math.max(12, Math.min(root.position.x, parent.width - root.width - 12))
     y: Math.max(12, Math.min(root.position.y, parent.height - root.height - 12))
     z: 210
-
-    // Появление — пружина масштаба из точки клика.
-    scale: root.opened ? 1 : 0.9
-    transformOrigin: Item.TopLeft
-    Behavior on scale { SpringSpatial {} }
 
     function openAt(px: real, py: real): void {
         root.position = Qt.point(px, py)
@@ -64,12 +55,14 @@ Item {
         return items
     }
 
-    // Крупная M3-поверхность меню: большой радиус и тональный слой, без
-    // обводки. Пункты внутри — отдельные morph-пилюли.
     Rectangle {
         anchors.fill: parent
-        radius: Theme.shape.xlIncreased
+        radius: Theme.shape.md
+        // M3 menu — surface-container; поверх обоев оставляем лёгкую вуаль,
+        // но цвет роли не подменяем.
         color: Theme.veil(Theme.surfaceContainer, 0.98)
+        border.width: 1
+        border.color: Theme.outlineVariant
     }
 
     Column {
@@ -77,7 +70,7 @@ Item {
 
         anchors.fill: parent
         anchors.margins: Theme.space.sm
-        spacing: 2
+        spacing: 0
 
         Repeater {
             model: root.menuItems()
@@ -87,73 +80,55 @@ Item {
 
                 required property var modelData
 
-                readonly property string actionName: menuRow.modelData.action
-                readonly property bool separator: menuRow.modelData.separator
-
-                // Группировка цветом вместо разделителей: каждый класс
-                // действий получает свой контейнер.
-                readonly property bool settingsGroup: actionName === "widget-settings"
-                                                      || actionName === "add"
-                                                      || actionName === "global"
-                readonly property bool commitGroup: actionName === "commit"
-                                                    || actionName === "edit"
-                readonly property bool dangerGroup: actionName === "cancel"
-
                 width: menuColumn.width
-                // Пустой «разделитель» — только воздух, без линии.
-                height: menuRow.separator ? Theme.space.xs : 48
+                height: menuRow.modelData.separator ? Theme.space.sm + 1 : Theme.touchTarget
 
-                MorphShape {
+                Rectangle {
                     anchors.fill: parent
-                    visible: !menuRow.separator
-                    shape: menuHover.pressed ? "squircle" : "pill"
-                    modulation: menuRow.commitGroup ? 0.35 : 0.45
-                    color: menuRow.commitGroup
-                           ? (menuHover.containsMouse
-                              ? Theme.mix(Theme.primaryContainer,
-                                          Theme.scheme.onPrimaryContainer, Theme.stateHover)
-                              : Theme.primaryContainer)
-                           : menuRow.dangerGroup
-                             ? (menuHover.containsMouse
-                                ? Theme.mix(Theme.errorContainer,
-                                            Theme.scheme.onErrorContainer, Theme.stateHover)
-                                : Theme.errorContainer)
-                             : menuRow.hovered
-                               ? Theme.tertiaryContainer
-                               : "transparent"
-                    borderWidth: 0
+                    visible: menuRow.modelData.separator
+                    color: "transparent"
+
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.leftMargin: Theme.space.md
+                        anchors.rightMargin: Theme.space.md
+                        height: 1
+                        color: Theme.outlineVariant
+                    }
                 }
 
-                readonly property bool hovered: menuHover.containsMouse
-
-                Text {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.leftMargin: Theme.space.md
-                    anchors.rightMargin: Theme.space.md
-                    color: menuRow.commitGroup ? Theme.scheme.onPrimaryContainer
-                         : menuRow.dangerGroup ? Theme.scheme.onErrorContainer
-                         : menuRow.hovered ? Theme.scheme.onTertiaryContainer
-                         : Theme.scheme.onSurface
-                    font: menuRow.commitGroup || menuRow.dangerGroup
-                          || menuRow.hovered ? Theme.typeEmphasizedLabelLarge
-                                             : Theme.typeLabelLarge
-                    elide: Text.ElideRight
-                    text: menuRow.modelData.label
-                    Behavior on color { ColorAnimation { duration: 140 } }
-                }
-
-                MouseArea {
-                    id: menuHover
-
+                Rectangle {
                     anchors.fill: parent
-                    enabled: !menuRow.separator
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        root.opened = false
-                        root.action(menuRow.modelData.action)
+                    visible: !menuRow.modelData.separator
+                    // Строка меню — скруглённый state layer, как в M3.
+                    radius: Theme.shape.xs
+                    color: menuHover.containsMouse
+                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                           : "transparent"
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: Theme.space.md
+                        anchors.rightMargin: Theme.space.md
+                        color: Theme.scheme.onSurface
+                        font: Theme.typeLabelLarge
+                        elide: Text.ElideRight
+                        text: menuRow.modelData.label
+                    }
+
+                    MouseArea {
+                        id: menuHover
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: {
+                            root.opened = false
+                            root.action(menuRow.modelData.action)
+                        }
                     }
                 }
             }

@@ -1,45 +1,30 @@
 import QtQuick
-import "../../components/expressive"
 import "../../singletons"
 
-// Кнопка управления карточкой в редакторе (M3 Expressive icon button).
-// Живёт поверх обоев, поэтому подложка непрозрачная. Круг в покое при
-// наведении превращается в «печенье» primary-контейнера, при нажатии
-// сжимается и становится squircle; пружины дают живой отклик.
-Item {
+// Круглая кнопка управления карточкой в редакторе (M3 icon button).
+// Живёт поверх обоев, поэтому в отличие от кнопок внутри панелей имеет
+// непрозрачную подложку; наведение — слоем состояния surfaceContainerHighest.
+Rectangle {
     id: root
 
     property string text: ""
     signal clicked()
 
-    readonly property bool hovered: mouse.containsMouse
-    readonly property bool pressed: mouse.pressed
-
-    width: 38
-    height: 38
-
-    scale: root.pressed ? 0.88 : (root.hovered ? 1.08 : 1)
-    Behavior on scale { SpringSpatial {} }
-
-    MorphShape {
-        anchors.fill: parent
-        shape: root.pressed ? "squircle"
-             : root.hovered ? "cookie"
-             : "circle"
-        modulation: 0.65
-        color: root.hovered ? Theme.primaryContainer : Theme.menuSurface
-        borderWidth: root.hovered ? 0 : 1
-        borderColor: Theme.outlineVariant
-        Behavior on color { ColorAnimation { duration: 140 } }
-    }
+    width: 32
+    height: 32
+    radius: Theme.shape.full
+    color: mouse.containsMouse ? Theme.surfaceContainerHighest : Theme.menuSurface
+    border.width: 1
+    border.color: mouse.containsMouse ? Theme.primary : Theme.outlineVariant
+    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+    Behavior on border.color { ColorAnimation { duration: Theme.motionShort3 } }
 
     Text {
         anchors.centerIn: parent
-        color: root.hovered ? Theme.scheme.onPrimaryContainer : Theme.scheme.onSurface
+        color: Theme.scheme.onSurface
         font.family: Theme.fontFamily
-        font.pixelSize: root.hovered ? Theme.iconSize.md : Theme.iconSize.sm + 2
+        font.pixelSize: Theme.iconSize.sm
         text: root.text
-        Behavior on color { ColorAnimation { duration: 140 } }
     }
 
     MouseArea {

@@ -2,12 +2,10 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import "quick"
-import "expressive"
 import "../singletons"
 
-// Верхний бар: слева рабочие столы, по центру время, справа — батарея,
-// уведомления и кнопка статуса. В Expressive бар — не полоса на всю
-// ширину, а плавающая пилюля с воздухом по краям.
+// Верхний бар: слева рабочие столы, по центру дата и время,
+// справа — элементы из настроек (батарея, кнопка статуса и будущие).
 PanelWindow {
     id: root
 
@@ -18,7 +16,7 @@ PanelWindow {
     }
 
     implicitHeight: Theme.barHeight
-    color: "transparent"
+    color: Theme.barBackground
     exclusiveZone: Theme.barHeight
     WlrLayershell.namespace: "quickshell-bar"
 
@@ -34,13 +32,6 @@ PanelWindow {
     // может забрать клавиатуру, поэтому ввод идёт в отдельном окне.
     InputDialog {
         dialogScreen: root.screen
-    }
-
-    // Бар прижат к верхней кромке: ровная полоса без отступов и градиента.
-    Rectangle {
-        id: barCard
-        anchors.fill: parent
-        color: Theme.barSurface
     }
 
     Workspaces {
@@ -60,7 +51,7 @@ PanelWindow {
         anchors.right: parent.right
         anchors.rightMargin: Theme.barPadding
         anchors.verticalCenter: parent.verticalCenter
-        spacing: Theme.space.xs
+        spacing: 6
 
         Repeater {
             model: MockState.barItems
@@ -114,6 +105,7 @@ PanelWindow {
     BluetoothPinDialog {
         dialogScreen: root.screen
     }
+
 
     Component {
         id: notificationsItem

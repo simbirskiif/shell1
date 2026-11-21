@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
-import "expressive"
 import "../singletons"
 
 // Центр уведомлений — такая же панель, как быстрые настройки: та же
@@ -20,28 +19,56 @@ PanelWindow {
     readonly property real maxHeight: root.centerScreen
                                       ? root.centerScreen.height - Theme.barHeight - Theme.space.lg : 10000
 
-    // Пустой Центр: большая клякса-форма, которая перетекает между
-    // пресетами, пока истории нет. Состояние — только визуальное.
-    property int emptyPhase: 0
-    readonly property var emptyShapes: ["blob", "cookie", "clover", "sunny"]
-    readonly property string emptyShape: root.emptyShapes[root.emptyPhase % root.emptyShapes.length]
-    readonly property color emptyContainer: root.emptyPhase % 2 === 0
-                                            ? Theme.primaryContainer : Theme.tertiaryContainer
-    readonly property color emptyInk: root.emptyPhase % 2 === 0
-                                      ? Theme.scheme.onPrimaryContainer
-                                      : Theme.scheme.onTertiaryContainer
-
-    Timer {
-        interval: 1900
-        repeat: true
-        running: root.visible && NotificationService.history.count === 0
-        onTriggered: root.emptyPhase += 1
-    }
-
     // Видимость ведём сами: окно должно успеть проявиться и сжаться,
     // прежде чем исчезнуть.
     property bool shown: false
     property bool closing: false
+
+    // Кнопка-иконка M3: круг 40dp; включённое состояние — tonal-контейнер
+    // secondaryContainer, обычное — только state layer при наведении.
+    component PanelIconButton: Item {
+        id: button
+
+        property string icon: ""
+        property bool active: false
+
+        signal clicked()
+
+        width: Theme.iconButtonSize
+        height: Theme.iconButtonSize
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Theme.shape.full
+            color: button.active ? Theme.secondaryContainer
+                                 : (buttonHover.containsMouse && button.enabled
+                                    ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                                    : "transparent")
+            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+        }
+
+        Text {
+            anchors.centerIn: parent
+            text: button.icon
+            color: button.active ? Theme.scheme.onSecondaryContainer
+                                 : (button.enabled
+                                    ? Theme.scheme.onSurface
+                                    : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent))
+            font.family: Theme.iconFontFamily
+            font.pixelSize: Theme.iconSize.md
+            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+        }
+
+        MouseArea {
+            id: buttonHover
+
+            anchors.fill: parent
+            hoverEnabled: true
+            enabled: button.enabled
+            cursorShape: Qt.PointingHandCursor
+            onClicked: button.clicked()
+        }
+    }
 
     screen: centerScreen
     visible: (root.shown || root.closing) && root.onFocusedScreen
@@ -109,8 +136,8 @@ PanelWindow {
         onClicked: NotificationService.closeCenter()
     }
 
-    // Карточка панели: Expressive-лист на панельной роли темы. Без
-    // обводки: контейнер отделяется тоном и скруглением 32.
+    // Карточка панели: M3-лист на surfaceContainerLow (панельная роль темы —
+    // тот же тон с лёгкой вуалью над обоями), радиус xl.
     Rectangle {
         id: panel
 
@@ -120,19 +147,31 @@ PanelWindow {
         anchors.rightMargin: Theme.barPadding
         width: Theme.notificationCenterWidth
         height: Math.min(layout.implicitHeight + Theme.notificationPadding * 2, root.maxHeight)
-        radius: Theme.shape.xlIncreased
+        radius: Theme.shape.xl
         color: Theme.panelSurface
+        border.width: 1
+        border.color: Theme.outlineVariant
         clip: true
 
-        // Появление и закрытие — пружины: проявление с 92% и рост из
-        // верхнего правого угла; прозрачность — effects-пружина без
-        // перелёта, чтобы панель не мигала на границе единицы.
+        // Появление и закрытие — как у остальных панелей: проявление с 92%
+        // и рост из верхнего правого угла.
         opacity: root.shown && !root.closing ? 1 : 0
         scale: root.shown && !root.closing ? 1 : Theme.motionFadeThroughScale
         transformOrigin: Item.TopRight
 
-        Behavior on opacity { SpringEffects {} }
-        Behavior on scale { SpringSpatial {} }
+        Behavior on opacity {
+            MotionNumber {
+                duration: Theme.motionMedium1
+                curve: Theme.curveEmphasizedDecelerate
+            }
+        }
+
+        Behavior on scale {
+            MotionNumber {
+                duration: Theme.motionMedium1
+                curve: Theme.curveEmphasizedDecelerate
+            }
+        }
 
         // Клики по панели не должны закрывать её через подложку.
         MouseArea {
@@ -148,9 +187,8 @@ PanelWindow {
             anchors.margins: Theme.notificationPadding
             spacing: Theme.notificationSpacing
 
-            // Шапка Expressive: крупный заголовок headlineSmall; справа —
-            // кнопка «не беспокоить», FAB очистки (tertiary, cookie) и
-            // закрытие. Крупные тач-цели, без мелких иконок-точек.
+            // Шапка M3 top app bar: заголовок titleLarge, справа — круглые
+            // кнопки-иконки 40 и текстовая кнопка «Очистить».
             Item {
                 id: header
 
@@ -159,13 +197,13 @@ PanelWindow {
 
                 Text {
                     anchors.left: parent.left
-                    anchors.leftMargin: Theme.space.xs
+                    anchors.leftMargin: Theme.space.sm
                     anchors.right: headerActions.left
                     anchors.rightMargin: Theme.space.sm
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Уведомления"
                     color: Theme.scheme.onSurface
-                    font: Theme.typeEmphasizedHeadlineSmall
+                    font: Theme.typeTitleLarge
                     elide: Text.ElideRight
                 }
 
@@ -173,147 +211,89 @@ PanelWindow {
                     id: headerActions
 
                     anchors.right: parent.right
+                    anchors.rightMargin: Theme.space.sm
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: Theme.space.xs
 
-                    // «Не беспокоить»: включённое состояние — форма cookie
-                    // на secondaryContainer, как у колокольчика в баре.
-                    Item {
-                        id: dndButton
-
-                        width: 48
-                        height: 48
-                        scale: dndHover.pressed ? 0.9 : (dndHover.containsMouse ? 1.05 : 1)
-                        Behavior on scale { SpringSpatialFast {} }
-
-                        MorphShape {
-                            anchors.fill: parent
-                            shape: NotificationService.doNotDisturb ? "cookie" : "circle"
-                            modulation: 0.8
-                            color: NotificationService.doNotDisturb
-                                   ? Theme.secondaryContainer
-                                   : (dndHover.containsMouse
-                                      ? Theme.surfaceContainerHighest : "transparent")
-                            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
-                        }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: NotificationService.doNotDisturb ? "\uf1f6" : "\uf0f3"
-                            color: NotificationService.doNotDisturb
-                                   ? Theme.scheme.onSecondaryContainer
-                                   : Theme.scheme.onSurface
-                            font.family: Theme.iconFontFamily
-                            font.pixelSize: Theme.iconSize.md
-                        }
-
-                        MouseArea {
-                            id: dndHover
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: NotificationService.doNotDisturb = !NotificationService.doNotDisturb
-                        }
+                    // Тот же «не беспокоить», что и плиткой в быстрых настройках.
+                    PanelIconButton {
+                        icon: NotificationService.doNotDisturb ? "\uf1f6" : "\uf0f3"
+                        active: NotificationService.doNotDisturb
+                        onClicked: NotificationService.doNotDisturb = !NotificationService.doNotDisturb
                     }
 
-                    // «Очистить» — ExpressiveFAB: крупная cookie в tertiary-
-                    // контейнере. Пока истории нет — пригашен и не кликается.
-                    ExpressiveFab {
-                        id: clearFab
+                    // «Очистить» — текстовая кнопка M3: прозрачный контейнер,
+                    // подпись labelLarge цветом primary, state layer, а в
+                    // disabled — 38% контента.
+                    Item {
+                        id: clearButton
 
-                        tone: "tertiary"
-                        shape: "cookie"
-                        hoverShape: "squircle"
-                        size: 48
-                        icon: "\uf1f8"
+                        width: clearLabel.implicitWidth + Theme.space.xl
+                        height: Theme.buttonHeight
                         enabled: NotificationService.history.count > 0
-                        opacity: clearFab.enabled ? 1 : 0.45
-                        Behavior on opacity { SpringEffects {} }
-                        onClicked: NotificationService.clearHistory()
-                    }
 
-                    Item {
-                        id: closeButton
-
-                        width: 48
-                        height: 48
-                        scale: closeHover.pressed ? 0.9 : (closeHover.containsMouse ? 1.05 : 1)
-                        Behavior on scale { SpringSpatialFast {} }
-
-                        MorphShape {
+                        Rectangle {
                             anchors.fill: parent
-                            shape: closeHover.containsMouse ? "cookie" : "circle"
-                            modulation: 0.8
-                            color: closeHover.containsMouse
-                                   ? Theme.surfaceContainerHighest : "transparent"
+                            radius: Theme.shape.full
+                            color: clearHover.containsMouse && clearButton.enabled
+                                   ? Theme.stateLayer(Theme.primary, Theme.stateHover)
+                                   : "transparent"
                             Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
                         }
 
                         Text {
+                            id: clearLabel
+
                             anchors.centerIn: parent
-                            text: "\uf00d"
-                            color: Theme.scheme.onSurface
-                            font.family: Theme.iconFontFamily
-                            font.pixelSize: Theme.iconSize.md
+                            text: "Очистить"
+                            color: clearButton.enabled
+                                   ? Theme.primary
+                                   : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent)
+                            font: Theme.typeLabelLarge
+                            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
                         }
 
                         MouseArea {
-                            id: closeHover
+                            id: clearHover
+
                             anchors.fill: parent
                             hoverEnabled: true
+                            enabled: clearButton.enabled
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: NotificationService.closeCenter()
+                            onClicked: NotificationService.clearHistory()
                         }
+                    }
+
+                    PanelIconButton {
+                        icon: "\uf00d"
+                        onClicked: NotificationService.closeCenter()
                     }
                 }
             }
 
-            // Пустой Центр: большая клякса, которая перетекает между
-            // пресетами (blob → cookie → clover → sunny), и крупный
-            // emphasized-заголовок. Вместо мелкой серой иконки — акцент.
+            // Пустой Центр: иконка и заголовок headlineSmall на onSurfaceVariant.
             Item {
                 width: parent.width
-                height: NotificationService.history.count === 0 ? 212 : 0
+                height: NotificationService.history.count === 0 ? 130 : 0
                 visible: height > 0
 
                 Column {
                     anchors.centerIn: parent
-                    spacing: Theme.space.md
+                    spacing: Theme.space.sm
 
-                    Item {
-                        width: 120
-                        height: 120
+                    Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-
-                        MorphShape {
-                            anchors.fill: parent
-                            shape: root.emptyShape
-                            color: root.emptyContainer
-                            modulation: 0.85
-                            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
-                        }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: NotificationService.doNotDisturb ? "\uf1f6" : "\uf0f3"
-                            color: root.emptyInk
-                            font.family: Theme.iconFontFamily
-                            font.pixelSize: 44
-                        }
+                        text: "\uf0f3"
+                        color: Theme.scheme.onSurfaceVariant
+                        font.family: Theme.iconFontFamily
+                        font.pixelSize: Theme.iconSize.xl
                     }
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "Нет уведомлений"
-                        color: Theme.scheme.onSurface
-                        font: Theme.typeEmphasizedTitleLarge
-                    }
-
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: "Здесь появятся новые сообщения"
                         color: Theme.scheme.onSurfaceVariant
-                        font: Theme.typeBodyMedium
+                        font: Theme.typeHeadlineSmall
                     }
                 }
             }
