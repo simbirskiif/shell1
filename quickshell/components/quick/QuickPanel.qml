@@ -1,5 +1,6 @@
 import QtQuick
 import ".."
+import "../expressive"
 import "../../singletons"
 
 // Содержимое попапа. Один список дескрипторов создаёт и плитки, и дочерние
@@ -123,6 +124,44 @@ Item {
         UiState.moveTile(from, to);
     }
 
+    // Экспрессивная пара «акцент + форма» для каждой плитки: в одной
+    // панели соседствуют разные контейнеры и разные контуры.
+    function tileTone(key) {
+        if (key === "internet")
+            return "primary";
+        if (key === "bluetooth")
+            return "tertiary";
+        if (key === "sound")
+            return "secondary";
+        if (key === "brightness")
+            return "tertiary";
+        if (key === "dnd")
+            return "neutral";
+        if (key === "caffeine")
+            return "secondary";
+        if (key === "layout")
+            return "primary";
+        return "secondary";
+    }
+
+    function tileShape(key) {
+        if (key === "internet")
+            return "cookie";
+        if (key === "bluetooth")
+            return "pill";
+        if (key === "sound")
+            return "squircle";
+        if (key === "brightness")
+            return "cookie";
+        if (key === "dnd")
+            return "blob";
+        if (key === "caffeine")
+            return "pill";
+        if (key === "layout")
+            return "squircle";
+        return "cookie";
+    }
+
     readonly property Item activeDetail: {
         for (let i = 0; i < detailViews.count; ++i) {
             const view = detailViews.itemAt(i);
@@ -243,62 +282,71 @@ Item {
             anchors.top: parent.top
             spacing: Theme.quickTileSpacing
 
-            // Шапка в духе M3 top app bar: настройки слева, заголовок,
-            // батарея справа.
+            // Шапка Expressive: крупный FAB-настройки, жирный заголовок,
+            // батарея — большой тональный чип tertiary-container.
             Item {
                 width: parent.width
-                height: Theme.appBarHeight
+                height: Theme.appBarHeight + 12
 
-                Rectangle {
+                ExpressiveFab {
                     id: settingsButton
                     anchors.left: parent.left
                     anchors.leftMargin: 0
                     anchors.verticalCenter: parent.verticalCenter
-                    width: Theme.iconButtonSize
-                    height: Theme.iconButtonSize
-                    radius: width / 2
-                    color: settingsHover.containsMouse ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
-                                                 : "transparent"
-                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "\uf013"
-                        color: Theme.scheme.onSurface
-                        font.family: Theme.iconFontFamily
-                        font.pixelSize: Theme.iconSize.md
-                    }
-
-                    MouseArea {
-                        id: settingsHover
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: settingsEntry.open()
-                    }
+                    size: 52
+                    icon: "\uf013"
+                    tone: "primary"
+                    shape: "cookie"
+                    hoverShape: "squircle"
+                    onClicked: settingsEntry.open()
                 }
 
                 Text {
                     anchors.left: settingsButton.right
-                    anchors.leftMargin: Theme.space.sm
-                    anchors.right: battery.right
+                    anchors.leftMargin: Theme.space.md
+                    anchors.right: batteryChip.left
                     anchors.rightMargin: Theme.space.sm
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Быстрые настройки"
                     color: Theme.scheme.onSurface
-                    font: Theme.typeTitleMedium
+                    font: Theme.typeEmphasizedHeadlineSmall
                     elide: Text.ElideRight
                 }
 
-                BatteryButton {
-                    id: battery
+                Rectangle {
+                    id: batteryChip
                     anchors.right: parent.right
-                    anchors.rightMargin: 0
                     anchors.verticalCenter: parent.verticalCenter
                     visible: PowerService.present
-                    level: PowerService.level
-                    charging: PowerService.charging
-                    onClicked: batteryEntry.open()
+                    width: batteryRow.width + Theme.space.lg * 2
+                    height: 46
+                    radius: height / 2
+                    color: Theme.secondaryContainer
+
+                    Row {
+                        id: batteryRow
+                        anchors.centerIn: parent
+                        spacing: 8
+
+                        BatteryIndicator {
+                            anchors.verticalCenter: parent.verticalCenter
+                            level: PowerService.level
+                            charging: PowerService.charging
+                        }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: PowerService.level + "%"
+                            color: Theme.scheme.onTertiaryContainer
+                            font: Theme.typeEmphasizedLabelLarge
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: batteryEntry.open()
+                    }
                 }
             }
 
@@ -340,6 +388,8 @@ Item {
                         title: modelData.title
                         subtitle: modelData.subtitle
                         active: modelData.active
+                        accentTone: root.tileTone(modelData.key)
+                        expressiveShape: root.tileShape(modelData.key)
                         editable: root.editing
                         // Плитка «Wi-Fi»: в кружке живые деления сигнала.
                         wifiStatus: modelData.wifiTile === true

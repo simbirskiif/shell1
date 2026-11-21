@@ -16,6 +16,13 @@ import "components/lock"
 ShellRoot {
     id: shellRoot
 
+    // Variable-шрифт Material 3 Expressive: Roboto Flex (wght/wdth/opsz).
+    // Грузим из репозитория, чтобы не зависеть от системных шрифтов.
+    FontLoader {
+        id: robotoFlex
+        source: "fonts/RobotoFlex.ttf"
+    }
+
     // Владелец процесса BlueZ-helper'а: Process должен жить в дереве оболочки
     // (внутри синглтона он не запускается). Сразу подключаем его к бэкенду.
     BluetoothHelperHost {

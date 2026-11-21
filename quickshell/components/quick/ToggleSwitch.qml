@@ -1,10 +1,11 @@
 import QtQuick
 import ".."
+import "../expressive"
 import "../../singletons"
 
-// Переключатель Material 3: дорожка-пилюля 52×32, ручка уезжает вправо и
-// растёт. Выключенный — тональная поверхность с обводкой outline, включённый —
-// primary с ручкой on-primary и галочкой.
+// Переключатель Material 3 Expressive: тяжёлая дорожка-пилюля, крупная
+// ручка, которая меняет форму (круг ↔ squircle) и тянется при нажатии.
+// Внутри ручки — галочка; включение читается и по форме, и по цвету.
 Item {
     id: root
 
@@ -12,9 +13,14 @@ Item {
 
     signal toggled()
 
-    implicitWidth: 52
-    implicitHeight: 32
+    implicitWidth: 60
+    implicitHeight: 34
 
+    readonly property bool hovered: mouse.containsMouse
+    readonly property bool pressed: mouse.pressed
+
+    // Дорожка: включённая — primary, выключенная — тональная поверхность
+    // с обводкой outline. Цвет — effects-переход, форма и ручка — пружины.
     Rectangle {
         id: track
         anchors.fill: parent
@@ -22,32 +28,44 @@ Item {
         color: root.checked ? Theme.primary : Theme.surfaceContainerHighest
         border.width: root.checked ? 0 : 2
         border.color: Theme.outline
-        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
-        Behavior on border.width { NumberAnimation { duration: Theme.motionShort4 } }
+        scale: root.pressed ? 0.97 : 1
+
+        Behavior on color { ColorAnimation { duration: 140 } }
+        Behavior on border.width { NumberAnimation { duration: 140 } }
+        Behavior on scale {
+            SpringSpatialFast {}
+        }
+
+        // Мягкое свечение-ореол при наведении: контейнер становится
+        // заметнее, не превращаясь в тень.
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -4
+            radius: height / 2
+            color: Theme.stateLayer(Theme.primary, 0.10)
+            opacity: root.hovered ? 1 : 0
+            z: -1
+            Behavior on opacity { NumberAnimation { duration: 140 } }
+        }
     }
 
-    Rectangle {
+    // Ручка: сплющенный круг в покое, squircle во включённом состоянии.
+    // При нажатии вытягивается по горизонтали — «живая» деформация.
+    MorphShape {
         id: handle
-        width: root.checked ? 24 : 16
-        height: width
-        radius: width / 2
+
+        readonly property real restingSize: root.checked ? 26 : 22
+
+        width: root.pressed ? handle.restingSize + 8 : handle.restingSize
+        height: root.pressed ? handle.restingSize - 1 : handle.restingSize
         anchors.verticalCenter: parent.verticalCenter
-        x: root.checked ? track.width - width - 4 : 8
+        x: root.checked ? track.width - width - 4 : 4
+        shape: root.checked ? "squircle" : "circle"
         color: root.checked ? Theme.scheme.onPrimary : Theme.outline
 
-        Behavior on x {
-            MotionNumber {
-                duration: Theme.motionShort4
-                curve: Theme.curveEmphasized
-            }
-        }
-        Behavior on width {
-            MotionNumber {
-                duration: Theme.motionShort4
-                curve: Theme.curveEmphasized
-            }
-        }
-        Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        Behavior on width { SpringSpatial {} }
+        Behavior on height { SpringSpatial {} }
+        Behavior on x { SpringSpatial {} }
 
         Text {
             anchors.centerIn: parent
@@ -56,13 +74,16 @@ Item {
             color: Theme.primary
             font.family: Theme.iconFontFamily
             font.pixelSize: 12
-            opacity: root.checked ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+            scale: root.checked ? 1 : 0.4
+            Behavior on scale { SpringSpatialFast {} }
         }
     }
 
+
     MouseArea {
+        id: mouse
         anchors.fill: parent
+        hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.toggled()
     }

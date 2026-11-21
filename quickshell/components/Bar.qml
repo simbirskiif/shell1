@@ -2,10 +2,12 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import "quick"
+import "expressive"
 import "../singletons"
 
-// Верхний бар: слева рабочие столы, по центру дата и время,
-// справа — элементы из настроек (батарея, кнопка статуса и будущие).
+// Верхний бар: слева рабочие столы, по центру время, справа — батарея,
+// уведомления и кнопка статуса. В Expressive бар — не полоса на всю
+// ширину, а плавающая пилюля с воздухом по краям.
 PanelWindow {
     id: root
 
@@ -16,7 +18,7 @@ PanelWindow {
     }
 
     implicitHeight: Theme.barHeight
-    color: Theme.barBackground
+    color: "transparent"
     exclusiveZone: Theme.barHeight
     WlrLayershell.namespace: "quickshell-bar"
 
@@ -34,24 +36,43 @@ PanelWindow {
         dialogScreen: root.screen
     }
 
+    // Плавающая карточка бара: скруглённая пилюля, лёгкий тональный
+    // градиент к tertiary — цветовая иерархия вместо серой полосы.
+    Rectangle {
+        id: barCard
+        anchors.fill: parent
+        anchors.topMargin: 6
+        anchors.bottomMargin: 6
+        anchors.leftMargin: 8
+        anchors.rightMargin: 8
+        radius: height / 2
+        color: Theme.barSurface
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: Theme.barSurface }
+            GradientStop { position: 0.55; color: Theme.barSurface }
+            GradientStop { position: 1.0; color: Theme.withAlpha(Theme.tertiaryContainer, 0.55) }
+        }
+    }
+
     Workspaces {
-        anchors.left: parent.left
-        anchors.leftMargin: Theme.barPadding
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.left: barCard.left
+        anchors.leftMargin: Theme.space.lg
+        anchors.verticalCenter: barCard.verticalCenter
         screenName: root.screen ? root.screen.name : ""
     }
 
     Clock {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.horizontalCenter: barCard.horizontalCenter
+        anchors.verticalCenter: barCard.verticalCenter
     }
 
     // Порядок элементов задаётся в настройках (MockState.barItems).
     Row {
-        anchors.right: parent.right
-        anchors.rightMargin: Theme.barPadding
-        anchors.verticalCenter: parent.verticalCenter
-        spacing: 6
+        anchors.right: barCard.right
+        anchors.rightMargin: Theme.space.sm
+        anchors.verticalCenter: barCard.verticalCenter
+        spacing: Theme.space.xs
 
         Repeater {
             model: MockState.barItems
@@ -105,7 +126,6 @@ PanelWindow {
     BluetoothPinDialog {
         dialogScreen: root.screen
     }
-
 
     Component {
         id: notificationsItem

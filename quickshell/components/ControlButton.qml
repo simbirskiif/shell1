@@ -1,14 +1,16 @@
 import QtQuick
 import "quick"
+import "expressive"
 import "../singletons"
 
-// Кнопка справа в баре: статус Bluetooth / Wi-Fi / звука одной кнопкой.
-Rectangle {
+// Кластер статуса в баре: Bluetooth, Wi-Fi и звук одной пилюлей.
+// В Expressive это плотная «таблетка» с жирными иконками; при открытой
+// панели она заливается secondary-container и меняет контур.
+Item {
     id: root
 
     required property bool bluetoothEnabled
     required property bool wifiEnabled
-    // Состояние Wi-Fi: подключён ли и насколько силён сигнал (для делений).
     required property bool wifiConnected
     required property int wifiSignal
     required property bool soundEnabled
@@ -16,39 +18,40 @@ Rectangle {
 
     signal clicked()
 
-    // M3: кнопка-пилюля 40dp высотой, состояние — filled tonal.
-    implicitWidth: content.implicitWidth + 24
-    implicitHeight: Theme.iconButtonSize
-    radius: Theme.controlRadius
-    color: root.opened ? Theme.secondaryContainer
-                       : (hover.containsMouse ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
-                                        : "transparent")
-    Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+    implicitWidth: content.implicitWidth + 26
+    implicitHeight: 40
+
+    readonly property bool hovered: hover.containsMouse
+
+    scale: hover.pressed ? 0.94 : (root.hovered ? 1.05 : 1)
+    Behavior on scale { SpringSpatialFast {} }
+
+    MorphShape {
+        anchors.fill: parent
+        shape: root.opened ? "cookie" : "pill"
+        modulation: 0.6
+        color: root.opened ? Theme.secondaryContainer
+             : root.hovered ? Theme.surfaceContainerHighest
+             : Theme.withAlpha(Theme.surfaceContainerHigh, 0.55)
+    }
 
     Row {
         id: content
         anchors.centerIn: parent
-        // глифы тоже сидят выше центра строки — выравниваем с батареей
-        anchors.verticalCenterOffset: 1
-        spacing: 10
+        spacing: 9
 
         Text {
             text: "\uf293"
-            color: root.bluetoothEnabled ? (root.opened ? Theme.scheme.onSecondaryContainer
-                                                       : Theme.scheme.onSurface)
-                                        : Theme.quickTextDim
+            color: root.bluetoothEnabled ? Theme.scheme.onSurface : Theme.scheme.onSurfaceVariant
             font.family: Theme.iconFontFamily
-            font.pixelSize: Theme.iconSize.sm
-            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+            font.pixelSize: 18
         }
 
-        // Выключенное radio — перечёркнутый значок, включённое — деления
-        // доступности.
         WifiStatusIcon {
             anchors.verticalCenter: parent.verticalCenter
-            width: 19
-            height: 19
-            glyphSize: 14
+            width: 22
+            height: 22
+            glyphSize: 18
             offMode: !root.wifiEnabled
             signal: root.wifiSignal
             dim: !root.wifiEnabled
@@ -56,12 +59,9 @@ Rectangle {
 
         Text {
             text: root.soundEnabled ? "\uf028" : "\uf026"
-            color: root.soundEnabled ? (root.opened ? Theme.scheme.onSecondaryContainer
-                                                   : Theme.scheme.onSurface)
-                                    : Theme.quickTextDim
+            color: root.soundEnabled ? Theme.scheme.onSurface : Theme.scheme.onSurfaceVariant
             font.family: Theme.iconFontFamily
-            font.pixelSize: Theme.iconSize.sm
-            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+            font.pixelSize: 18
         }
     }
 

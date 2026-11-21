@@ -1,13 +1,16 @@
 import QtQuick
 import ".."
+import "../expressive"
 import "../../singletons"
 
-// Плитка быстрых настроек в духе Material 3: тональный контейнер,
-// круглая иконка-переключатель слева, двухстрочная подпись справа.
-// Кружок переключает состояние, остальная площадь раскрывает панель.
-// В режиме редактирования плитка чуть уменьшается (визуально, размеры в
-// раскладке не меняются), сверху справа появляется «минус», а перетаскивание
-// меняет порядок плиток.
+// Плитка быстрых настроек в духе Material 3 Expressive.
+//
+// Состояние читается не только цветом, но и формой: выключенная плитка —
+// спокойный squircle на тональной поверхности, включённая — свой
+// выразительный контур (cookie, clover, sunny, burst…) и крупный цветной
+// контейнер (primary/tertiary/secondary). При нажатии плитка сжимается и
+// на миг становится более круглой, при наведении — слегка раздувается.
+// Кружок-иконка тоже меняет форму, поэтому «включено» видно боковым зрением.
 Rectangle {
     id: root
 
@@ -17,11 +20,12 @@ Rectangle {
     required property bool active
     // Плитка Wi-Fi: в кружке деления сигнала вместо обычного глифа.
     property bool wifiStatus: false
+    // Акцентная пара и форма включённого состояния (задаёт панель).
+    property string accentTone: "secondary"
+    property string expressiveShape: "cookie"
 
     property bool editable: false
-    // Показывать ли плитку: скрытая гаснет на месте, а не улетает в угол.
     property bool shown: true
-    // Позиция в сетке (её задаёт панель) — нужна для перетаскивания.
     property int order: -1
     property int columns: 2
     property real stepX: width
@@ -34,49 +38,61 @@ Rectangle {
 
     implicitWidth: Theme.quickWidth / 2
     implicitHeight: Theme.quickTileHeight
-    radius: Theme.quickTileRadius
-    color: root.active ? Theme.secondaryContainer : Theme.surfaceContainerHigh
-    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+    // Корневой Rectangle нужен только для совместимости с раскладкой,
+    // сам фон рисует MorphShape ниже.
+    color: "transparent"
+
+    readonly property bool hovered: hover.containsMouse
+    readonly property bool pressedDown: dragArea.pressed || hover.pressed
+
+    readonly property color activeContainer: {
+        if (root.accentTone === "primary")
+            return Theme.primaryContainer;
+        if (root.accentTone === "tertiary")
+            return Theme.tertiaryContainer;
+        if (root.accentTone === "neutral")
+            return Theme.surfaceContainerHighest;
+        return Theme.secondaryContainer;
+    }
+
+    readonly property color activeInk: {
+        if (root.accentTone === "primary")
+            return Theme.scheme.onPrimaryContainer;
+        if (root.accentTone === "tertiary")
+            return Theme.scheme.onTertiaryContainer;
+        if (root.accentTone === "neutral")
+            return Theme.scheme.onSurface;
+        return Theme.scheme.onSecondaryContainer;
+    }
+
+    readonly property color containerColor: root.active ? root.activeContainer
+                                                       : Theme.surfaceContainerHigh
+    readonly property color contentColor: root.active ? root.activeInk : Theme.scheme.onSurface
 
     // В редакторе плитка выглядит меньше, но место занимает то же.
-    // Скрытая плитка уходит по m3 exit: растворяется и сжимается.
     scale: (root.editable ? 0.92 : 1) * (root.shown ? 1 : Theme.motionElementScale)
-    Behavior on scale {
-        MotionNumber {
-            duration: Theme.motionMedium1
-            curve: Theme.curveEmphasized
-        }
-    }
+           * (root.pressedDown ? 0.93 : (root.hovered && !root.editable ? 1.03 : 1))
 
-    Behavior on x {
-        MotionNumber {
-            duration: Theme.motionMedium1
-            curve: Theme.curveEmphasized
-        }
-    }
+    Behavior on scale { SpringSpatial {} }
+    Behavior on x { SpringSpatial {} }
+    Behavior on y { SpringSpatial {} }
+    Behavior on opacity { SpringEffects {} }
 
-    Behavior on y {
-        MotionNumber {
-            duration: Theme.motionMedium1
-            curve: Theme.curveEmphasized
-        }
-    }
-
-    Behavior on opacity {
-        MotionNumber {
-            duration: Theme.motionShort4
-            curve: Theme.curveEmphasized
-        }
-    }
-
-    // Слой состояния M3: наведение подсвечивает плитку поверх тона.
-    Rectangle {
+    // Фон: морфящаяся форма. Выключенная — squircle, включённая — свой
+    // контур; нажатие на миг возвращает к squircle и обратно.
+    MorphShape {
         anchors.fill: parent
-        radius: parent.radius
-        color: Theme.stateLayer(root.active ? Theme.scheme.onSecondaryContainer
-                                            : Theme.scheme.onSurface, Theme.stateHover)
-        opacity: hover.containsMouse && !root.editable ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
+        shape: root.pressedDown ? "squircle"
+             : root.active ? root.expressiveShape
+             : "squircle"
+        color: root.containerColor
+        modulation: 0.5
+        // Тонкий контур только у выключенной плитки: активная держится
+        // цветом, а не обводкой.
+        borderWidth: root.active ? 0 : 1
+        borderColor: Theme.outlineVariant
+
+        Behavior on color { ColorAnimation { duration: 150 } }
     }
 
     MouseArea {
@@ -88,16 +104,47 @@ Rectangle {
         onClicked: root.expandRequested()
     }
 
-    StatusCircle {
+    // Круг-иконка: выключенная — круг, включённая — «солнышко».
+    MorphShape {
         id: circle
         anchors.left: parent.left
         anchors.leftMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
-        interactive: !root.editable
-        icon: root.icon
-        active: root.active
-        wifiStatus: root.wifiStatus
-        onToggled: root.toggled()
+        width: 38
+        height: 38
+        shape: root.active
+               ? (root.expressiveShape === "sunny" || root.expressiveShape === "burst"
+                  || root.expressiveShape === "clover" || root.expressiveShape === "blob"
+                  ? root.expressiveShape : "sunny")
+               : "circle"
+        color: root.active ? root.activeInk : Theme.surfaceContainerHighest
+
+        MouseArea {
+            anchors.fill: parent
+            enabled: !root.editable
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.toggled()
+        }
+
+        Text {
+            anchors.centerIn: parent
+            visible: !root.wifiStatus
+            text: root.icon
+            color: root.active ? root.activeContainer : Theme.scheme.onSurfaceVariant
+            font.family: Theme.iconFontFamily
+            font.pixelSize: 20
+        }
+
+        WifiStatusIcon {
+            anchors.centerIn: parent
+            visible: root.wifiStatus
+            width: 26
+            height: 26
+            glyphSize: 20
+            onAccent: root.active
+            offMode: !NetworkService.wifiEnabled
+            signal: NetworkService.connectedSignal
+        }
     }
 
     Column {
@@ -112,21 +159,21 @@ Rectangle {
         Text {
             width: parent.width
             text: root.title
-            color: root.active ? Theme.scheme.onSecondaryContainer : Theme.scheme.onSurface
-            font: Theme.typeLabelLarge
+            color: root.contentColor
+            font: root.active ? Theme.typeEmphasizedLabelLarge : Theme.typeLabelLarge
             elide: Text.ElideRight
-            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+            Behavior on color { ColorAnimation { duration: 150 } }
         }
 
         Text {
             width: parent.width
             visible: root.subtitle !== ""
             text: root.subtitle
-            color: root.active ? Theme.withAlpha(Theme.scheme.onSecondaryContainer, 0.8)
+            color: root.active ? Theme.withAlpha(root.activeInk, 0.78)
                                : Theme.scheme.onSurfaceVariant
             font: Theme.typeLabelMedium
             elide: Text.ElideRight
-            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+            Behavior on color { ColorAnimation { duration: 150 } }
         }
     }
 
@@ -153,28 +200,29 @@ Rectangle {
     }
 
     // «Минус» в правом верхнем углу — убрать плитку в доступные.
-    Rectangle {
+    Item {
         id: removeButton
         visible: root.editable
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.rightMargin: -6
-        anchors.topMargin: -6
-        width: 26
-        height: 26
-        radius: width / 2
-        color: removeHover.containsMouse ? Theme.error : Theme.errorContainer
-        border.width: 2
-        border.color: Theme.surface
+        anchors.rightMargin: -4
+        anchors.topMargin: -4
+        width: 32
+        height: 32
         z: 3
-        Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
+
+        MorphShape {
+            anchors.fill: parent
+            shape: removeHover.containsMouse ? "burst" : "circle"
+            color: removeHover.containsMouse ? Theme.error : Theme.errorContainer
+        }
 
         Text {
             anchors.centerIn: parent
             text: "\uf068"
             color: removeHover.containsMouse ? Theme.scheme.onError : Theme.scheme.onErrorContainer
             font.family: Theme.iconFontFamily
-            font.pixelSize: 10
+            font.pixelSize: 13
         }
 
         MouseArea {
