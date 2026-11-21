@@ -149,7 +149,7 @@ PanelWindow {
                             anchors.fill: parent
                             // Выбор меняет форму: clover ↔ squircle. Смена
                             // shape в MorphShape сама играет на пружине.
-                            shape: tile.selected ? "clover" : "squircle"
+                            shape: "squircle"
                             color: tile.containerColor
                             modulation: 0.45
                             Behavior on color { ColorAnimation { duration: 140 } }
@@ -159,7 +159,7 @@ PanelWindow {
                         // не вылезать за волнистый контур.
                         MorphShape {
                             anchors.fill: parent
-                            shape: tile.selected ? "clover" : "squircle"
+                            shape: "squircle"
                             modulation: 0.45
                             color: Theme.withAlpha(tile.inkColor, Theme.stateHover)
                             opacity: tileHover.containsMouse && !tile.selected ? 1 : 0

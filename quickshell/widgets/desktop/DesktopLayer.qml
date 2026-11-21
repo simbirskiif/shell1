@@ -327,7 +327,7 @@ PanelWindow {
 
         MorphShape {
             anchors.fill: parent
-            shape: PickerState.valid ? "squircle" : "burst"
+            shape: "squircle"
             modulation: 0.34
             color: PickerState.valid
                    ? Theme.withAlpha(Theme.primaryContainer, 0.55)
@@ -359,7 +359,7 @@ PanelWindow {
 
         MorphShape {
             anchors.fill: parent
-            shape: DragController.valid ? "squircle" : "burst"
+            shape: "squircle"
             modulation: 0.34
             color: DragController.valid
                    ? Theme.withAlpha(Theme.primaryContainer, 0.55)
