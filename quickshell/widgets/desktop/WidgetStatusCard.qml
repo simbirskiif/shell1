@@ -29,7 +29,7 @@ Item {
     // чтобы проблему было видно боковым зрением.
     MorphShape {
         anchors.fill: parent
-        shape: root.compact ? "squircle" : "cookie"
+        shape: "squircle"
         modulation: 0.42
         color: Theme.errorContainer
         borderWidth: 0

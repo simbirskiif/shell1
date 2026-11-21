@@ -259,16 +259,15 @@ Item {
         anchors.right: parent.right
         height: Theme.appBarHeight
 
-        // Маркер-«печенька»: секция/экран читается цветной формой, а не
-        // мелкой подписью.
-        MorphShape {
+        // Спокойный маркер секции вместо «печеньки»: маленькая точка.
+        Rectangle {
             id: titleDot
             anchors.left: parent.left
             anchors.leftMargin: 2
             anchors.verticalCenter: parent.verticalCenter
-            width: 10
-            height: 10
-            shape: "cookie"
+            width: 8
+            height: 8
+            radius: 4
             color: Theme.tertiary
         }
 
@@ -293,19 +292,18 @@ Item {
             height: 26
             visible: !root.settingsOpen
 
-            MorphShape {
+            Rectangle {
                 anchors.fill: parent
-                shape: "pill"
-                modulation: 0.35
-                color: Theme.tertiaryContainer
+                radius: height / 2
+                color: Theme.surfaceContainerHigh
             }
 
             Text {
                 id: countText
                 anchors.centerIn: parent
                 text: appList.count
-                color: Theme.scheme.onTertiaryContainer
-                font: Theme.typeEmphasizedLabelLarge
+                color: Theme.scheme.onSurfaceVariant
+                font: Theme.typeLabelLarge
             }
         }
     }

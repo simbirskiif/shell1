@@ -36,42 +36,30 @@ PanelWindow {
         dialogScreen: root.screen
     }
 
-    // Плавающая карточка бара: скруглённая пилюля, лёгкий тональный
-    // градиент к tertiary — цветовая иерархия вместо серой полосы.
+    // Бар прижат к верхней кромке: ровная полоса без отступов и градиента.
     Rectangle {
         id: barCard
         anchors.fill: parent
-        anchors.topMargin: 6
-        anchors.bottomMargin: 6
-        anchors.leftMargin: 8
-        anchors.rightMargin: 8
-        radius: height / 2
         color: Theme.barSurface
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: Theme.barSurface }
-            GradientStop { position: 0.55; color: Theme.barSurface }
-            GradientStop { position: 1.0; color: Theme.withAlpha(Theme.tertiaryContainer, 0.55) }
-        }
     }
 
     Workspaces {
-        anchors.left: barCard.left
-        anchors.leftMargin: Theme.space.lg
-        anchors.verticalCenter: barCard.verticalCenter
+        anchors.left: parent.left
+        anchors.leftMargin: Theme.barPadding
+        anchors.verticalCenter: parent.verticalCenter
         screenName: root.screen ? root.screen.name : ""
     }
 
     Clock {
-        anchors.horizontalCenter: barCard.horizontalCenter
-        anchors.verticalCenter: barCard.verticalCenter
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.verticalCenter: parent.verticalCenter
     }
 
     // Порядок элементов задаётся в настройках (MockState.barItems).
     Row {
-        anchors.right: barCard.right
-        anchors.rightMargin: Theme.space.sm
-        anchors.verticalCenter: barCard.verticalCenter
+        anchors.right: parent.right
+        anchors.rightMargin: Theme.barPadding
+        anchors.verticalCenter: parent.verticalCenter
         spacing: Theme.space.xs
 
         Repeater {

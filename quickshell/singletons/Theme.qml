@@ -177,7 +177,7 @@ Singleton {
 
     // ===================== Поверхности и отступы оболочки ===============
     // Бар
-    readonly property int barHeight: 60
+    readonly property int barHeight: 56
     readonly property int barPadding: 12
     readonly property color barBackground: root.barSurface
     readonly property color barForeground: root.scheme.onSurface
@@ -200,11 +200,11 @@ Singleton {
     readonly property int controlRadius: root.shape.full
 
     // Попап быстрых настроек: ширина общая для всех видов и ограничена.
-    readonly property int quickWidth: 420
+    readonly property int quickWidth: 400
     readonly property int quickRadius: root.shape.xl
     readonly property int quickPadding: 16
     readonly property int quickCircleSize: 32
-    readonly property int quickTileHeight: 78
+    readonly property int quickTileHeight: 72
     readonly property int quickTileRadius: root.shape.xl
     readonly property int quickTileSpacing: 8
     readonly property int quickHeaderHeight: 64

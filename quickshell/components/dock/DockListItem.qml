@@ -1,27 +1,18 @@
 import QtQuick
 import Quickshell
-import "../expressive"
 import "../../singletons"
 
-// Результат поиска в двух видах: строка и плитка. Высота задаётся
-// GridView, поэтому переходы add/remove/displaced работают в обоих видах.
-// Мышь выбирает элемент только при реальном входе/движении указателя.
+// Результат поиска в двух видах: строка и плитка.
 //
-// Expressive: карточки-плитки — контрастные контейнеры (primary/tertiary/
-// secondary) с чередующимися формами squircle/cookie/pill; выбранная
-// карточка — secondary-container и форма clover. Строки — крупные пилюли
-// с воздухом между ними (разделителей нет): в покое прозрачные, при
-// наведении — squircle тональной поверхности, выбранная — cookie на
-// secondary-container. Иконка живёт в орбе 42, глиф — 24.
+// Сознательно без MorphShape: в сетке одновременно живут десятки
+// делегатов, и Canvas-контуры на каждом заметно роняли отклик меню.
+// Здесь только прямоугольники со скруглением и пружины — меню остаётся
+// быстрым, а состояние читается цветом и контуром.
 Item {
     id: root
 
     required property var item
     property bool tile: false
-    // Порядковый номер в выдаче: чередует контейнеры и формы плиток,
-    // поэтому сетка выглядит как набор разных фигур, а не как один цвет.
-    property int slot: 0
-    // Индекс делегата: нужен и для выбора по мыши (GridView.currentIndex).
     required property int index
 
     signal activated()
@@ -31,8 +22,6 @@ Item {
     scale: 1
     opacity: 1
 
-    // Текущий элемент списка: в плитках он получает clover на
-    // secondary-container, в строках — cookie на secondary-container.
     readonly property bool current: GridView.isCurrentItem
     readonly property bool hovered: hover.containsMouse
     readonly property bool pressed: hover.pressed
@@ -43,31 +32,14 @@ Item {
         return Quickshell.iconPath(root.item.icon, true);
     }
 
-    // Цвет и форма плитки чередуются по номеру: primary-container/squircle,
-    // tertiary-container/cookie, secondary-container/pill. Выбранная плитка
-    // всегда secondary-container + clover — форма важнее цвета, поэтому
-    // выбор читается даже там, где контейнер совпадает.
-    readonly property int toneIndex: root.slot % 3
-    readonly property color tileContainer: root.current ? Theme.secondaryContainer
-        : root.toneIndex === 0 ? Theme.primaryContainer
-        : root.toneIndex === 1 ? Theme.tertiaryContainer
-        : Theme.secondaryContainer
-    readonly property color tileInk: root.current ? Theme.scheme.onSecondaryContainer
-        : root.toneIndex === 0 ? Theme.scheme.onPrimaryContainer
-        : root.toneIndex === 1 ? Theme.scheme.onTertiaryContainer
-        : Theme.scheme.onSecondaryContainer
-    readonly property string tileShape: root.current ? "clover"
-        : root.toneIndex === 0 ? "squircle"
-        : root.toneIndex === 1 ? "cookie"
-        : "pill"
-
-    // Строка: выбранная — secondary-container + cookie, наведение —
-    // squircle тональной поверхности, в покое формы нет.
-    readonly property color rowColor: root.current ? Theme.secondaryContainer
-        : root.hovered ? Theme.surfaceContainerHigh
-        : "transparent"
-    readonly property color rowInk: root.current ? Theme.scheme.onSecondaryContainer
-                                                 : Theme.scheme.onSurface
+    // Один акцент: выбранный элемент — secondary-container, остальные —
+    // тональная поверхность. Наведение лишь чуть поднимает тон.
+    readonly property color baseColor: root.current ? Theme.secondaryContainer
+                                                    : Theme.surfaceContainerHigh
+    readonly property color inkColor: root.current ? Theme.scheme.onSecondaryContainer
+                                                   : Theme.scheme.onSurface
+    readonly property color cardColor: Theme.mix(root.baseColor, root.inkColor,
+                                                 root.hovered && !root.current ? 0.05 : 0)
 
     function activate() {
         root.activated();
@@ -75,37 +47,83 @@ Item {
             DockSearch.activate(root.item);
     }
 
-    // Всё содержимое в одном слое: hover/press масштабируют форму и текст,
-    // а root.scale остаётся свободным для переходов GridView.
     Item {
         id: content
         anchors.fill: parent
 
         scale: root.pressed ? 0.97
-             : (root.tile && root.hovered ? 1.03 : 1)
+             : (root.tile && root.hovered ? 1.02 : 1)
         Behavior on scale { SpringSpatialFast {} }
 
-        // --- форма-контейнер ------------------------------------------
-        // Плитка — MorphShape: контейнер почти квадратный, поэтому
-        // полярный контур читается как настоящая фигура (squircle/cookie/
-        // pill, выбранная — clover).
-        MorphShape {
+        // Плитка: ровный squircle-контейнер.
+        Rectangle {
             id: tileCard
             visible: root.tile
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
             width: Math.max(0, root.width - Theme.space.xs)
             height: Math.max(0, root.height - Theme.space.xs)
-            shape: root.pressed ? "squircle" : root.tileShape
-            modulation: root.current ? 0.45 : 0.5
-            color: Theme.mix(root.tileContainer, root.tileInk,
-                             root.pressed ? 0.10 : (root.hovered ? 0.06 : 0))
-            Behavior on color { ColorAnimation { duration: 140 } }
+            radius: Theme.shape.lg
+            color: root.cardColor
+            border.width: root.current ? 0 : 1
+            border.color: Theme.outlineVariant
+            Behavior on color { ColorAnimation { duration: 120 } }
         }
 
-        // Строка — stadium, а не MorphShape: полярная форма на широкой
-        // строке вытягивается в «линзу» с острыми концами. Выразительность
-        // строки держит cookie-орб, а контейнер остаётся ровной пилюлей.
+        // Круглая подложка иконки в плитке.
+        Rectangle {
+            id: tileOrb
+            visible: root.tile
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: Theme.space.sm
+            width: 46
+            height: 46
+            radius: width / 2
+            color: Theme.withAlpha(root.inkColor, 0.10)
+        }
+
+        Image {
+            id: tileIcon
+            visible: root.tile
+            anchors.centerIn: tileOrb
+            width: Theme.iconSize.lg + Theme.space.xs
+            height: width
+            source: root.tile ? root.iconSource : ""
+            sourceSize.width: 64
+            sourceSize.height: 64
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            asynchronous: true
+        }
+
+        Text {
+            anchors.centerIn: tileOrb
+            visible: root.tile && tileIcon.status !== Image.Ready
+            text: root.item && root.item.title
+                  ? String(root.item.title).charAt(0).toUpperCase() : "?"
+            color: root.inkColor
+            font: Theme.typeTitleMedium
+        }
+
+        Text {
+            visible: root.tile
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: Theme.space.sm
+            anchors.rightMargin: Theme.space.sm
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: Theme.space.sm
+            text: root.item ? root.item.title : ""
+            color: root.inkColor
+            font: Theme.typeLabelMedium
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            maximumLineCount: 1
+            Behavior on color { ColorAnimation { duration: 120 } }
+        }
+
+        // Строка: пилюля на всю ширину.
         Rectangle {
             id: rowCard
             visible: !root.tile
@@ -114,15 +132,11 @@ Item {
             width: root.width
             height: Math.max(0, root.height - Theme.space.xs)
             radius: height / 2
-            color: root.rowColor
-            Behavior on color { ColorAnimation { duration: 140 } }
+            color: root.cardColor
+            Behavior on color { ColorAnimation { duration: 120 } }
         }
 
-        // --- строковый вид --------------------------------------------
-        // Орб иконки: у выбранной строки — tertiary-container, иначе
-        // тональная поверхность. Контейнер строки и орб — разные роли,
-        // поэтому строка читается как «содержимое в форме», а не плашка.
-        MorphShape {
+        Rectangle {
             id: rowOrb
             visible: !root.tile
             anchors.left: parent.left
@@ -130,10 +144,9 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: 42
             height: 42
-            shape: root.current ? "cookie" : (root.hovered ? "sunny" : "circle")
-            modulation: 0.9
+            radius: width / 2
             color: root.current ? Theme.tertiaryContainer : Theme.surfaceContainerHighest
-            Behavior on color { ColorAnimation { duration: 140 } }
+            Behavior on color { ColorAnimation { duration: 120 } }
         }
 
         Image {
@@ -142,7 +155,7 @@ Item {
             anchors.centerIn: rowOrb
             width: Theme.iconSize.lg
             height: width
-            source: root.iconSource
+            source: root.tile ? "" : root.iconSource
             sourceSize.width: 64
             sourceSize.height: 64
             fillMode: Image.PreserveAspectFit
@@ -155,9 +168,8 @@ Item {
             visible: !root.tile && iconImage.status !== Image.Ready
             text: root.item && root.item.title
                   ? String(root.item.title).charAt(0).toUpperCase() : "?"
-            color: root.rowInk
+            color: root.inkColor
             font: Theme.typeTitleMedium
-            Behavior on color { ColorAnimation { duration: 140 } }
         }
 
         Column {
@@ -172,10 +184,10 @@ Item {
             Text {
                 width: parent.width
                 text: root.item ? root.item.title : ""
-                color: root.rowInk
+                color: root.inkColor
                 font: root.current ? Theme.typeEmphasizedLabelLarge : Theme.typeBodyLarge
                 elide: Text.ElideRight
-                Behavior on color { ColorAnimation { duration: 140 } }
+                Behavior on color { ColorAnimation { duration: 120 } }
             }
 
             Text {
@@ -186,64 +198,8 @@ Item {
                                     : Theme.scheme.onSurfaceVariant
                 font: Theme.typeLabelMedium
                 elide: Text.ElideRight
-                Behavior on color { ColorAnimation { duration: 140 } }
+                Behavior on color { ColorAnimation { duration: 120 } }
             }
-        }
-
-        // --- плиточный вид --------------------------------------------
-        // Орб под иконкой: полупрозрачная ink-подложка, поэтому глиф
-        // читается на любом из трёх контейнеров.
-        MorphShape {
-            id: tileOrb
-            visible: root.tile
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: 46
-            height: 46
-            anchors.top: parent.top
-            anchors.topMargin: Theme.space.sm
-            shape: root.current ? "sunny" : "circle"
-            modulation: 0.9
-            color: Theme.withAlpha(root.tileInk, 0.14)
-        }
-
-        Image {
-            id: tileIcon
-            visible: root.tile
-            anchors.centerIn: tileOrb
-            width: Theme.iconSize.lg + Theme.space.xs
-            height: width
-            source: root.iconSource
-            sourceSize.width: 64
-            sourceSize.height: 64
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-            asynchronous: true
-        }
-
-        Text {
-            anchors.centerIn: tileOrb
-            visible: root.tile && tileIcon.status !== Image.Ready
-            text: root.item && root.item.title
-                  ? String(root.item.title).charAt(0).toUpperCase() : "?"
-            color: root.tileInk
-            font: Theme.typeTitleMedium
-        }
-
-        Text {
-            visible: root.tile
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: Theme.space.sm
-            anchors.rightMargin: Theme.space.sm
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: Theme.space.sm
-            text: root.item ? root.item.title : ""
-            color: root.tileInk
-            font: Theme.typeLabelMedium
-            horizontalAlignment: Text.AlignHCenter
-            elide: Text.ElideRight
-            maximumLineCount: 1
-            Behavior on color { ColorAnimation { duration: 140 } }
         }
     }
 
@@ -255,13 +211,9 @@ Item {
 
         onContainsMouseChanged: if (containsMouse) DockState.keepAlive()
 
-        // Мышь — второй приоритет: наведение меняет выделение только
-        // после реального появления курсора на элементе. Неподвижный
-        // указатель, под которым появилась панель, ничего не выбирает.
         onEntered: {
             if (Date.now() < DockState.mouseGuardUntil)
                 return;
-            // Курсор не двигался — значит под ним просто переехал список.
             if (Date.now() - DockState.pointerMovedAt > 150)
                 return;
             if (GridView.view && GridView.view.currentIndex !== root.index)
@@ -271,8 +223,6 @@ Item {
         onPositionChanged: {
             if (Date.now() < DockState.mouseGuardUntil)
                 return;
-            // Тот же фильтр, что и на входе: позиция могла измениться
-            // потому, что под неподвижным курсором переехал список.
             if (Date.now() - DockState.pointerMovedAt > 150)
                 return;
             if (GridView.view && GridView.view.currentIndex !== root.index)

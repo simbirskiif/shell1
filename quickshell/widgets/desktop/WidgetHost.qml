@@ -404,7 +404,7 @@ Item {
         anchors.margins: -6
         z: -1
         visible: root.editing && root.selected
-        shape: root.dragActive ? "burst" : "cookie"
+        shape: "squircle"
         modulation: 0.42
         color: Theme.primaryContainer
         opacity: visible ? 1 : 0

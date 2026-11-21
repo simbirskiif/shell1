@@ -124,53 +124,6 @@ Item {
         UiState.moveTile(from, to);
     }
 
-    // Экспрессивная пара «акцент + форма» для каждой плитки: в одной
-    // панели соседствуют разные контейнеры и разные контуры.
-    function tileTone(key) {
-        if (key === "internet")
-            return "primary";
-        if (key === "bluetooth")
-            return "tertiary";
-        if (key === "sound")
-            return "secondary";
-        if (key === "brightness")
-            return "tertiary";
-        if (key === "dnd")
-            return "neutral";
-        if (key === "caffeine")
-            return "secondary";
-        if (key === "layout")
-            return "primary";
-        return "secondary";
-    }
-
-    function tileShape(key) {
-        if (key === "internet")
-            return "cookie";
-        if (key === "bluetooth")
-            return "pill";
-        if (key === "sound")
-            return "squircle";
-        if (key === "brightness")
-            return "cookie";
-        if (key === "dnd")
-            return "blob";
-        if (key === "caffeine")
-            return "pill";
-        if (key === "layout")
-            return "squircle";
-        return "cookie";
-    }
-
-    readonly property Item activeDetail: {
-        for (let i = 0; i < detailViews.count; ++i) {
-            const view = detailViews.itemAt(i);
-            if (view && view.active)
-                return view;
-        }
-        return null;
-    }
-
     implicitWidth: Theme.quickWidth
 
     // Высоты обоих участников жеста: сетки и открытой дочерней панели.
@@ -282,23 +235,38 @@ Item {
             anchors.top: parent.top
             spacing: Theme.quickTileSpacing
 
-            // Шапка Expressive: крупный FAB-настройки, жирный заголовок,
-            // батарея — большой тональный чип tertiary-container.
+            // Шапка: спокойная кнопка настроек, заголовок, нейтральный
+            // чип батареи. Никаких крупных FAB и цветных контейнеров —
+            // Expressive остаётся в движении и типографике.
             Item {
                 width: parent.width
-                height: Theme.appBarHeight + 12
+                height: 52
 
-                ExpressiveFab {
+                Rectangle {
                     id: settingsButton
                     anchors.left: parent.left
-                    anchors.leftMargin: 0
                     anchors.verticalCenter: parent.verticalCenter
-                    size: 52
-                    icon: "\uf013"
-                    tone: "primary"
-                    shape: "cookie"
-                    hoverShape: "squircle"
-                    onClicked: settingsEntry.open()
+                    width: 40
+                    height: 40
+                    radius: width / 2
+                    color: settingsHover.containsMouse ? Theme.surfaceContainerHighest
+                                                       : Theme.surfaceContainerHigh
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "\uf013"
+                        color: Theme.scheme.onSurface
+                        font.family: Theme.iconFontFamily
+                        font.pixelSize: 18
+                    }
+
+                    MouseArea {
+                        id: settingsHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: settingsEntry.open()
+                    }
                 }
 
                 Text {
@@ -309,7 +277,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Быстрые настройки"
                     color: Theme.scheme.onSurface
-                    font: Theme.typeEmphasizedHeadlineSmall
+                    font: Theme.typeEmphasizedTitleLarge
                     elide: Text.ElideRight
                 }
 
@@ -318,15 +286,17 @@ Item {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     visible: PowerService.present
-                    width: batteryRow.width + Theme.space.lg * 2
-                    height: 46
+                    width: batteryRow.width + Theme.space.lg
+                    height: 38
                     radius: height / 2
-                    color: Theme.secondaryContainer
+                    color: Theme.surfaceContainerHigh
+                    border.width: 1
+                    border.color: Theme.outlineVariant
 
                     Row {
                         id: batteryRow
                         anchors.centerIn: parent
-                        spacing: 8
+                        spacing: 6
 
                         BatteryIndicator {
                             anchors.verticalCenter: parent.verticalCenter
@@ -337,8 +307,8 @@ Item {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: PowerService.level + "%"
-                            color: Theme.scheme.onTertiaryContainer
-                            font: Theme.typeEmphasizedLabelLarge
+                            color: Theme.scheme.onSurface
+                            font: Theme.typeLabelLarge
                         }
                     }
 
@@ -388,8 +358,6 @@ Item {
                         title: modelData.title
                         subtitle: modelData.subtitle
                         active: modelData.active
-                        accentTone: root.tileTone(modelData.key)
-                        expressiveShape: root.tileShape(modelData.key)
                         editable: root.editing
                         // Плитка «Wi-Fi»: в кружке живые деления сигнала.
                         wifiStatus: modelData.wifiTile === true

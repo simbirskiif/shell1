@@ -69,9 +69,7 @@ Item {
 
     MorphShape {
         anchors.fill: parent
-        shape: root.dragging ? "squircle"
-             : root.hovered ? "clover"
-             : "cookie"
+        shape: root.hovered ? "pill" : "squircle"
         modulation: 0.42
         color: root.hovered ? Theme.primaryContainer : root.baseContainer
         borderWidth: 0

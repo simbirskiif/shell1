@@ -293,9 +293,7 @@ Item {
 
             MorphShape {
                 anchors.fill: parent
-                shape: pathToggleHover.pressed ? "squircle"
-                     : pathToggleHover.containsMouse ? "cookie"
-                     : "pill"
+                shape: pathToggleHover.containsMouse ? "squircle" : "pill"
                 modulation: 0.4
                 color: pathToggleHover.containsMouse ? Theme.tertiaryContainer
                                                      : Theme.secondaryContainer

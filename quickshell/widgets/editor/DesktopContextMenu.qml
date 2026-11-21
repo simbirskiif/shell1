@@ -106,10 +106,7 @@ Item {
                 MorphShape {
                     anchors.fill: parent
                     visible: !menuRow.separator
-                    shape: menuHover.pressed ? "squircle"
-                         : menuRow.commitGroup ? "pill"
-                         : menuRow.hovered ? "pill"
-                         : "cookie"
+                    shape: menuHover.pressed ? "squircle" : "pill"
                     modulation: menuRow.commitGroup ? 0.35 : 0.45
                     color: menuRow.commitGroup
                            ? (menuHover.containsMouse
