@@ -460,6 +460,17 @@ Singleton {
         refresh();
     }
 
+    // Настройки могли прочитаться раньше, чем создался этот синглтон:
+    // тогда restore() вызывается из onCompleted. Если позже — сигналом.
+    Connections {
+        target: Settings
+
+        function onLoadedChanged() {
+            if (Settings.loaded)
+                root.restore();
+        }
+    }
+
     Component.onCompleted: {
         refresh();
         // Синглтон создаётся лениво: настройки могли прочитаться раньше нас.
