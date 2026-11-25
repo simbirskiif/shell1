@@ -66,6 +66,9 @@ PanelWindow {
                 sourceComponent: itemKey === "battery" ? batteryItem
                                : itemKey === "notifications" ? notificationsItem
                                : itemKey === "status" ? statusItem
+                               : itemKey === "wifi" ? wifiItem
+                               : itemKey === "bluetooth" ? bluetoothItem
+                               : itemKey === "brightness" ? brightnessItem
                                : null
             }
         }
@@ -133,7 +136,9 @@ PanelWindow {
         id: statusItem
 
         ControlButton {
-            iconOverride: MockState.iconFor("status")
+            bluetoothIcon: MockState.statusIconFor("bluetooth")
+            wifiIcon: MockState.statusIconFor("wifi")
+            soundIcon: MockState.statusIconFor("sound")
             bluetoothEnabled: BluetoothBackend.enabled
             wifiEnabled: NetworkService.wifiEnabled
             wifiConnected: NetworkService.wifiConnected
@@ -141,6 +146,43 @@ PanelWindow {
             soundEnabled: !AudioService.outputMuted
             opened: quickPopup.visible
             onClicked: quickPopup.toggle()
+        }
+    }
+
+    // Быстрые действия открывают свои панели — как батарея и уведомления.
+    // Тумблеры радио остаются внутри панелей, чтобы случайный клик по бару
+    // не отключал сеть.
+    Component {
+        id: wifiItem
+
+        BarActionButton {
+            kind: "wifi"
+            iconOverride: MockState.iconFor("wifi")
+            wifiEnabled: NetworkService.wifiEnabled
+            wifiConnected: NetworkService.wifiConnected
+            wifiSignal: NetworkService.connectedSignal
+            onClicked: UiState.open(root.screen ? root.screen.name : "", "internet")
+        }
+    }
+
+    Component {
+        id: bluetoothItem
+
+        BarActionButton {
+            kind: "bluetooth"
+            iconOverride: MockState.iconFor("bluetooth")
+            bluetoothEnabled: BluetoothBackend.enabled
+            onClicked: UiState.open(root.screen ? root.screen.name : "", "bluetooth")
+        }
+    }
+
+    Component {
+        id: brightnessItem
+
+        BarActionButton {
+            kind: "brightness"
+            iconOverride: MockState.iconFor("brightness")
+            onClicked: UiState.open(root.screen ? root.screen.name : "", "brightness")
         }
     }
 }

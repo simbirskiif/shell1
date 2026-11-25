@@ -107,7 +107,10 @@ Item {
                             anchors.centerIn: parent
                             sourceComponent: chip.itemKey === "battery" ? batteryPreview
                                            : chip.itemKey === "notifications" ? notificationsPreview
-                                           : statusPreview
+                                           : chip.itemKey === "status" ? statusPreview
+                                           : chip.itemKey === "wifi" ? wifiPreview
+                                           : chip.itemKey === "bluetooth" ? bluetoothPreview
+                                           : brightnessPreview
                         }
                     }
 
@@ -178,13 +181,46 @@ Item {
         id: statusPreview
 
         ControlButton {
-            iconOverride: MockState.iconFor("status")
+            bluetoothIcon: MockState.statusIconFor("bluetooth")
+            wifiIcon: MockState.statusIconFor("wifi")
+            soundIcon: MockState.statusIconFor("sound")
             bluetoothEnabled: BluetoothBackend.enabled
             wifiEnabled: NetworkService.wifiEnabled
             wifiConnected: NetworkService.wifiConnected
             wifiSignal: NetworkService.connectedSignal
             soundEnabled: !AudioService.outputMuted
             opened: false
+        }
+    }
+
+    Component {
+        id: wifiPreview
+
+        BarActionButton {
+            kind: "wifi"
+            iconOverride: MockState.iconFor("wifi")
+            wifiEnabled: NetworkService.wifiEnabled
+            wifiConnected: NetworkService.wifiConnected
+            wifiSignal: NetworkService.connectedSignal
+        }
+    }
+
+    Component {
+        id: bluetoothPreview
+
+        BarActionButton {
+            kind: "bluetooth"
+            iconOverride: MockState.iconFor("bluetooth")
+            bluetoothEnabled: BluetoothBackend.enabled
+        }
+    }
+
+    Component {
+        id: brightnessPreview
+
+        BarActionButton {
+            kind: "brightness"
+            iconOverride: MockState.iconFor("brightness")
         }
     }
 }

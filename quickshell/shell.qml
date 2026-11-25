@@ -873,6 +873,29 @@ ShellRoot {
             return settingsState();
         }
 
+        // Добавить/убрать действие в баре: wifi | bluetooth | brightness
+        // (а также battery | notifications | status).
+        function addItem(item: string): string {
+            MockState.addBarItem(item);
+            return settingsState();
+        }
+
+        function removeItem(item: string): string {
+            MockState.removeBarItem(item);
+            return settingsState();
+        }
+
+        function available(): string {
+            return MockState.availableBarItems().join(",");
+        }
+
+        // Входящая иконка кнопки управления: slot = wifi | bluetooth | sound,
+        // value = auto | "" (скрыть) | глиф.
+        function statusIcon(slot: string, value: string): string {
+            MockState.setStatusIcon(slot, value);
+            return settingsState();
+        }
+
         // Состояние настроек: файл, ключи и то, что сейчас в памяти.
         function settingsState(): string {
             const bar = [];

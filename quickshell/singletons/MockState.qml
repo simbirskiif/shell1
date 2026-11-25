@@ -23,33 +23,66 @@ Singleton {
     property var visibleTiles: ["bluetooth", "internet", "sound", "dnd", "caffeine", "brightness", "layout"]
     property var availableTiles: []
 
-    // Порядок элементов в баре: порядок в модели = слева-направо.
+    // Элементы бара. Порядок в модели = слева-направо; bar.items хранит
+    // только реально выбранные элементы, поэтому сохранённый пустой список
+    // означает пустой бар, а не «восстановить всё».
     readonly property ListModel barItems: ListModel {
-        ListElement { itemKey: "battery"; title: "Battery" }
-        ListElement { itemKey: "notifications"; title: "Notifications" }
-        ListElement { itemKey: "status"; title: "Quick settings" }
+        ListElement { itemKey: "battery"; title: "Батарея" }
+        ListElement { itemKey: "notifications"; title: "Уведомления" }
+        ListElement { itemKey: "status"; title: "Пункт управления" }
     }
 
-    // Подписи элементов бара по ключу: из них собирается модель при
-    // восстановлении порядка.
+    // Каталог всех доступных элементов. Подписи — для списка «добавить»,
+    // иконки — для него же, когда элемент ещё не стоит в баре.
     readonly property var barItemTitles: ({
-        "battery": "Battery",
-        "notifications": "Notifications",
-        "status": "Quick settings"
+        "battery": "Батарея",
+        "notifications": "Уведомления",
+        "status": "Пункт управления",
+        "wifi": "Wi-Fi",
+        "bluetooth": "Bluetooth",
+        "brightness": "Яркость"
     })
 
-    // Иконки элементов бара. Пустая строка — штатная иконка элемента:
-    // у батареи это живой индикатор заряда, у статуса — составной значок
-    // Bluetooth/Wi-Fi/звука, у уведомлений — колокольчик. Пользовательская
-    // иконка заменяет её одним глифом Nerd Font.
+    readonly property var barItemIcons: ({
+        "battery": "\uf240",
+        "notifications": "\uf0f3",
+        "status": "\uf013",
+        "wifi": "\uf1eb",
+        "bluetooth": "\uf293",
+        "brightness": "\uf185"
+    })
+
+    // Порядок на первом запуске и при сбросе.
+    readonly property var defaultBarItems: ["battery", "notifications", "status"]
+
+    // Счётчик изменений состава/порядка: от него зависят привязки списка
+    // доступных действий в окне настроек.
+    property int barRevision: 0
+
+    // Иконки одиночных элементов. Пустая строка — штатная иконка: у батареи
+    // живой индикатор, у уведомлений колокольчик, у Wi-Fi живые деления
+    // сигнала, у Bluetooth/яркости — штатный глиф.
     readonly property var defaultBarIcons: ({
         "battery": "",
         "notifications": "\uf0f3",
-        "status": ""
+        "wifi": "",
+        "bluetooth": "",
+        "brightness": ""
     })
     property var barIcons: ({})
 
     onBarIconsChanged: root.store("bar.icons", barIcons)
+
+    // Составные иконки кнопки управления. "auto" — живой значок, пустая
+    // строка — слот скрыт; если скрыты все три, кнопка показывает шестерёнку.
+    readonly property var defaultStatusIcons: ({
+        "wifi": "auto",
+        "bluetooth": "auto",
+        "sound": "auto"
+    })
+    property var statusIcons: ({})
+
+    onStatusIconsChanged: root.store("bar.statusIcons", statusIcons)
 
     // --- сохранение настроек ------------------------------------------------
     // Значения живут здесь (к ним привязан интерфейс), а Settings хранит их
@@ -91,26 +124,88 @@ Singleton {
         root.barIcons = next;
     }
 
-    function resetBarIcons() {
-        root.barIcons = ({});
+    function statusIconFor(slot) {
+        const value = root.statusIcons[slot];
+        if (value === undefined || value === null)
+            return root.defaultStatusIcons[slot] || "";
+        return String(value);
     }
 
-    // Строка для IPC/логов: key=glyph или key=auto для штатного вида.
+    function setStatusIcon(slot, value) {
+        if (root.defaultStatusIcons[slot] === undefined)
+            return;
+        const next = {};
+        for (const existing in root.statusIcons)
+            next[existing] = root.statusIcons[existing];
+        next[slot] = String(value === undefined || value === null ? "" : value);
+        root.statusIcons = next;
+    }
+
+    function resetBarIcons() {
+        root.barIcons = ({});
+        root.statusIcons = ({});
+    }
+
+    // Строка для IPC/логов: key=glyph, key=auto или key=hidden для статуса.
     function barIconsSummary() {
         const parts = [];
         for (const key in root.defaultBarIcons) {
             const glyph = root.iconOverrideFor(key);
             parts.push(key + "=" + (glyph === "" ? "auto" : glyph));
         }
+        const status = [];
+        for (const slot in root.defaultStatusIcons) {
+            const value = root.statusIconFor(slot);
+            status.push(slot + ":" + (value === "" ? "hidden" : value));
+        }
+        parts.push("status=" + status.join("/"));
         return parts.join(",");
     }
 
-    Connections {
-        target: Settings
+    // --- состав бара -------------------------------------------------------
 
-        function onLoadedChanged() {
-            if (Settings.loaded)
-                root.restore();
+    function barItemPresent(key) {
+        for (let i = 0; i < root.barItems.count; ++i) {
+            if (root.barItems.get(i).itemKey === key)
+                return true;
+        }
+        return false;
+    }
+
+    function availableBarItems() {
+        root.barRevision;
+        const result = [];
+        for (const key in root.barItemTitles) {
+            if (!root.barItemPresent(key))
+                result.push(key);
+        }
+        return result;
+    }
+
+    function barItemIcon(key) {
+        return root.barItemIcons[key] || "\uf013";
+    }
+
+    function firstBarItemKey() {
+        return root.barItems.count > 0 ? root.barItems.get(0).itemKey : "";
+    }
+
+    function addBarItem(key) {
+        if (root.barItemTitles[key] === undefined || root.barItemPresent(key))
+            return;
+        root.barItems.append({ itemKey: key, title: root.barItemTitles[key] });
+        root.barRevision++;
+        root.storeBarOrder();
+    }
+
+    function removeBarItem(key) {
+        for (let i = 0; i < root.barItems.count; ++i) {
+            if (root.barItems.get(i).itemKey !== key)
+                continue;
+            root.barItems.remove(i);
+            root.barRevision++;
+            root.storeBarOrder();
+            return;
         }
     }
 
@@ -122,28 +217,32 @@ Singleton {
         const savedIcons = Settings.value("bar.icons", null);
         root.barIcons = savedIcons !== null && typeof savedIcons === "object"
                         && !Array.isArray(savedIcons) ? savedIcons : ({});
-        root.restoreBarOrder(Settings.value("bar.items", []));
+        const savedStatusIcons = Settings.value("bar.statusIcons", null);
+        root.statusIcons = savedStatusIcons !== null && typeof savedStatusIcons === "object"
+                           && !Array.isArray(savedStatusIcons) ? savedStatusIcons : ({});
+        root.restoreBarOrder(Settings.value("bar.items", null));
         root.restoring = false;
     }
 
-    // Сохранённый порядок применяем к модели: незнакомые ключи отбрасываем,
-    // пропавшие из настройки — дописываем в конец, чтобы элемент не исчез.
+    // Сохранённый список — точный состав бара. Незнакомые ключи (например,
+    // из будущей версии) отбрасываем, но отсутствующие в настройке элементы
+    // больше не дописываем: действия можно убрать с бара осознанно.
     function restoreBarOrder(saved) {
-        if (!saved || saved.length === 0)
-            return;
         const order = [];
-        for (let i = 0; i < saved.length; ++i) {
-            const key = String(saved[i]);
-            if (root.barItemTitles[key] !== undefined && order.indexOf(key) < 0)
-                order.push(key);
-        }
-        for (const key in root.barItemTitles) {
-            if (order.indexOf(key) < 0)
-                order.push(key);
+        if (Array.isArray(saved)) {
+            for (let i = 0; i < saved.length; ++i) {
+                const key = String(saved[i]);
+                if (root.barItemTitles[key] !== undefined && order.indexOf(key) < 0)
+                    order.push(key);
+            }
+        } else {
+            for (let i = 0; i < root.defaultBarItems.length; ++i)
+                order.push(root.defaultBarItems[i]);
         }
         root.barItems.clear();
         for (let i = 0; i < order.length; ++i)
             root.barItems.append({ itemKey: order[i], title: root.barItemTitles[order[i]] });
+        root.barRevision++;
     }
 
     function storeBarOrder() {
@@ -209,15 +308,12 @@ Singleton {
         root.availableTiles = [];
     }
 
-    // Сброс раздела «Бар» из окна настроек: исходный порядок и процент
-    // батареи включён — так оболочка выглядит на первом запуске.
+    // Сброс раздела «Бар» из окна настроек: исходный порядок, штатные
+    // иконки и включённый процент батареи.
     function resetBarSettings() {
         root.showBatteryPercent = true;
-        root.barIcons = ({});
-        const order = ["battery", "notifications", "status"];
-        root.barItems.clear();
-        for (let i = 0; i < order.length; ++i)
-            root.barItems.append({ itemKey: order[i], title: root.barItemTitles[order[i]] });
+        root.resetBarIcons();
+        root.restoreBarOrder(root.defaultBarItems);
         root.storeBarOrder();
     }
 

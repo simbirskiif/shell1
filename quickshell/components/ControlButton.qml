@@ -3,6 +3,9 @@ import "quick"
 import "../singletons"
 
 // Кнопка справа в баре: статус Bluetooth / Wi-Fi / звука одной кнопкой.
+// Состав настраивается в окне настроек: каждый слот может быть живым
+// (auto), скрытым (пусто) или заменён своим глифом. Если скрыты все три,
+// кнопка показывает шестерёнку и остаётся входом в быстрые настройки.
 Rectangle {
     id: root
 
@@ -14,8 +17,19 @@ Rectangle {
     required property bool soundEnabled
     required property bool opened
 
-    // Пользовательская иконка заменяет весь составной индикатор состояния.
-    property string iconOverride: ""
+    // "auto" — штатный значок, "" — слот скрыт, иначе глиф Nerd Font.
+    property string bluetoothIcon: "auto"
+    property string wifiIcon: "auto"
+    property string soundIcon: "auto"
+
+    readonly property bool allSlotsHidden: bluetoothIcon === "" && wifiIcon === ""
+                                           && soundIcon === ""
+    readonly property color activeColor: root.opened ? Theme.scheme.onSecondaryContainer
+                                                      : Theme.scheme.onSurface
+    readonly property color dimColor: root.opened
+                                      ? Theme.stateLayer(Theme.scheme.onSecondaryContainer,
+                                                         Theme.disabledContent)
+                                      : Theme.quickTextDim
 
     signal clicked()
 
@@ -35,22 +49,32 @@ Rectangle {
         anchors.verticalCenterOffset: 1
         spacing: 10
 
+        // --- Bluetooth ----------------------------------------------------
         Text {
-            visible: root.iconOverride === ""
+            anchors.verticalCenter: parent.verticalCenter
+            visible: !root.allSlotsHidden && root.bluetoothIcon === "auto"
             text: "\uf293"
-            color: root.bluetoothEnabled ? (root.opened ? Theme.scheme.onSecondaryContainer
-                                                       : Theme.scheme.onSurface)
-                                        : Theme.quickTextDim
+            color: root.bluetoothEnabled ? root.activeColor : root.dimColor
             font.family: Theme.iconFontFamily
             font.pixelSize: Theme.iconSize.sm
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
 
-        // Выключенное radio — перечёркнутый значок, включённое — деления
-        // доступности.
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: !root.allSlotsHidden && root.bluetoothIcon !== ""
+                     && root.bluetoothIcon !== "auto"
+            text: root.bluetoothIcon
+            color: root.bluetoothEnabled ? root.activeColor : root.dimColor
+            font.family: Theme.iconFontFamily
+            font.pixelSize: Theme.iconSize.sm
+            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        }
+
+        // --- Wi-Fi --------------------------------------------------------
         WifiStatusIcon {
             anchors.verticalCenter: parent.verticalCenter
-            visible: root.iconOverride === ""
+            visible: !root.allSlotsHidden && root.wifiIcon === "auto"
             width: 19
             height: 19
             glyphSize: 14
@@ -60,23 +84,46 @@ Rectangle {
         }
 
         Text {
-            visible: root.iconOverride === ""
+            anchors.verticalCenter: parent.verticalCenter
+            visible: !root.allSlotsHidden && root.wifiIcon !== ""
+                     && root.wifiIcon !== "auto"
+            text: root.wifiIcon
+            color: root.wifiEnabled ? (root.wifiConnected ? root.activeColor : Theme.quickTextDim)
+                                    : root.dimColor
+            font.family: Theme.iconFontFamily
+            font.pixelSize: Theme.iconSize.sm
+        }
+
+        // --- Звук ---------------------------------------------------------
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: !root.allSlotsHidden && root.soundIcon === "auto"
             text: root.soundEnabled ? "\uf028" : "\uf026"
-            color: root.soundEnabled ? (root.opened ? Theme.scheme.onSecondaryContainer
-                                                   : Theme.scheme.onSurface)
-                                    : Theme.quickTextDim
+            color: root.soundEnabled ? root.activeColor : root.dimColor
             font.family: Theme.iconFontFamily
             font.pixelSize: Theme.iconSize.sm
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
 
         Text {
-            visible: root.iconOverride !== ""
-            text: root.iconOverride
-            color: root.opened ? Theme.scheme.onSecondaryContainer : Theme.scheme.onSurface
+            anchors.verticalCenter: parent.verticalCenter
+            visible: !root.allSlotsHidden && root.soundIcon !== ""
+                     && root.soundIcon !== "auto"
+            text: root.soundIcon
+            color: root.soundEnabled ? root.activeColor : root.dimColor
             font.family: Theme.iconFontFamily
             font.pixelSize: Theme.iconSize.sm
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        }
+
+        // Все слоты скрыты — кнопка остаётся входом в быстрые настройки.
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.allSlotsHidden
+            text: "\uf013"
+            color: root.activeColor
+            font.family: Theme.iconFontFamily
+            font.pixelSize: Theme.iconSize.sm
         }
     }
 
