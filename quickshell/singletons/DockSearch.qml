@@ -525,15 +525,6 @@ Singleton {
                 root.probeIfNeeded();
             root.requestSearch();
         }
-
-        function onSettingsOpenChanged() {
-            if (!DockState.settingsOpen)
-                return;
-            if (root.providers.length === 0)
-                root.refresh();
-            else
-                root.probeIfNeeded();
-        }
     }
 
     function setQuery(value) {

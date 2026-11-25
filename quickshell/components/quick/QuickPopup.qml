@@ -193,6 +193,12 @@ PopupWindow {
             QuickPanel {
                 id: panelItem
                 width: scroller.width
+                screenName: root.screenName
+
+                onSettingsRequested: {
+                    UiState.close();
+                    SettingsWindowState.show("bar", root.screenName);
+                }
             }
         }
     }

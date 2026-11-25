@@ -44,10 +44,6 @@ Singleton {
     // такие «наведения» не должны менять выделение.
     property double pointerMovedAt: 0
 
-    // Какое содержимое раскрытой панели показано: приложения или настройки.
-    // Живёт здесь, чтобы переключаться из панели и по IPC.
-    property bool settingsOpen: false
-
     // Поисковый запрос в списке приложений. В DockState, а не в панели,
     // чтобы его можно было менять снаружи и сбрасывать при закрытии.
     property string query: ""
@@ -73,7 +69,6 @@ Singleton {
         + " pending=" + root.pendingExpand
         + " hold=" + root.holdOpen
         + " hover=" + root.hovered
-        + " settings=" + root.settingsOpen
         + " query=" + (root.query === "" ? "-" : root.query)
 
     // --- команды ----------------------------------------------------------
@@ -132,7 +127,6 @@ Singleton {
         root.holdOpen = false;
         autoHide.stop();
         root.pendingExpand = false;
-        root.settingsOpen = false;
         root.query = "";
         if (!root.expanded) {
             if (root.shown && !root.transitioning)
@@ -151,7 +145,6 @@ Singleton {
     function hide() {
         root.holdOpen = false;
         root.pendingExpand = false;
-        root.settingsOpen = false;
         root.query = "";
         autoHide.stop();
         if (!root.shown) {

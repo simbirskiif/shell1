@@ -3,22 +3,17 @@ import Quickshell
 import ".."
 import "../../singletons"
 
-// Содержимое раскрытого дока: поиск, анимированный список приложений и
-// настройки дока. Это «большая панель», в которую плавно превращается
-// компактная полоса. Поверхность листа задаёт карточка дока (Dock.qml):
-// в раскрытом виде она тонально опускается до surfaceContainerLow.
+// Содержимое раскрытого дока: поиск и анимированный список приложений.
+// Это «большая панель», в которую плавно превращается компактная полоса.
+// Поверхность листа задаёт карточка дока (Dock.qml): в раскрытом виде она
+// тонально опускается до surfaceContainerLow. Настройки дока живут в общем
+// окне настроек (components/settings/SettingsWindow.qml).
 Item {
     id: root
 
     required property string screenName
 
     signal closeRequested()
-
-    // Настройки открываются поверх списка, а не отдельным окном: панель уже
-    // держит и маску ввода, и фокус-граб для закрытия по клику мимо.
-    // Состояние в DockState, чтобы панель переживала пересоздание и
-    // переключалась по IPC.
-    readonly property bool settingsOpen: DockState.settingsOpen
 
     // Первый результат выбираем только на новом запросе, а не на каждом
     // обновлении выдачи: иначе асинхронный Elephant сбрасывает выбор,
@@ -42,9 +37,6 @@ Item {
     // Высота, которую хочет содержимое. В режиме «по списку» её использует
     // Dock: карточка плавно подстраивается под число строк.
     readonly property real desiredHeight: {
-        // Даже с открытыми настройками окно следует за размером списка:
-        // так включение режима «по списку» видно сразу, а не после
-        // закрытия настроек. Сам блок настроек при этом прокручивается.
         const listPart = Math.max(72, root.listContentHeight);
         return header.height + Theme.space.sm + searchField.height
                + Theme.space.sm + listPart;
@@ -192,14 +184,8 @@ Item {
         function onExpandedChanged() {
             if (DockState.expanded) {
                 DockState.mouseGuardUntil = Date.now() + 360;
-                if (!DockState.settingsOpen)
-                    searchField.focusInput();
-            }
-        }
-
-        function onSettingsOpenChanged() {
-            if (DockState.expanded && !DockState.settingsOpen)
                 searchField.focusInput();
+            }
         }
 
         function onShownChanged() {
@@ -231,10 +217,6 @@ Item {
         enabled: DockState.expanded
 
         onActivated: {
-            if (DockState.settingsOpen) {
-                DockState.settingsOpen = false;
-                return;
-            }
             if (DockState.query !== "") {
                 DockState.query = "";
                 return;
@@ -257,7 +239,7 @@ Item {
             anchors.left: parent.left
             anchors.leftMargin: Theme.space.xs
             anchors.verticalCenter: parent.verticalCenter
-            text: root.settingsOpen ? "Настройки дока" : "Приложения"
+            text: "Приложения"
             color: Theme.scheme.onSurface
             font: Theme.typeTitleLarge
         }
@@ -266,7 +248,6 @@ Item {
             anchors.left: titleText.right
             anchors.leftMargin: Theme.space.sm
             anchors.verticalCenter: parent.verticalCenter
-            visible: !root.settingsOpen
             text: "· " + appList.count
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeBodyMedium
@@ -284,9 +265,14 @@ Item {
             size: Theme.iconButtonSize
             glyphSize: Theme.iconSize.md
             icon: "\uf013"
-            accented: root.settingsOpen
 
-            onClicked: DockState.settingsOpen = !DockState.settingsOpen
+            // Настройки — отдельным окном. Док сворачиваем: два
+            // exclusive-слоя одновременно не должны бороться за клавиатуру.
+            onClicked: {
+                const screen = root.screenName;
+                DockState.collapse();
+                SettingsWindowState.show("dock", screen);
+            }
         }
 
         DockIconButton {
@@ -310,14 +296,6 @@ Item {
         y: DockSettings.searchAtBottom ? parent.height - height
                                        : header.height + Theme.space.sm
         height: DockSettings.searchHeight
-        opacity: root.settingsOpen ? 0 : 1
-        visible: opacity > 0.001
-        Behavior on opacity {
-            MotionNumber {
-                duration: Theme.dockFadeDuration
-                curve: Theme.curveEmphasized
-            }
-        }
 
         onEdited: value => DockState.query = value
         onNavigate: delta => root.moveSelection(delta)
@@ -331,7 +309,6 @@ Item {
         id: layoutButton
         anchors.right: parent.right
         anchors.verticalCenter: searchField.verticalCenter
-        visible: !root.settingsOpen
         size: Theme.iconButtonSize
         glyphSize: Theme.iconSize.md
         icon: DockSettings.tileLayout ? "\uf00b" : "\uf00a"
@@ -428,16 +405,6 @@ Item {
             radius: Theme.shape.lg
             color: Theme.secondaryContainer
         }
-        enabled: !root.settingsOpen
-        opacity: root.settingsOpen ? 0 : 1
-        visible: opacity > 0.001
-        Behavior on opacity {
-            MotionNumber {
-                duration: Theme.dockFadeDuration
-                curve: Theme.curveEmphasized
-            }
-        }
-
         delegate: DockListItem {
             required property var modelData
 
@@ -516,7 +483,6 @@ Item {
     Item {
         id: listOverlay
         anchors.fill: appList
-        visible: !root.settingsOpen
 
         // «Мышь — второй приоритет»: выделение от указателя включается
         // только после реального движения. Панель может появиться под
@@ -545,27 +511,10 @@ Item {
 
     Text {
         anchors.centerIn: appList
-        visible: !root.settingsOpen && appList.count === 0
+        visible: appList.count === 0
         text: DockState.query !== "" ? "Ничего не найдено" : "Список приложений пуст"
         color: Theme.scheme.onSurfaceVariant
         font: Theme.typeBodyMedium
     }
 
-    // --- настройки дока ---------------------------------------------------
-    DockPanelSettings {
-        anchors.top: header.bottom
-        anchors.topMargin: Theme.space.sm
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        enabled: root.settingsOpen
-        opacity: root.settingsOpen ? 1 : 0
-        visible: opacity > 0.001
-        Behavior on opacity {
-            MotionNumber {
-                duration: Theme.dockFadeDuration
-                curve: Theme.curveEmphasized
-            }
-        }
-    }
 }

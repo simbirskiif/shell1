@@ -79,7 +79,7 @@ Rectangle {
         font: Theme.typeBodyLarge
         selectByMouse: true
         clip: true
-        focus: DockState.keyboardActive && !DockState.settingsOpen
+        focus: DockState.keyboardActive
 
         onTextChanged: root.edited(input.text)
         onAccepted: root.submitted()

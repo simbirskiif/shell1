@@ -1,10 +1,11 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "../../singletons"
 
 // Внешнее управление через IPC: qs ipc call widgets <функция>.
-// На этапе 3 здесь переключение материала/режима цвета для проверки и
-// будущий попап настроек; на этапе 5 сюда добавится edit toggle.
+// Параметры экземпляров и глобальные значения доступны и из окна настроек
+// (раздел «Виджеты»), но IPC остаётся для биндов и проверок без мыши.
 IpcHandler {
     target: "widgets"
 
@@ -39,7 +40,7 @@ IpcHandler {
                    + Config.defaultColorMode + "/"
                    + Math.round(Config.defaultMaterialDim * 100) + "%"
                    + " settings=" + (EditorState.settingsUid || "none")
-                   + " global=" + (EditorState.globalOpen ? "true" : "false"))
+                   + " settingsWindow=" + (SettingsWindowState.summary()))
         return lines.join("\n")
     }
 
@@ -82,9 +83,7 @@ IpcHandler {
     }
 
     function globals(): string {
-        const screen = Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
-        if (screen)
-            EditorState.openGlobalSettings(screen.name)
+        SettingsWindowState.show("widgets", "")
         return state()
     }
 
@@ -98,6 +97,12 @@ IpcHandler {
 
     function dim(value: real): string {
         Config.setDefaultMaterialDim(value)
+        return state()
+    }
+
+    // Отладочная сетка рабочего стола.
+    function grid(enabled: bool): string {
+        Config.setShowGrid(enabled)
         return state()
     }
 

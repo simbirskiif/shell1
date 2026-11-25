@@ -156,11 +156,11 @@ qs ipc -p /home/adm_a/shell/quickshell call widgets addPath /path/to/widgets
   «Закрыть». После закрытия/удаления панель полностью исчезает.
 - Каталог виджетов тоже открывается справа на всю высоту, как панели
   оболочки.
-- «Параметры виджетов…» в ПКМ-меню открывает `WidgetsGlobalPopup`: материал,
-  цвет и затемнение материала по умолчанию для всех экземпляров, сброс
-  переопределений. Это тот же слой, отдельного окна нет.
+- «Параметры виджетов…» в ПКМ-меню открывает общее окно настроек
+  (`SettingsWindow`, раздел «Виджеты»): материал, цвет, затемнение материала
+  по умолчанию для всех экземпляров, отладочная сетка и сброс переопределений.
 - В настройках экземпляра есть слайдер «Затемнение материала» и кнопка
-  «По умолчанию»; глобальное значение задаётся таким же слайдером.
+  «По умолчанию»; глобальное значение задаётся в том же разделе окна настроек.
 
 ## Пути
 
@@ -198,11 +198,12 @@ qs ipc -p /home/adm_a/shell/quickshell call widgets addPath /path/to/widgets
 quickshell/
   shell.qml                   основная оболочка + DesktopLayer + WidgetIpc
   singletons/Theme.qml        общая палитра, включая Material-роли виджетов
+  components/settings/        общее окно настроек оболочки (все разделы)
   widgets/
     core/                     Config, Registry, LayoutStore, Theme-роли, IPC
     desktop/                  DesktopLayer, WidgetHost, GridOverlay
     editor/                   DragController, PickerState, Picker, Settings,
-                              SidePanel, DesktopContextMenu, WidgetsGlobalPopup
+                              SidePanel, DesktopContextMenu
     tools/build-shaders.sh
     docs/WIDGET_AUTHORING.md
   builtin-widgets/            my.clock, my.note, my.color, my.allowed,

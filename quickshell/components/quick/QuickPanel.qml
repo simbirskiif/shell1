@@ -9,10 +9,16 @@ import "../../singletons"
 Item {
     id: root
 
+    // Экран, на котором открыт попап: нужен, чтобы шестерёнка открыла
+    // окно настроек на том же мониторе.
+    property string screenName: ""
+
+    signal settingsRequested()
+
     readonly property string panel: UiState.panel
     readonly property bool editing: UiState.editing
 
-    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, layoutEntry, dndEntry, caffeineEntry, batteryEntry, settingsEntry, soundOutputEntry, soundInputEntry]
+    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, layoutEntry, dndEntry, caffeineEntry, batteryEntry, soundOutputEntry, soundInputEntry]
 
     // Плитки, которыми управляет редактор.
     readonly property var tileEntries: [bluetoothEntry, internetEntry, soundEntry, dndEntry, caffeineEntry, brightnessEntry, layoutEntry]
@@ -274,7 +280,7 @@ Item {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: settingsEntry.open()
+                        onClicked: root.settingsRequested()
                     }
                 }
 
@@ -794,27 +800,6 @@ Item {
 
         function toggle() {
             ProfileState.next();
-        }
-    }
-
-    // Настройки: тоже кнопка в шапке (слева от батареи), не плитка.
-    QtObject {
-        id: settingsEntry
-
-        readonly property bool inGrid: false
-        readonly property string key: "settings"
-        readonly property string title: "Settings"
-        readonly property string icon: "\uf013"
-        readonly property bool active: false
-        readonly property string subtitle: ""
-        readonly property Component view: Component { PanelSettings {} }
-
-        function open() {
-            UiState.openDetail(key);
-        }
-
-        function toggle() {
-            // У настроек кружок ничего не переключает.
         }
     }
 

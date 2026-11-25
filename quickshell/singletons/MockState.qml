@@ -17,7 +17,9 @@ Singleton {
     property bool showBatteryPercent: true
 
     // Набор плиток основной панели: видимые (в порядке) и доступные.
-    // Меняется только кнопкой «Сохранить» в режиме редактирования.
+    // Меняется кнопкой «Сохранить» в режиме редактирования или сразу из
+    // раздела «Быстрые настройки» общего окна настроек.
+    readonly property var defaultVisibleTiles: ["bluetooth", "internet", "sound", "dnd", "caffeine", "brightness", "layout"]
     property var visibleTiles: ["bluetooth", "internet", "sound", "dnd", "caffeine", "brightness", "layout"]
     property var availableTiles: []
 
@@ -115,6 +117,53 @@ Singleton {
             root.barItems.move(0, root.barItems.count - 1, 1);
             root.storeBarOrder();
         }
+    }
+
+    // Плитки быстрых настроек: перестановка и скрытие/возврат. Порядок
+    // в массиве = порядок в сетке, изменения сразу пишутся в Settings.
+    function moveVisibleTile(key, delta) {
+        const tiles = root.visibleTiles.slice();
+        const from = tiles.indexOf(key);
+        const to = from + delta;
+        if (from < 0 || to < 0 || to >= tiles.length || delta === 0)
+            return;
+        const item = tiles.splice(from, 1)[0];
+        tiles.splice(to, 0, item);
+        root.visibleTiles = tiles;
+    }
+
+    function hideQuickTile(key) {
+        const tiles = root.visibleTiles.slice();
+        const index = tiles.indexOf(key);
+        if (index < 0)
+            return;
+        tiles.splice(index, 1);
+        root.visibleTiles = tiles;
+        if (root.availableTiles.indexOf(key) < 0)
+            root.availableTiles = root.availableTiles.concat([key]);
+    }
+
+    function showQuickTile(key) {
+        if (root.visibleTiles.indexOf(key) >= 0)
+            return;
+        root.visibleTiles = root.visibleTiles.concat([key]);
+        root.availableTiles = root.availableTiles.filter(item => item !== key);
+    }
+
+    function resetQuickTiles() {
+        root.visibleTiles = root.defaultVisibleTiles.slice();
+        root.availableTiles = [];
+    }
+
+    // Сброс раздела «Бар» из окна настроек: исходный порядок и процент
+    // батареи включён — так оболочка выглядит на первом запуске.
+    function resetBarSettings() {
+        root.showBatteryPercent = true;
+        const order = ["battery", "notifications", "status"];
+        root.barItems.clear();
+        for (let i = 0; i < order.length; ++i)
+            root.barItems.append({ itemKey: order[i], title: root.barItemTitles[order[i]] });
+        root.storeBarOrder();
     }
 
     // Яркость переехала в BrightnessService (backlight/logind и DDC/CI):

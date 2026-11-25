@@ -127,6 +127,14 @@ Singleton {
         return true
     }
 
+    // Отладочная сетка: раньше ключ правился только руками в config.json,
+    // теперь у него есть переключатель в окне настроек.
+    function setShowGrid(value: bool): bool {
+        adapter.grid.showGrid = value === true
+        configFile.writeAdapter()
+        return true
+    }
+
     // Каталоги для пользовательских настроек/материалов. Создаём заранее,
     // чтобы наблюдатели за папками не пропускали вложенное создание.
     Process {

@@ -11,6 +11,7 @@ import "components/dock"
 import "singletons"
 import "widgets/desktop"
 import "widgets/core"
+import "components/settings"
 import "components/lock"
 
 ShellRoot {
@@ -133,6 +134,18 @@ ShellRoot {
         delegate: NotificationCenter {
             required property var modelData
             centerScreen: modelData
+        }
+    }
+
+    // Единое окно настроек оболочки: разделы «Бар», «Быстрые настройки»,
+    // «Док», «Уведомления», «Кофеин», «Виджеты» и «Оформление». Открывается
+    // из быстрых настроек, дока, меню рабочего стола и по IPC.
+    Variants {
+        model: Quickshell.screens
+
+        delegate: SettingsWindow {
+            required property var modelData
+            settingsScreen: modelData
         }
     }
 
@@ -311,6 +324,45 @@ ShellRoot {
 
         function state(): string {
             return ProfileState.summary();
+        }
+    }
+
+    // Окно настроек снаружи:
+    //   qs ipc -p ~/shell/quickshell call settings open dock
+    //   qs ipc -p ~/shell/quickshell call settings toggle dock
+    // section: bar | quick | dock | notifications | caffeine | widgets | appearance.
+    IpcHandler {
+        target: "settings"
+
+        function open(section: string): string {
+            SettingsWindowState.show(section, "");
+            return state();
+        }
+
+        function toggle(section: string): string {
+            SettingsWindowState.toggle(section, "");
+            return state();
+        }
+
+        function close(): string {
+            SettingsWindowState.close();
+            return state();
+        }
+
+        function section(name: string): string {
+            SettingsWindowState.setSection(name);
+            return state();
+        }
+
+        function list(): string {
+            const parts = [];
+            for (let i = 0; i < SettingsWindowState.sections.length; ++i)
+                parts.push(SettingsWindowState.sections[i].key);
+            return parts.join(" ");
+        }
+
+        function state(): string {
+            return SettingsWindowState.summary();
         }
     }
 
@@ -494,9 +546,15 @@ ShellRoot {
             return state();
         }
 
-        // Переключить содержимое раскрытой панели: приложения/настройки.
+        // Настройки дока теперь в общем окне настроек. Имя функции оставлено
+        // прежним: на него завязаны бинды и скрипты проверки.
         function toggleSettings(): string {
-            DockState.settingsOpen = !DockState.settingsOpen;
+            if (SettingsWindowState.opened && SettingsWindowState.section === "dock") {
+                SettingsWindowState.close();
+            } else {
+                DockState.collapse();
+                SettingsWindowState.show("dock", DockState.screenName);
+            }
             return state();
         }
 
@@ -881,8 +939,9 @@ ShellRoot {
             return state();
         }
 
+        // Шестерёнка быстрых настроек ведёт в общее окно настроек.
         function settings(): string {
-            UiState.open(UiState.defaultScreen(), "settings");
+            SettingsWindowState.show("bar", "");
             return state();
         }
 

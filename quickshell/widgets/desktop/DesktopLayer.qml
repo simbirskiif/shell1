@@ -275,7 +275,7 @@ PanelWindow {
         } else if (name === "add") {
             EditorState.openPicker(root.screen.name)
         } else if (name === "global") {
-            EditorState.openGlobalSettings(root.screen.name)
+            SettingsWindowState.show("widgets", root.screen.name)
         } else if (name === "edit") {
             EditorState.enter()
         } else if (name === "commit") {
@@ -536,10 +536,6 @@ PanelWindow {
         metrics: gridMetrics
     }
 
-    WidgetsGlobalPopup {
-        screen: root.screen
-    }
-
     // Затемняющая подложка меню: закрывает его по клику вне панели, но не
     // создаёт отдельного слоя.
     MouseArea {
@@ -571,8 +567,6 @@ PanelWindow {
                     desktopMenu.close()
                 else if (EditorState.settingsUid.length > 0)
                     EditorState.closeSettings()
-                else if (EditorState.globalOpen)
-                    EditorState.closeGlobalSettings()
                 else if (EditorState.pickerOpen)
                     EditorState.closePicker()
                 else
