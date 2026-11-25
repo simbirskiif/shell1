@@ -4,41 +4,61 @@ import "../quick"
 import "../../singletons"
 
 // Живое превью правой части бара: те же кнопки, что в настоящем баре,
-// с настоящими значениями сервисов. Элементы выбираются кликом, а
-// перетаскивание меняет их порядок после отпускания.
+// с настоящими значениями сервисов.
 //
-// Repeater с ListModel пересоздаёт делегаты на move(), поэтому во время
-// перетаскивания модель не трогаем: показываем цель и смещаем только
-// отрисовку, а move() вызываем один раз на отпускании.
+// Перетаскивание обрабатывает страница настроек (единое перетаскивание для бара и списка
+// доступных действий); здесь остаются выбор кликом, приём цели и маркер
+// вставки.
 Item {
     id: root
 
     property string selectedKey: "battery"
-    property int dragIndex: -1
-    property int dropIndex: -1
-    property real dragOffset: 0
+    // Куда встанет перетаскиваемый элемент: 0..count; -1 — маркер скрыт.
+    property int dropGap: -1
+    // Item, в координатах которого страница считает позицию курсора.
+    property Item dragLayer: null
+
+    // Перетаскиваемый элемент и его смещение: видимая кнопка едет за мышью,
+    // слот в Row остаётся на месте.
+    property string draggingKey: ""
+    property real dragDeltaX: 0
+    property real dragDeltaY: 0
 
     signal selected(string key)
+    signal dragStarted(string key, int index, real x, real y)
+    signal dragMoved(real x, real y)
+    signal dragFinished()
+    signal dragCanceled()
 
     implicitWidth: parent ? parent.width : 0
     implicitHeight: Theme.barHeight + Theme.space.md
 
-    function targetIndex(rowX) {
-        let target = previewRepeater.count - 1;
+    // Позиция вставки по локальной X превью. Сравниваем с центрами кнопок:
+    // левее центра первой — 0, правее центра последней — count.
+    function gapAt(localX) {
+        const rowX = localX - previewRow.x;
+        if (previewRepeater.count === 0)
+            return 0;
         for (let i = 0; i < previewRepeater.count; ++i) {
             const item = previewRepeater.itemAt(i);
-            if (item && rowX < item.x + item.width / 2) {
-                target = i;
-                break;
-            }
+            if (rowX < item.x + item.width / 2)
+                return i;
         }
-        return target;
+        return previewRepeater.count;
     }
 
-    function resetDrag() {
-        root.dragIndex = -1;
-        root.dropIndex = -1;
-        root.dragOffset = 0;
+    function markerX() {
+        if (root.dropGap < 0)
+            return 0;
+        if (previewRepeater.count === 0)
+            return width / 2;
+        if (root.dropGap <= 0)
+            return previewRow.x + previewRepeater.itemAt(0).x - previewRow.spacing / 2;
+        if (root.dropGap >= previewRepeater.count) {
+            const last = previewRepeater.itemAt(previewRepeater.count - 1);
+            return previewRow.x + last.x + last.width + previewRow.spacing / 2;
+        }
+        return previewRow.x + previewRepeater.itemAt(root.dropGap).x - previewRow.spacing / 2;
     }
 
     // Полоса как у бара: тот же фон, высота и отступ справа.
@@ -69,27 +89,22 @@ Item {
                     required property int index
 
                     readonly property bool selected: root.selectedKey === itemKey
-                    readonly property bool dropTarget: root.dropIndex === index
-                                                      && root.dragIndex >= 0
-                                                      && root.dropIndex !== root.dragIndex
 
                     width: previewLoader.implicitWidth + Theme.space.md
                     height: Theme.iconButtonSize + Theme.space.sm
-                    z: root.dragIndex === index ? 10 : 0
+                    z: root.draggingKey === itemKey ? 50 : 0
 
-                    // Выделение выбранного и подсветка цели перетаскивания.
-                    // Остаётся на месте слота, пока содержимое едет за мышью.
+                    // Выделение выбранного. Дроп-цель показывает отдельный
+                    // вертикальный маркер ниже.
                     Rectangle {
                         anchors.fill: parent
                         radius: Theme.shape.full
-                        color: chip.dropTarget
-                               ? Theme.withAlpha(Theme.primary, 0.18)
-                               : chip.selected
-                                 ? Theme.withAlpha(Theme.primary, 0.10)
-                                 : (dragArea.containsMouse
-                                    ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
-                                    : "transparent")
-                        border.width: chip.dropTarget ? 2 : (chip.selected ? 1 : 0)
+                        color: chip.selected
+                               ? Theme.withAlpha(Theme.primary, 0.10)
+                               : (dragArea.containsMouse
+                                  ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                                  : "transparent")
+                        border.width: chip.selected ? 1 : 0
                         border.color: Theme.primary
                     }
 
@@ -98,7 +113,8 @@ Item {
 
                         anchors.fill: parent
                         transform: Translate {
-                            x: root.dragIndex === chip.index ? root.dragOffset : 0
+                            x: root.draggingKey === chip.itemKey ? root.dragDeltaX : 0
+                            y: root.draggingKey === chip.itemKey ? root.dragDeltaY : 0
                         }
 
                         Loader {
@@ -114,8 +130,9 @@ Item {
                         }
                     }
 
-                    // Клики и перетаскивание: перекрываем действие настоящей
-                    // кнопки, чтобы в настройках она только выбиралась.
+                    // Клик открывает окно иконки, движение — перетаскивание.
+                    // События уходят странице, чтобы она могла принять drop
+                    // и добавить/убрать элемент.
                     MouseArea {
                         id: dragArea
 
@@ -125,36 +142,52 @@ Item {
                         cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
 
                         property real pressX: 0
+                        property real pressY: 0
+                        property bool moved: false
 
-                        onPressed: {
-                            root.dragIndex = chip.index;
-                            root.dropIndex = chip.index;
-                            root.dragOffset = 0;
+                        function pagePoint(x, y) {
+                            return root.dragLayer
+                                ? root.dragLayer.mapFromItem(chip, x, y)
+                                : Qt.point(x, y);
+                        }
+
+                        onPressed: mouse => {
                             pressX = mouse.x;
-                            root.selectedKey = chip.itemKey;
+                            pressY = mouse.y;
+                            moved = false;
                             root.selected(chip.itemKey);
+                            const point = pagePoint(mouse.x, mouse.y);
+                            root.dragStarted(chip.itemKey, chip.index, point.x, point.y);
                         }
 
                         onPositionChanged: mouse => {
-                            if (root.dragIndex < 0)
+                            if (!pressed)
                                 return;
-                            root.dragOffset = mouse.x - pressX;
-                            const point = mapToItem(previewRow, mouse.x, mouse.y);
-                            root.dropIndex = root.targetIndex(point.x);
+                            if (!moved
+                                    && Math.sqrt((mouse.x - pressX) * (mouse.x - pressX)
+                                      + (mouse.y - pressY) * (mouse.y - pressY)) < 4)
+                                return;
+                            moved = true;
+                            const point = pagePoint(mouse.x, mouse.y);
+                            root.dragMoved(point.x, point.y);
                         }
 
-                        onReleased: {
-                            const from = root.dragIndex;
-                            const to = root.dropIndex;
-                            root.resetDrag();
-                            if (from >= 0 && to >= 0 && from !== to)
-                                Qt.callLater(() => MockState.moveBarItemTo(from, to));
-                        }
-
-                        onCanceled: root.resetDrag()
+                        onReleased: root.dragFinished()
+                        onCanceled: root.dragCanceled()
                     }
                 }
             }
+        }
+
+        // Вертикальный маркер места вставки.
+        Rectangle {
+            visible: root.dropGap >= 0
+            x: root.markerX() - width / 2
+            y: previewRow.y + (previewRow.height - height) / 2
+            width: 2
+            height: 32
+            radius: Theme.shape.full
+            color: Theme.primary
         }
     }
 

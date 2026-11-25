@@ -354,6 +354,13 @@ ShellRoot {
             return state();
         }
 
+        // Окно выбора иконки элемента бара: battery | notifications |
+        // status | wifi | bluetooth | brightness.
+        function icon(key: string): string {
+            SettingsWindowState.openIconEditor(key);
+            return state();
+        }
+
         function list(): string {
             const parts = [];
             for (let i = 0; i < SettingsWindowState.sections.length; ++i)
@@ -887,6 +894,11 @@ ShellRoot {
 
         function available(): string {
             return MockState.availableBarItems().join(",");
+        }
+
+        function addItemAt(item: string, index: int): string {
+            MockState.addBarItemAt(item, index);
+            return settingsState();
         }
 
         // Входящая иконка кнопки управления: slot = wifi | bluetooth | sound,

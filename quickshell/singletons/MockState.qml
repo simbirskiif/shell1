@@ -190,12 +190,25 @@ Singleton {
         return root.barItems.count > 0 ? root.barItems.get(0).itemKey : "";
     }
 
-    function addBarItem(key) {
+    function barItemIndex(key) {
+        for (let i = 0; i < root.barItems.count; ++i) {
+            if (root.barItems.get(i).itemKey === key)
+                return i;
+        }
+        return -1;
+    }
+
+    function addBarItemAt(key, index) {
         if (root.barItemTitles[key] === undefined || root.barItemPresent(key))
             return;
-        root.barItems.append({ itemKey: key, title: root.barItemTitles[key] });
+        const at = Math.max(0, Math.min(root.barItems.count, Math.round(index)));
+        root.barItems.insert(at, { itemKey: key, title: root.barItemTitles[key] });
         root.barRevision++;
         root.storeBarOrder();
+    }
+
+    function addBarItem(key) {
+        root.addBarItemAt(key, root.barItems.count);
     }
 
     function removeBarItem(key) {

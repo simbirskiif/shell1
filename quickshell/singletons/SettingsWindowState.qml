@@ -30,6 +30,8 @@ Singleton {
     // другом мониторе переводит его туда, а не создаёт второе.
     property string screenName: ""
     property string section: "bar"
+    // Открытый диалог выбора иконки элемента бара. Пусто — диалог закрыт.
+    property string iconEditorKey: ""
 
     function hasSection(key) {
         for (let i = 0; i < root.sections.length; ++i) {
@@ -56,6 +58,7 @@ Singleton {
                 && root.hasSection(sectionKey))
             root.section = String(sectionKey);
         root.screenName = root.screenOrFirst(screen);
+        root.iconEditorKey = "";
         // Окно забирает клавиатуру эксклюзивно. Попап и раскрытый док —
         // тоже отдельные поверхности с фокусом, поэтому закрываем их,
         // иначе композитор выбирает между ними наугад.
@@ -67,7 +70,17 @@ Singleton {
     }
 
     function close() {
+        root.iconEditorKey = "";
         root.opened = false;
+    }
+
+    function openIconEditor(key) {
+        if (key !== undefined && String(key).length > 0)
+            root.iconEditorKey = String(key);
+    }
+
+    function closeIconEditor() {
+        root.iconEditorKey = "";
     }
 
     function toggle(sectionKey, screen) {
@@ -81,13 +94,16 @@ Singleton {
     }
 
     function setSection(sectionKey) {
-        if (root.hasSection(sectionKey))
+        if (root.hasSection(sectionKey)) {
             root.section = sectionKey;
+            root.iconEditorKey = "";
+        }
     }
 
     function summary() {
         return "opened=" + (root.opened ? "yes" : "no")
             + " section=" + root.section
+            + " iconEditor=" + (root.iconEditorKey === "" ? "-" : root.iconEditorKey)
             + " screen=" + (root.screenName === "" ? "-" : root.screenName);
     }
 }

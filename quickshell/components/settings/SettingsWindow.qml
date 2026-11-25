@@ -92,7 +92,12 @@ PanelWindow {
     Shortcut {
         sequence: "Escape"
         enabled: root.visible
-        onActivated: SettingsWindowState.close()
+        onActivated: {
+            if (SettingsWindowState.iconEditorKey !== "")
+                SettingsWindowState.closeIconEditor();
+            else
+                SettingsWindowState.close();
+        }
     }
 
     // Затемнение и закрытие по клику мимо карточки.
@@ -359,6 +364,11 @@ PanelWindow {
                    / Math.max(1, pageScroll.contentHeight - pageScroll.height)
             }
         }
+    }
+
+    // Окно выбора иконки поверх карточки настроек.
+    BarIconDialog {
+        z: 300
     }
 
     // Компоненты разделов. Держим их рядом с окном: навигация и страницы
