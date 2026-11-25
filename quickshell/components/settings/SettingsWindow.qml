@@ -227,6 +227,10 @@ PanelWindow {
             anchors.bottom: parent.bottom
             width: Math.min(248, card.width * 0.32)
             color: Theme.surfaceContainer
+            // clip у карточки прямоугольный: левая колонка — единственный
+            // непрозрачный слой у нижнего края, поэтому её нижний левый угол
+            // скругляем сами, иначе он закрывает скругление карточки.
+            bottomLeftRadius: Theme.shape.xl
 
             Column {
                 id: navColumn
@@ -318,6 +322,18 @@ PanelWindow {
                 width: pageScroll.width
                 sourceComponent: root.pageComponent
             }
+        }
+
+        // Обводка поверх содержимого: дочерние слои рисуются выше фона
+        // карточки и могут перекрывать её рамку (у левой колонки — ещё и
+        // нижнее скругление).
+        Rectangle {
+            anchors.fill: parent
+            radius: Theme.shape.xl
+            color: "transparent"
+            border.width: 1
+            border.color: Theme.outlineVariant
+            z: 100
         }
 
         // Тонкий индикатор прокрутки: длинные разделы (док, виджеты) не
