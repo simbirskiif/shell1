@@ -38,6 +38,19 @@ Singleton {
         "status": "Quick settings"
     })
 
+    // Иконки элементов бара. Пустая строка — штатная иконка элемента:
+    // у батареи это живой индикатор заряда, у статуса — составной значок
+    // Bluetooth/Wi-Fi/звука, у уведомлений — колокольчик. Пользовательская
+    // иконка заменяет её одним глифом Nerd Font.
+    readonly property var defaultBarIcons: ({
+        "battery": "",
+        "notifications": "\uf0f3",
+        "status": ""
+    })
+    property var barIcons: ({})
+
+    onBarIconsChanged: root.store("bar.icons", barIcons)
+
     // --- сохранение настроек ------------------------------------------------
     // Значения живут здесь (к ним привязан интерфейс), а Settings хранит их
     // между запусками. Во время восстановления обратной записи не делаем.
@@ -54,6 +67,44 @@ Singleton {
         Settings.setValue(key, value);
     }
 
+    // Переопределение иконки: пустая строка — «по умолчанию». Отдельно от
+    // iconFor(), чтобы настройки могли подсветить именно выбор пользователя.
+    function iconOverrideFor(key) {
+        const value = root.barIcons[key];
+        return value === undefined || value === null ? "" : String(value);
+    }
+
+    function iconFor(key) {
+        const override = root.iconOverrideFor(key);
+        if (override !== "")
+            return override;
+        return root.defaultBarIcons[key] || "";
+    }
+
+    function setBarIcon(key, glyph) {
+        if (root.defaultBarIcons[key] === undefined)
+            return;
+        const next = {};
+        for (const existing in root.barIcons)
+            next[existing] = root.barIcons[existing];
+        next[key] = String(glyph === undefined || glyph === null ? "" : glyph);
+        root.barIcons = next;
+    }
+
+    function resetBarIcons() {
+        root.barIcons = ({});
+    }
+
+    // Строка для IPC/логов: key=glyph или key=auto для штатного вида.
+    function barIconsSummary() {
+        const parts = [];
+        for (const key in root.defaultBarIcons) {
+            const glyph = root.iconOverrideFor(key);
+            parts.push(key + "=" + (glyph === "" ? "auto" : glyph));
+        }
+        return parts.join(",");
+    }
+
     Connections {
         target: Settings
 
@@ -68,6 +119,9 @@ Singleton {
         root.visibleTiles = Settings.value("tiles.visible", root.visibleTiles);
         root.availableTiles = Settings.value("tiles.available", root.availableTiles);
         root.showBatteryPercent = Settings.value("bar.showBatteryPercent", root.showBatteryPercent);
+        const savedIcons = Settings.value("bar.icons", null);
+        root.barIcons = savedIcons !== null && typeof savedIcons === "object"
+                        && !Array.isArray(savedIcons) ? savedIcons : ({});
         root.restoreBarOrder(Settings.value("bar.items", []));
         root.restoring = false;
     }
@@ -159,6 +213,7 @@ Singleton {
     // батареи включён — так оболочка выглядит на первом запуске.
     function resetBarSettings() {
         root.showBatteryPercent = true;
+        root.barIcons = ({});
         const order = ["battery", "notifications", "status"];
         root.barItems.clear();
         for (let i = 0; i < order.length; ++i)

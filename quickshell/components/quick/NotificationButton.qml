@@ -7,6 +7,8 @@ Rectangle {
     id: root
 
     property bool opened: false
+    // Иконка по умолчанию — колокольчик; в настройках бара её можно сменить.
+    property string iconGlyph: "\uf0f3"
 
     signal clicked()
 
@@ -21,7 +23,7 @@ Rectangle {
     Text {
         anchors.centerIn: parent
         anchors.verticalCenterOffset: 1
-        text: "\uf0f3"
+        text: root.iconGlyph
         // Колокольчик не подсвечиваем: о непрочитанном говорит точка.
         color: root.opened ? Theme.scheme.onSecondaryContainer : Theme.scheme.onSurface
         font.family: Theme.iconFontFamily

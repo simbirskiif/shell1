@@ -111,6 +111,7 @@ PanelWindow {
         id: notificationsItem
 
         NotificationButton {
+            iconGlyph: MockState.iconFor("notifications")
             opened: NotificationService.centerOpen
             onClicked: NotificationService.toggleCenter()
         }
@@ -120,6 +121,7 @@ PanelWindow {
         id: batteryItem
 
         BatteryButton {
+            iconOverride: MockState.iconFor("battery")
             showPercent: MockState.showBatteryPercent
             level: PowerService.level
             charging: PowerService.charging
@@ -131,6 +133,7 @@ PanelWindow {
         id: statusItem
 
         ControlButton {
+            iconOverride: MockState.iconFor("status")
             bluetoothEnabled: BluetoothBackend.enabled
             wifiEnabled: NetworkService.wifiEnabled
             wifiConnected: NetworkService.wifiConnected

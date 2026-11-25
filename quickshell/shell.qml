@@ -861,6 +861,18 @@ ShellRoot {
             return state();
         }
 
+        // Иконка элемента бара: item = battery | notifications | status,
+        // glyph — глиф Nerd Font; пустая строка возвращает штатный вид.
+        function icon(item: string, glyph: string): string {
+            MockState.setBarIcon(item, glyph);
+            return settingsState();
+        }
+
+        function resetIcons(): string {
+            MockState.resetBarIcons();
+            return settingsState();
+        }
+
         // Состояние настроек: файл, ключи и то, что сейчас в памяти.
         function settingsState(): string {
             const bar = [];
@@ -876,6 +888,7 @@ ShellRoot {
                 + " available=" + MockState.availableTiles.join(",")
                 + " bar=" + bar.join(",")
                 + " barPercent=" + (MockState.showBatteryPercent ? "on" : "off")
+                + " barIcons=" + MockState.barIconsSummary()
                 + " dnd=" + (NotificationService.doNotDisturb ? "on" : "off")
                 + " sens=" + NotificationService.swipeSensitivity.toFixed(2)
                 + " soundTab=" + UiState.soundTab;
@@ -1095,6 +1108,7 @@ ShellRoot {
                 + " netTile=" + (NetworkService.internetViaEthernet ? "Internet" : "Wi-Fi")
                 + " order=" + order.join(",")
                 + " barPercent=" + (MockState.showBatteryPercent ? "on" : "off")
+                + " barIcons=" + MockState.barIconsSummary()
                 + " battery=" + PowerService.level + "%" + (PowerService.charging ? "+" : "")
                 + " out=" + Math.round(AudioService.outputVolume * 100) + "%"
                              + (AudioService.outputMuted ? "m" : "")

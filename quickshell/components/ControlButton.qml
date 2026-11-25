@@ -14,6 +14,9 @@ Rectangle {
     required property bool soundEnabled
     required property bool opened
 
+    // Пользовательская иконка заменяет весь составной индикатор состояния.
+    property string iconOverride: ""
+
     signal clicked()
 
     // M3: кнопка-пилюля 40dp высотой, состояние — filled tonal.
@@ -33,6 +36,7 @@ Rectangle {
         spacing: 10
 
         Text {
+            visible: root.iconOverride === ""
             text: "\uf293"
             color: root.bluetoothEnabled ? (root.opened ? Theme.scheme.onSecondaryContainer
                                                        : Theme.scheme.onSurface)
@@ -46,6 +50,7 @@ Rectangle {
         // доступности.
         WifiStatusIcon {
             anchors.verticalCenter: parent.verticalCenter
+            visible: root.iconOverride === ""
             width: 19
             height: 19
             glyphSize: 14
@@ -55,10 +60,20 @@ Rectangle {
         }
 
         Text {
+            visible: root.iconOverride === ""
             text: root.soundEnabled ? "\uf028" : "\uf026"
             color: root.soundEnabled ? (root.opened ? Theme.scheme.onSecondaryContainer
                                                    : Theme.scheme.onSurface)
                                     : Theme.quickTextDim
+            font.family: Theme.iconFontFamily
+            font.pixelSize: Theme.iconSize.sm
+            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        }
+
+        Text {
+            visible: root.iconOverride !== ""
+            text: root.iconOverride
+            color: root.opened ? Theme.scheme.onSecondaryContainer : Theme.scheme.onSurface
             font.family: Theme.iconFontFamily
             font.pixelSize: Theme.iconSize.sm
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }

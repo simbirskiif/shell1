@@ -12,6 +12,8 @@ Item {
 
     // В баре процент можно отключить в настройках — иконка остаётся.
     property bool showPercent: true
+    // Пользовательская иконка из настроек бара. Пусто — живой индикатор.
+    property string iconOverride: ""
 
     signal clicked()
 
@@ -26,8 +28,19 @@ Item {
 
         BatteryIndicator {
             anchors.verticalCenter: parent.verticalCenter
+            visible: root.iconOverride === ""
             level: root.level
             charging: root.charging
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenterOffset: 1
+            visible: root.iconOverride !== ""
+            text: root.iconOverride
+            color: Theme.quickText
+            font.family: Theme.iconFontFamily
+            font.pixelSize: Theme.iconSize.sm
         }
 
         Text {
