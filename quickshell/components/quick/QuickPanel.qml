@@ -175,14 +175,8 @@ Item {
         return root.detailHeight;
     }
 
-    // Во время жеста окну нужен запас по высоте: если менять размер самой
-    // поверхности каждый кадр, композитор столько же раз пересоздаёт буфер
-    // и всё лагает. Запас фиксируем на старте жеста: при доводке panel
-    // успевает стать пустым, и «живой» максимум схлопнулся бы прямо посреди
-    // движения — окно прыгало бы вверх-вниз на ровном месте.
-    property real gestureRoom: 0
-    readonly property bool gestureSizing: root.gestureTowardMain
-
+    // Поверхность попапа имеет постоянную высоту, поэтому во время жеста
+    // карточка просто едет за пальцем — ресайза окна нет.
     implicitHeight: root.contentHeight
 
     // Состояние жеста живёт в UiState — им можно управлять и снаружи,
@@ -190,16 +184,14 @@ Item {
     readonly property real swipe: UiState.swipe
     readonly property bool swipeActive: UiState.swipeActive
 
-    // Ключ панели, которую уводит текущий жест, и запас высоты на его время.
-    // Фиксируем на старте: во время доводки panel успевает стать пустым,
-    // а вид ещё должен доехать до конца под управлением пальца.
+    // Ключ панели, которую уводит текущий жест. Фиксируем на старте: во
+    // время доводки panel успевает стать пустым, а вид ещё должен доехать
+    // до конца под управлением пальца.
     property string gestureKey: ""
 
     onSwipeActiveChanged: {
-        if (root.swipeActive) {
+        if (root.swipeActive)
             root.gestureKey = root.panel;
-            root.gestureRoom = Math.max(root.mainHeight, root.detailHeight);
-        }
     }
 
     // Жест идёт от дочерней панели к сетке плиток: в нём участвуют ровно

@@ -29,12 +29,8 @@ PopupWindow {
 
     function syncVisibility() {
         root.visible = UiState.openedScreen === root.screenName;
-        if (root.visible) {
-            // Открываемся сразу нужного размера: поверхность ещё не показана,
-            // анимировать размер нечего.
-            shrinkTimer.stop();
-            root.windowHeight = root.wantedHeight;
-        }
+        // Поверхность попапа имеет постоянный размер (см. implicitHeight),
+        // поэтому при открытии ничего пересчитывать не нужно.
     }
 
     onVisibleChanged: {
@@ -51,7 +47,6 @@ PopupWindow {
     }
 
     Component.onCompleted: {
-        root.windowHeight = root.wantedHeight;
         root.syncVisibility();
         UiState.popupHeight = card.height;
     }
@@ -81,55 +76,22 @@ PopupWindow {
     readonly property real maxHeight: anchorWindow.screen ? anchorWindow.screen.height - anchorWindow.height - 16 : 10000
 
     implicitWidth: panelItem.implicitWidth + Theme.quickPadding * 2
-    // Во время жеста окно держит запас по высоте (зафиксированный на старте)
-    // и не меняет размер ни на одном кадре — видимую высоту внутри ведёт
-    // карточка. В остальное время окно едет за той же целью, что и карточка,
-    // своей m3-анимацией: поэтому запас снимается плавно, а не одним
-    // прыжком, и контент в конце жеста никуда не дёргается.
-    // Окно растёт ещё и под контекстное меню: оно живёт в этом же окне
-    // (попап рисуется поверх layer-shell поверхностей) и должно помещаться
-    // целиком, иначе карточка обрежется. Запас нужен только пока меню
-    // открыто: у закрытого меню высота всё равно посчитана, и окно было бы
-    // всегда выше карточки на эту величину — в полосе под ней клик мимо не
-    // закрывал бы попап.
-    readonly property real menuRoom: Math.max(contextMenu.open ? contextMenu.maxCardHeight : 0,
-                                              bluetoothContextMenu.open ? bluetoothContextMenu.maxCardHeight : 0)
 
-    // Высота, которую окно должно занимать по контенту.
-    readonly property real targetHeight: Math.min(panelItem.contentHeight
-        + Theme.quickPadding * 2, root.maxHeight) + root.menuRoom
-    // Во время жеста окно держит запас по высоте (зафиксированный на старте)
-    // и не меняется вовсе.
-    readonly property real wantedHeight: panelItem.gestureSizing
-        ? Math.min(panelItem.gestureRoom + Theme.quickPadding * 2, root.maxHeight) + root.menuRoom
-        : root.targetHeight
+    // Высота поверхности постоянна: весь экран под баром. Раньше окно
+    // догоняло карточку шагами (рост сразу, сжатие по таймеру через 360 мс).
+    // На Wayland каждый такой шаг — новая поверхность и пересборка буфера
+    // в композиторе, а сжатие приходилось на произвольный момент после
+    // анимации: панель в этот момент дёргалась. Теперь поверхность не меняет
+    // размер, пока попап открыт: карточка анимируется внутри неё, как в
+    // NotificationPopups, а прозрачная полоса под карточкой только ловит
+    // клик мимо. Поэтому поверхность создаётся сразу нужного размера и больше
+    // не пересобирается до закрытия попапа.
+    implicitHeight: root.maxHeight
 
-    // Размер поверхности меняется одним шагом, а не по кадру за анимацией:
-    // каждый промежуточный размер — это новый буфер и пересборка поверхности
-    // в композиторе. Замер до правки: 18–34 таких смен на одно переключение
-    // панели, и каждое изменение высоты списка (поиск сетей) тянуло за собой
-    // ещё два десятка. Растём сразу — карточка дорастает внутри, ничего не
-    // срезается; сжимаемся, когда карточка уже доехала.
-    property real windowHeight: 0
-
-    function syncWindowHeight() {
-        if (root.wantedHeight > root.windowHeight) {
-            shrinkTimer.stop();
-            root.windowHeight = root.wantedHeight;
-        } else if (root.wantedHeight < root.windowHeight) {
-            shrinkTimer.restart();
-        }
-    }
-
-    onWantedHeightChanged: root.syncWindowHeight()
-    implicitHeight: root.windowHeight
-
-    Timer {
-        id: shrinkTimer
-        // Ждём, пока карточка доедет (её анимация — 300 мс), и сжимаем окно
-        // одним шагом.
-        interval: Theme.motionMedium2 + 60
-        onTriggered: root.windowHeight = root.wantedHeight
+    // Клик по прозрачной полосе под карточкой закрывает попап (как клик мимо).
+    MouseArea {
+        anchors.fill: parent
+        onClicked: root.close()
     }
     // m3 container transform: контейнер меняет размер на emphasized.
     Behavior on implicitWidth {
@@ -161,6 +123,12 @@ PopupWindow {
         clip: true
         radius: Theme.quickRadius
         color: Theme.quickBackground
+
+        // Клики по пустому месту карточки не должны доходить до подложки
+        // (она закрывает попап): карточка — не «клик мимо».
+        MouseArea {
+            anchors.fill: parent
+        }
 
         // Появление: лёгкий рост из угла кнопки.
         // m3 enter: проявление с 92% и ростом из угла кнопки.
