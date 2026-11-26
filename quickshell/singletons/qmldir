@@ -20,7 +20,9 @@ singleton NotificationService 1.0 NotificationService.qml
 singleton ProfileState 1.0 ProfileState.qml
 singleton WindowState 1.0 WindowState.qml
 singleton PowerService 1.0 PowerService.qml
+singleton PrivacyService 1.0 PrivacyService.qml
 singleton BluetoothBackend 1.0 BluetoothBackend.qml
+PrivacyHelperHost 1.0 PrivacyHelperHost.qml
 BluetoothDeviceList 1.0 BluetoothDeviceList.qml
 BluetoothHelperHost 1.0 BluetoothHelperHost.qml
 singleton LockState 1.0 LockState.qml

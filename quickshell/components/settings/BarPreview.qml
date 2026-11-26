@@ -129,6 +129,7 @@ Item {
                                            : chip.itemKey === "bluetooth" ? bluetoothPreview
                                            : chip.itemKey === "brightness" ? brightnessPreview
                                            : chip.itemKey === "sound" ? soundPreview
+                                           : chip.itemKey === "privacy" ? privacyPreview
                                            : playerPreview
                         }
                     }
@@ -266,6 +267,14 @@ Item {
         BarActionButton {
             kind: "sound"
             iconOverride: MockState.iconFor("sound")
+        }
+    }
+
+    Component {
+        id: privacyPreview
+
+        PrivacyButton {
+            iconOverride: MockState.iconFor("privacy")
         }
     }
 

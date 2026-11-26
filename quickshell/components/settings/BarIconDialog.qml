@@ -76,6 +76,17 @@ Item {
                 { glyph: "\uf130", label: "Микрофон" }
             ];
         }
+        if (key === "privacy") {
+            return [
+                { glyph: "", label: "Авто" },
+                { glyph: "\uf132", label: "Щит" },
+                { glyph: "\uf130", label: "Микрофон" },
+                { glyph: "\uf030", label: "Камера" },
+                { glyph: "\uf041", label: "Геометка" },
+                { glyph: "\uf06e", label: "Глаз" },
+                { glyph: "\uf070", label: "Без глаза" }
+            ];
+        }
         if (key === "player") {
             return [
                 { glyph: "", label: "Авто" },

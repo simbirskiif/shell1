@@ -29,6 +29,7 @@ Singleton {
     readonly property ListModel barItems: ListModel {
         ListElement { itemKey: "battery"; title: "Батарея" }
         ListElement { itemKey: "notifications"; title: "Уведомления" }
+        ListElement { itemKey: "privacy"; title: "Конфиденциальность" }
         ListElement { itemKey: "status"; title: "Пункт управления" }
     }
 
@@ -42,7 +43,8 @@ Singleton {
         "bluetooth": "Bluetooth",
         "brightness": "Яркость",
         "sound": "Звук",
-        "player": "Плеер"
+        "player": "Плеер",
+        "privacy": "Конфиденциальность"
     })
 
     readonly property var barItemIcons: ({
@@ -53,15 +55,20 @@ Singleton {
         "bluetooth": "\uf293",
         "brightness": "\uf185",
         "sound": "\uf028",
-        "player": "\uf001"
+        "player": "\uf001",
+        "privacy": "\uf132"
     })
 
     // Порядок на первом запуске и при сбросе.
-    readonly property var defaultBarItems: ["battery", "notifications", "status"]
+    readonly property var defaultBarItems: ["battery", "notifications", "privacy", "status"]
 
     // Счётчик изменений состава/порядка: от него зависят привязки списка
     // доступных действий в окне настроек.
     property int barRevision: 0
+
+    // Одноразовое добавление нового элемента (конфиденциальности) в уже
+    // сохранённый бар — см. restoreBarOrder().
+    property bool barOrderMigrated: false
 
     // Иконки одиночных элементов. Пустая строка — штатная иконка: у батареи
     // живой индикатор, у уведомлений колокольчик, у Wi-Fi живые деления
@@ -73,7 +80,8 @@ Singleton {
         "bluetooth": "",
         "brightness": "",
         "sound": "",
-        "player": ""
+        "player": "",
+        "privacy": ""
     })
     property var barIcons: ({})
 
@@ -241,6 +249,10 @@ Singleton {
                            && !Array.isArray(savedStatusIcons) ? savedStatusIcons : ({});
         root.restoreBarOrder(Settings.value("bar.items", null));
         root.restoring = false;
+        if (root.barOrderMigrated) {
+            root.barOrderMigrated = false;
+            root.storeBarOrder();
+        }
     }
 
     // Сохранённый список — точный состав бара. Незнакомые ключи (например,
@@ -258,6 +270,23 @@ Singleton {
             for (let i = 0; i < root.defaultBarItems.length; ++i)
                 order.push(root.defaultBarItems[i]);
         }
+        // Индикатор конфиденциальности появился позже сохранённых настроек:
+        // показываем его в баре один раз, чтобы о кнопке можно было узнать без
+        // похода в раздел «Бар». Флаг не даёт вернуть её после того, как
+        // пользователь осознанно убрал элемент.
+        if (!Settings.value("bar.privacyIntroduced", false)) {
+            Settings.setValue("bar.privacyIntroduced", true);
+            if (Array.isArray(saved) && saved.length > 0
+                    && order.indexOf("privacy") < 0) {
+                const statusIndex = order.indexOf("status");
+                if (statusIndex >= 0)
+                    order.splice(statusIndex, 0, "privacy");
+                else
+                    order.push("privacy");
+                root.barOrderMigrated = true;
+            }
+        }
+
         root.barItems.clear();
         for (let i = 0; i < order.length; ++i)
             root.barItems.append({ itemKey: order[i], title: root.barItemTitles[order[i]] });

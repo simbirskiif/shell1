@@ -18,7 +18,11 @@ Item {
     readonly property string panel: UiState.panel
     readonly property bool editing: UiState.editing
 
-    readonly property var panels: [bluetoothEntry, internetEntry, soundEntry, brightnessEntry, layoutEntry, dndEntry, caffeineEntry, batteryEntry, soundOutputEntry, soundInputEntry]
+    readonly property var panels: [
+        bluetoothEntry, internetEntry, soundEntry, brightnessEntry,
+        layoutEntry, dndEntry, caffeineEntry, batteryEntry, privacyEntry,
+        soundOutputEntry, soundInputEntry
+    ]
 
     // Плитки, которыми управляет редактор.
     readonly property var tileEntries: [bluetoothEntry, internetEntry, soundEntry, dndEntry, caffeineEntry, brightnessEntry, layoutEntry]
@@ -800,6 +804,28 @@ Item {
 
         function toggle() {
             ProfileState.next();
+        }
+    }
+
+    // Конфиденциальность: отдельная кнопка в баре, поэтому в сетке плиток
+    // её нет. Состояние приходит из PipeWire и helper'а камеры/GeoClue.
+    QtObject {
+        id: privacyEntry
+
+        readonly property bool inGrid: false
+        readonly property string key: "privacy"
+        readonly property string title: "Privacy"
+        readonly property string icon: "\uf132"
+        readonly property bool active: PrivacyService.anyActive
+        readonly property string subtitle: PrivacyService.anyActive ? "In use" : "Not in use"
+        readonly property Component view: Component { PanelPrivacy {} }
+
+        function open() {
+            UiState.openDetail(key);
+        }
+
+        function toggle() {
+            // У индикатора нечего переключать: панель только показывает.
         }
     }
 

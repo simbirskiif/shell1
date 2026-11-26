@@ -30,6 +30,12 @@ ShellRoot {
         id: bluetoothHelperHost
     }
 
+    // Камера V4L2 и геолокация GeoClue2 для индикатора конфиденциальности:
+    // Process тоже обязан жить в дереве оболочки, а не в синглтоне.
+    PrivacyHelperHost {
+        id: privacyHelperHost
+    }
+
     Variants {
         model: Quickshell.screens
 
@@ -657,6 +663,25 @@ ShellRoot {
             return internet();
         }
 
+        // Индикатор конфиденциальности: открыть панель и проверить
+        // состояние без мыши (микрофон/камера/геолокация).
+        function privacy(): string {
+            UiState.open(UiState.defaultScreen(), "privacy");
+            return privacyState();
+        }
+
+        function privacyState(): string {
+            return "mic=" + (PrivacyService.microphoneActive ? "on" : "off")
+                + " micApps=" + (PrivacyService.microphoneApps.join(",") || "-")
+                + " micAvailable=" + (PrivacyService.microphoneAvailable ? "yes" : "no")
+                + " camera=" + (PrivacyService.cameraActive ? "on" : "off")
+                + " cameraApps=" + (PrivacyService.cameraApps.join(",") || "-")
+                + " cameraAvailable=" + (PrivacyService.cameraAvailable ? "yes" : "no")
+                + " location=" + (PrivacyService.locationActive ? "on" : "off")
+                + " locationAvailable=" + (PrivacyService.locationAvailable ? "yes" : "no")
+                + " helper=" + (PrivacyService.helperOnline ? "online" : "offline");
+        }
+
         // Яркость основного экрана: погасить и вернуть прежнюю.
         function toggleBrightness(): string {
             BrightnessService.togglePrimary();
@@ -927,8 +952,8 @@ ShellRoot {
             return settingsState();
         }
 
-        // Добавить/убрать действие в баре: wifi | bluetooth | brightness
-        // (а также battery | notifications | status).
+        // Добавить/убрать действие в баре: wifi | bluetooth | brightness |
+        // sound | player | privacy (а также battery | notifications | status).
         function addItem(item: string): string {
             MockState.addBarItem(item);
             return settingsState();

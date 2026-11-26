@@ -72,6 +72,7 @@ PanelWindow {
                                : itemKey === "brightness" ? brightnessItem
                                : itemKey === "sound" ? soundItem
                                : itemKey === "player" ? playerItem
+                               : itemKey === "privacy" ? privacyItem
                                : null
             }
         }
@@ -196,6 +197,24 @@ PanelWindow {
             kind: "sound"
             iconOverride: MockState.iconFor("sound")
             onClicked: UiState.open(root.screen ? root.screen.name : "", "sound")
+        }
+    }
+
+    // Конфиденциальность: микрофон, камера и геолокация. Клик открывает
+    // панель быстрых настроек сразу на этом разделе; повторный клик
+    // закрывает её.
+    Component {
+        id: privacyItem
+
+        PrivacyButton {
+            iconOverride: MockState.iconFor("privacy")
+            onClicked: {
+                const screenName = root.screen ? root.screen.name : "";
+                if (UiState.openedScreen === screenName && UiState.panel === "privacy")
+                    UiState.close();
+                else
+                    UiState.open(screenName, "privacy");
+            }
         }
     }
 
