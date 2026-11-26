@@ -83,7 +83,7 @@ Item {
         spacing: 0
 
         PanelHeader {
-            title: "Bluetooth"
+            title: I18n.tr("quick.tile.bluetooth")
             // Тумблер показывает фактическое состояние адаптера.
             checked: BluetoothBackend.enabled
             // Кнопка включения бессмысленна без адаптера и при rfkill.
@@ -125,7 +125,8 @@ Item {
             height: visible ? implicitHeight : 0
             title: BluetoothBackend.lastError
             description: BluetoothBackend.lastErrorHint
-            actionText: BluetoothBackend.lastFailedAddress !== "" ? "Повторить" : ""
+            actionText: BluetoothBackend.lastFailedAddress !== ""
+                        ? I18n.tr("common.retry") : ""
             icon: "\uf071"
             onActionRequested: {
                 const address = BluetoothBackend.lastFailedAddress;
@@ -143,9 +144,9 @@ Item {
             visible: !BluetoothBackend.enabled && BluetoothBackend.available
             height: visible ? implicitHeight : 0
             icon: "\uf293"
-            title: "Bluetooth is off"
-            description: "Turn Bluetooth on to find nearby devices"
-            actionText: "Turn on"
+            title: I18n.tr("quick.bluetooth.off")
+            description: I18n.tr("quick.bluetooth.off.description")
+            actionText: I18n.tr("common.turnOn")
             onActionRequested: {
                 BluetoothBackend.setEnabled(true);
                 BluetoothBackend.startScan();
@@ -159,10 +160,12 @@ Item {
             visible: !BluetoothBackend.available
             height: visible ? implicitHeight : 0
             icon: "\uf293"
-            title: BluetoothBackend.blocked ? "Bluetooth is blocked" : "No Bluetooth adapter"
+            title: BluetoothBackend.blocked
+                   ? I18n.tr("quick.bluetooth.blocked")
+                   : I18n.tr("quick.bluetooth.noAdapter")
             description: BluetoothBackend.blocked
-                    ? "Bluetooth is blocked by rfkill. Unblock it to continue."
-                    : "No Bluetooth adapter was found on this system."
+                    ? I18n.tr("quick.bluetooth.blocked.description")
+                    : I18n.tr("quick.bluetooth.noAdapter.description")
             actionText: ""
             showAction: false
         }
@@ -209,7 +212,7 @@ Item {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Discoverable — visible to nearby devices"
+                            text: I18n.tr("quick.bluetooth.discoverable")
                             color: Theme.scheme.onSurfaceVariant
                             font: Theme.typeBodyMedium
                         }
@@ -218,7 +221,7 @@ Item {
             }
 
             PanelSection {
-                text: "My devices"
+                text: I18n.tr("quick.bluetooth.myDevices")
                 visible: BluetoothBackend.pairedDevices.count > 0
                 height: visible ? implicitHeight : 0
             }
@@ -246,14 +249,14 @@ Item {
                     anchors.left: parent.left
                     anchors.leftMargin: Theme.space.lg
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "No saved devices yet"
+                    text: I18n.tr("quick.bluetooth.noSaved")
                     color: Theme.scheme.onSurfaceVariant
                     font: Theme.typeBodyMedium
                 }
             }
 
             PanelSection {
-                text: "Available"
+                text: I18n.tr("common.available")
                 // Заголовок показываем, если есть что показать в секции:
                 // либо именованные, либо свёрнутые безымянные устройства.
                 visible: BluetoothBackend.newDevices.count > 0
@@ -310,7 +313,9 @@ Item {
                     anchors.left: toggleIcon.right
                     anchors.leftMargin: Theme.space.sm
                     anchors.verticalCenter: parent.verticalCenter
-                    text: (unnamedToggle.expanded ? "Скрыть безымянные" : "Показать ещё")
+                    text: (unnamedToggle.expanded
+                           ? I18n.tr("quick.bluetooth.hideUnnamed")
+                           : I18n.tr("quick.bluetooth.showMore"))
                           + " (" + BluetoothBackend.unnamedDevices.count + ")"
                     color: Theme.scheme.onSurfaceVariant
                     font: Theme.typeBodyMedium

@@ -56,7 +56,7 @@ Item {
 
         Text {
             width: parent.width
-            text: "Privacy"
+            text: I18n.tr("quick.tile.privacy")
             color: Theme.scheme.onSurface
             font: Theme.typeLabelLarge
             elide: Text.ElideRight
@@ -65,7 +65,7 @@ Item {
         Text {
             width: parent.width
             text: PrivacyService.anyActive
-                  ? PrivacyService.activeSummary : "No active devices"
+                  ? PrivacyService.activeSummary : I18n.tr("quick.privacy.noActive")
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeLabelMedium
             elide: Text.ElideRight

@@ -223,7 +223,7 @@ PanelWindow {
                 anchors.right: closeButton.left
                 anchors.rightMargin: Theme.space.sm
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Плеер"
+                text: I18n.tr("settings.player.title")
                 color: Theme.scheme.onSurface
                 font: Theme.typeTitleLarge
                 elide: Text.ElideRight
@@ -347,8 +347,9 @@ PanelWindow {
 
                         Text {
                             width: parent.width
-                            text: root.player ? (root.player.trackTitle || "Без названия")
-                                              : "Ничего не играет"
+                            text: root.player
+                                  ? (root.player.trackTitle || I18n.tr("player.untitled"))
+                                  : I18n.tr("player.nothingPlaying")
                             color: Theme.scheme.onSurface
                             font: Theme.typeTitleMedium
                             wrapMode: Text.WordWrap
@@ -358,8 +359,9 @@ PanelWindow {
 
                         Text {
                             width: parent.width
-                            text: root.player ? (root.player.trackArtist || "Неизвестный исполнитель")
-                                              : "Запустите плеер с MPRIS"
+                            text: root.player
+                                  ? (root.player.trackArtist || I18n.tr("player.unknownArtist"))
+                                  : I18n.tr("player.startMpris")
                             color: Theme.scheme.onSurfaceVariant
                             font: Theme.typeBodyMedium
                             elide: Text.ElideRight

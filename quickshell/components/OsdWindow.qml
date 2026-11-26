@@ -73,7 +73,8 @@ OsdPopup {
             anchors.verticalCenter: parent.verticalCenter
             width: 52
             horizontalAlignment: Text.AlignRight
-            text: Osd.muted ? "Выкл." : Math.round(root.displayValue * 100) + "%"
+            text: Osd.muted ? I18n.tr("common.off")
+                            : Math.round(root.displayValue * 100) + "%"
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeLabelLarge
         }

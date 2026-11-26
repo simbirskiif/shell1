@@ -135,7 +135,8 @@ PanelWindow {
             Text {
                 width: parent.width
                 wrapMode: Text.WordWrap
-                text: root.changing ? "New password" : "Enter password"
+                text: root.changing ? I18n.tr("dialogs.password.new")
+                                    : I18n.tr("dialogs.password.enter")
                 color: Theme.scheme.onSurface
                 font: Theme.typeHeadlineSmall
             }
@@ -165,8 +166,9 @@ PanelWindow {
                     anchors.leftMargin: Theme.space.md
                     anchors.rightMargin: Theme.space.md
                     wrapMode: Text.WordWrap
-                    text: root.changing ? "Password was not accepted, try another one"
-                                        : "Wrong password, try again"
+                    text: root.changing
+                          ? I18n.tr("dialogs.password.rejected.change")
+                          : I18n.tr("dialogs.password.rejected")
                     color: Theme.scheme.onErrorContainer
                     font: Theme.typeBodyMedium
                 }
@@ -212,7 +214,7 @@ PanelWindow {
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
                         visible: passwordInput.text === "" && !root.revealed
-                        text: "Network password"
+                        text: I18n.tr("dialogs.password.placeholder")
                         color: Theme.scheme.onSurfaceVariant
                         font: Theme.typeBodySmall
                     }
@@ -278,7 +280,7 @@ PanelWindow {
                     Text {
                         id: cancelLabel
                         anchors.centerIn: parent
-                        text: "Cancel"
+                        text: I18n.tr("common.cancel")
                         color: Theme.primary
                         font: Theme.typeLabelLarge
                     }
@@ -317,7 +319,7 @@ PanelWindow {
                         id: connectLabel
                         anchors.centerIn: parent
                         visible: !root.connecting
-                        text: "Connect"
+                        text: I18n.tr("dialogs.password.connect")
                         color: root.readyToSubmit
                                ? Theme.scheme.onPrimary
                                : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent)

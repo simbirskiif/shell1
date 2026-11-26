@@ -67,7 +67,8 @@ Item {
 
             Text {
                 anchors.centerIn: parent
-                text: root.stoppable ? "Stop" : "Can't stop"
+                text: root.stoppable ? I18n.tr("quick.privacy.stop")
+                                     : I18n.tr("quick.privacy.cantStop")
                 color: root.onContainer
                 opacity: root.stoppable ? 1 : 0.65
                 font: root.stoppable ? Theme.typeLabelLarge : Theme.typeLabelSmall

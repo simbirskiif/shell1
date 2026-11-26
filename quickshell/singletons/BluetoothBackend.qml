@@ -229,7 +229,7 @@ Singleton {
             if (event.online === false)
                 helperOnline = false;
         } else if (kind === "error") {
-            setError("", String(event.error || "ошибка helper'а"));
+            setError("", String(event.error || I18n.tr("bluetooth.error.helper")));
         }
     }
 
@@ -344,7 +344,7 @@ Singleton {
             return;
         }
 
-        const text = String(event.error || "операция не удалась");
+        const text = String(event.error || I18n.tr("bluetooth.error.operation"));
         setError(address, text);
 
         // Один автоповтор — только «устройство не ответило» и только если pair
@@ -375,30 +375,30 @@ Singleton {
     function hintFor(text) {
         const value = String(text);
         if (value.indexOf("AuthenticationCanceled") >= 0)
-            return "Устройство отменило сопряжение. Обычно оно подключено к другому устройству (телефону) или вышло из режима сопряжения.";
+            return I18n.tr("bluetooth.hint.canceled");
         if (value.indexOf("AuthenticationRejected") >= 0)
-            return "Устройство отклонило запрос. Проверьте, принято ли подтверждение на самом устройстве.";
+            return I18n.tr("bluetooth.hint.rejected");
         if (value.indexOf("AuthenticationTimeout") >= 0)
-            return "Устройство не подтвердило сопряжение вовремя. Попробуйте ещё раз.";
+            return I18n.tr("bluetooth.hint.timeout");
         if (value.indexOf("AuthenticationFailed") >= 0)
-            return "Не удалось аутентифицироваться. Уберите устройство из списка и спарьте заново.";
+            return I18n.tr("bluetooth.hint.authFailed");
         if (value.indexOf("ConnectionAttemptFailed") >= 0
                 || value.indexOf("Page Timeout") >= 0)
-            return "Устройство не отвечает. Проверьте, что оно включено, рядом и не подключено к другому устройству.";
+            return I18n.tr("bluetooth.hint.unreachable");
         if (value.indexOf("profile-unavailable") >= 0)
-            return "Устройство подключилось, но нужный профиль недоступен. Попробуйте переподключить.";
+            return I18n.tr("bluetooth.hint.profile");
         if (value.indexOf("AlreadyExists") >= 0)
-            return "Устройство уже спарено или подключено.";
+            return I18n.tr("bluetooth.hint.alreadyExists");
         if (value.indexOf("InProgress") >= 0)
-            return "Операция уже идёт, дождитесь её завершения.";
+            return I18n.tr("bluetooth.hint.inProgress");
         if (value.indexOf("NotReady") >= 0)
-            return "Адаптер выключен или ещё не поднялся. Включите Bluetooth и повторите.";
+            return I18n.tr("bluetooth.hint.notReady");
         if (value.indexOf("adapter") >= 0 || value.indexOf("адаптер") >= 0)
-            return "Bluetooth-адаптер не найден.";
+            return I18n.tr("bluetooth.hint.noAdapter");
         if (value.indexOf("не найдено") >= 0)
-            return "BlueZ больше не видит это устройство.";
+            return I18n.tr("bluetooth.hint.gone");
         if (value.indexOf("ServiceUnknown") >= 0)
-            return "BlueZ не принял вызов: возможно, bluetoothd перезапускается. Повторите.";
+            return I18n.tr("bluetooth.hint.serviceUnknown");
         return "";
     }
 
@@ -445,7 +445,7 @@ Singleton {
         if (!hasAdapter)
             return false;
         if (value && blocked) {
-            setError("", "Bluetooth заблокирован (rfkill): снимите блокировку (rfkill unblock bluetooth).");
+            setError("", I18n.tr("bluetooth.error.rfkill"));
             return false;
         }
         scanRequested = false;
@@ -628,16 +628,17 @@ Singleton {
 
     function actionLabelFor(state, busy, cancellable, paired) {
         if (cancellable)
-            return "Отменить";
+            return I18n.tr("bluetooth.action.cancel");
         if (state === "connecting")
-            return "Подключение…";
+            return I18n.tr("bluetooth.action.connecting");
         if (state === "disconnecting")
-            return "Отключение…";
+            return I18n.tr("bluetooth.action.disconnecting");
         if (busy)
-            return "Подождите…";
+            return I18n.tr("bluetooth.action.wait");
         if (state === "connected")
-            return "Отключиться";
-        return paired ? "Подключиться" : "Спарить и подключить";
+            return I18n.tr("bluetooth.action.disconnect");
+        return paired ? I18n.tr("bluetooth.action.connect")
+                      : I18n.tr("bluetooth.action.pairConnect");
     }
 
     // ───────────── разрешение устройства ─────────────
@@ -839,15 +840,15 @@ Singleton {
 
     // Сводка для плитки быстрых настроек. Обычное свойство: обновляется в
     // updateModels(), чтобы не зависеть от переприсваивания devices.
-    property string connectedSummary: "Недоступен"
+    property string connectedSummary: I18n.tr("bluetooth.summary.unavailable")
 
     function computeSummary() {
         if (!hasAdapter) {
-            connectedSummary = "Недоступен";
+            connectedSummary = I18n.tr("bluetooth.summary.unavailable");
             return;
         }
         if (!enabled) {
-            connectedSummary = "Выключен";
+            connectedSummary = I18n.tr("bluetooth.summary.off");
             return;
         }
         for (const path in devices) {
@@ -856,7 +857,16 @@ Singleton {
                 return;
             }
         }
-        connectedSummary = "Нет подключений";
+        connectedSummary = I18n.tr("bluetooth.summary.none");
+    }
+
+    // Язык сменился — пересобрать сводку на месте: она хранится свойством,
+    // а не биндингом (см. комментарий выше).
+    Connections {
+        target: I18n
+        function onLocaleChanged() {
+            root.computeSummary();
+        }
     }
 
     // Скрыть текст ошибки, не забывая адрес для кнопки «Повторить».

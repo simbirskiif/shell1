@@ -26,7 +26,7 @@ Item {
         spacing: 0
 
         PanelHeader {
-            title: root.output ? "Output device" : "Input device"
+            title: root.output ? I18n.tr("quick.tile.output") : I18n.tr("quick.tile.input")
             checked: false
             switchable: false
             onBackRequested: root.backRequested()
@@ -45,8 +45,9 @@ Item {
             visible: shown
             height: shown ? implicitHeight : 0
             icon: root.output ? "\uf028" : "\uf130"
-            title: "No devices"
-            description: root.output ? "No audio outputs found" : "No audio inputs found"
+            title: I18n.tr("quick.audio.noDevices")
+            description: root.output ? I18n.tr("quick.audio.noOutputs")
+                                     : I18n.tr("quick.audio.noInputs")
             actionText: ""
             showAction: false
         }

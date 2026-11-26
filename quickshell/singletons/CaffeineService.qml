@@ -48,15 +48,15 @@ Singleton {
                             minutes: fallback[i] });
             }
         }
-        list.push({ key: "infinite", title: "Бесконечно", minutes: 0 });
+        list.push({ key: "infinite", title: I18n.tr("caffeine.infinite"), minutes: 0 });
         return list;
     }
 
     readonly property string label: {
         if (!root.active)
-            return "Выключен";
+            return I18n.tr("caffeine.off");
         const minutes = root.minutesOf(root.mode);
-        return minutes > 0 ? root.formatMinutes(minutes) : "Бесконечно";
+        return minutes > 0 ? root.formatMinutes(minutes) : I18n.tr("caffeine.infinite");
     }
 
     // ───────────── разбор сроков ─────────────
@@ -85,25 +85,16 @@ Singleton {
         return rounded;
     }
 
-    function plural(number, one, few, many) {
-        const mod10 = number % 10;
-        const mod100 = number % 100;
-        if (mod10 === 1 && mod100 !== 11)
-            return one;
-        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14))
-            return few;
-        return many;
-    }
-
     function formatMinutes(minutes) {
         const hours = Math.floor(minutes / 60);
         const rest = minutes % 60;
         const parts = [];
         if (hours > 0)
-            parts.push(hours + " " + root.plural(hours, "час", "часа", "часов"));
+            parts.push(I18n.trn("caffeine.duration.hours", hours));
         if (rest > 0)
-            parts.push(rest + " " + root.plural(rest, "минута", "минуты", "минут"));
-        return parts.length > 0 ? parts.join(" ") : minutes + " минут";
+            parts.push(I18n.trn("caffeine.duration.minutes", rest));
+        return parts.length > 0 ? parts.join(" ")
+                                : I18n.trn("caffeine.duration.minutes", minutes);
     }
 
     function minutesOf(key) {

@@ -21,7 +21,7 @@ Item {
         spacing: 0
 
         PanelHeader {
-            title: "Профиль"
+            title: I18n.tr("quick.profile")
             checked: ProfileState.current !== "default"
             switchable: false
             onBackRequested: root.backRequested()

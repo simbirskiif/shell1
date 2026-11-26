@@ -185,7 +185,7 @@ PanelWindow {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 visible: WindowState.snapshot.length === 0
-                text: "Нет открытых окон"
+                text: I18n.tr("switcher.noWindows")
                 color: Theme.scheme.onSurfaceVariant
                 font: Theme.typeBodySmall
                 elide: Text.ElideRight

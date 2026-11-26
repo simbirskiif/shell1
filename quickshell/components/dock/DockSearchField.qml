@@ -8,7 +8,7 @@ import "../../singletons"
 Rectangle {
     id: root
 
-    property string placeholder: "Поиск приложений"
+    property string placeholder: I18n.tr("dock.search.placeholder")
     property alias text: input.text
 
     signal edited(string value)

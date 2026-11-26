@@ -255,13 +255,13 @@ Singleton {
     readonly property var activeDeviceNames: {
         const names = [];
         if (root.microphoneActive)
-            names.push("Microphone");
+            names.push(I18n.tr("privacy.device.microphone"));
         if (root.cameraActive)
-            names.push("Camera");
+            names.push(I18n.tr("privacy.device.camera"));
         if (root.screenActive)
-            names.push("Screen");
+            names.push(I18n.tr("privacy.device.screen"));
         if (root.locationActive)
-            names.push("Location");
+            names.push(I18n.tr("privacy.device.location"));
         return names;
     }
     readonly property string activeSummary: root.activeDeviceNames.join(", ")
@@ -270,37 +270,40 @@ Singleton {
 
     // Короткий статус для панели: «In use — Firefox», «In use», …
     function statusText(apps) {
-        return apps.length > 0 ? "In use — " + apps.join(", ") : "In use";
+        return apps.length > 0
+            ? I18n.tr("privacy.status.withApps", { apps: apps.join(", ") })
+            : I18n.tr("privacy.inUse");
     }
 
     readonly property string microphoneStatus: {
         if (!root.microphoneAvailable)
-            return "No microphone";
+            return I18n.tr("privacy.noMicrophone");
         return root.microphoneActive
             ? root.statusText(root.microphoneApps)
-            : "Not in use";
+            : I18n.tr("privacy.notInUse");
     }
 
     readonly property string cameraStatus: {
         if (!root.cameraAvailable)
-            return "No camera";
+            return I18n.tr("privacy.noCamera");
         return root.cameraActive
             ? root.statusText(root.cameraApps)
-            : "Not in use";
+            : I18n.tr("privacy.notInUse");
     }
 
     readonly property string screenStatus: {
         if (!root.screenAvailable)
-            return "Screen sharing is unavailable";
+            return I18n.tr("privacy.screenUnavailable");
         return root.screenActive
             ? root.statusText(root.screenApps)
-            : "Not in use";
+            : I18n.tr("privacy.notInUse");
     }
 
     readonly property string locationStatus: {
         if (!root.locationAvailable)
-            return "GeoClue is not available";
-        return root.locationActive ? "In use" : "Not in use";
+            return I18n.tr("privacy.geoclueUnavailable");
+        return root.locationActive ? I18n.tr("privacy.inUse")
+                                   : I18n.tr("privacy.notInUse");
     }
 
     // ───────────── остановка захвата ─────────────

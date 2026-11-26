@@ -201,7 +201,7 @@ PanelWindow {
                     anchors.right: headerActions.left
                     anchors.rightMargin: Theme.space.sm
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Уведомления"
+                    text: I18n.tr("notifications.title")
                     color: Theme.scheme.onSurface
                     font: Theme.typeTitleLarge
                     elide: Text.ElideRight
@@ -245,7 +245,7 @@ PanelWindow {
                             id: clearLabel
 
                             anchors.centerIn: parent
-                            text: "Очистить"
+                            text: I18n.tr("common.clear")
                             color: clearButton.enabled
                                    ? Theme.primary
                                    : Theme.stateLayer(Theme.scheme.onSurface, Theme.disabledContent)
@@ -291,7 +291,7 @@ PanelWindow {
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "Нет уведомлений"
+                        text: I18n.tr("notifications.empty")
                         color: Theme.scheme.onSurfaceVariant
                         font: Theme.typeHeadlineSmall
                     }

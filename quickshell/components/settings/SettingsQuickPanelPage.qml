@@ -7,30 +7,30 @@ import "../../singletons"
 SettingsPage {
     id: root
 
-    title: "Быстрые настройки"
-    description: "Плитки в сетке: слева направо, сверху вниз."
+    title: I18n.tr("settings.quick.title")
+    description: I18n.tr("settings.quick.description")
 
     function tileInfo(key) {
         if (key === "bluetooth")
-            return { title: "Bluetooth", icon: "\uf293" };
+            return { title: I18n.tr("quick.tile.bluetooth"), icon: "\uf293" };
         if (key === "internet")
-            return { title: "Интернет", icon: "\uf0ac" };
+            return { title: I18n.tr("quick.tile.internet"), icon: "\uf0ac" };
         if (key === "sound")
-            return { title: "Звук", icon: "\uf028" };
+            return { title: I18n.tr("quick.tile.sound"), icon: "\uf028" };
         if (key === "dnd")
-            return { title: "Не беспокоить", icon: "\uf0f3" };
+            return { title: I18n.tr("quick.tile.dnd"), icon: "\uf0f3" };
         if (key === "caffeine")
-            return { title: "Кофеин", icon: "\uf0f4" };
+            return { title: I18n.tr("quick.tile.caffeine"), icon: "\uf0f4" };
         if (key === "brightness")
-            return { title: "Яркость", icon: "\uf185" };
+            return { title: I18n.tr("quick.tile.brightness"), icon: "\uf185" };
         if (key === "layout")
-            return { title: "Раскладка", icon: "\uf00a" };
+            return { title: I18n.tr("quick.tile.layout"), icon: "\uf00a" };
         return { title: key, icon: "\uf00a" };
     }
 
     SettingsCard {
-        title: "На панели"
-        description: "Порядок можно менять стрелками."
+        title: I18n.tr("settings.quick.visible.title")
+        description: I18n.tr("settings.quick.visible.description")
 
         Repeater {
             model: MockState.visibleTiles
@@ -96,15 +96,15 @@ SettingsPage {
         Text {
             width: parent.width
             visible: MockState.visibleTiles.length === 0
-            text: "Все плитки скрыты"
+            text: I18n.tr("settings.quick.allHidden")
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeBodyMedium
         }
     }
 
     SettingsCard {
-        title: "Доступные"
-        description: "Скрытые плитки можно вернуть на панель."
+        title: I18n.tr("settings.quick.available.title")
+        description: I18n.tr("settings.quick.available.description")
 
         Repeater {
             model: MockState.availableTiles
@@ -157,14 +157,14 @@ SettingsPage {
         Text {
             width: parent.width
             visible: MockState.availableTiles.length === 0
-            text: "Все плитки уже на панели"
+            text: I18n.tr("settings.quick.allShown")
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeBodyMedium
         }
     }
 
     SettingsButton {
-        text: "Сбросить плитки"
+        text: I18n.tr("settings.quick.reset")
         variant: "outlined"
         onClicked: MockState.resetQuickTiles()
     }

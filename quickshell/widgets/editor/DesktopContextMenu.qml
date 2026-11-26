@@ -38,19 +38,19 @@ Item {
     function menuItems(): var {
         const items = []
         if (root.targetUid.length > 0) {
-            items.push({ label: "Параметры виджета…", action: "widget-settings",
+            items.push({ labelKey: "widgets.menu.widgetSettings", action: "widget-settings",
                          separator: false })
-            items.push({ label: "", action: "", separator: true })
+            items.push({ labelKey: "", action: "", separator: true })
         }
-        items.push({ label: "Добавить виджет…", action: "add", separator: false })
-        items.push({ label: "Параметры виджетов…", action: "global", separator: false })
+        items.push({ labelKey: "widgets.menu.add", action: "add", separator: false })
+        items.push({ labelKey: "widgets.menu.global", action: "global", separator: false })
         if (root.editing) {
-            items.push({ label: "", action: "", separator: true })
-            items.push({ label: "Готово", action: "commit", separator: false })
-            items.push({ label: "Отмена", action: "cancel", separator: false })
+            items.push({ labelKey: "", action: "", separator: true })
+            items.push({ labelKey: "common.done", action: "commit", separator: false })
+            items.push({ labelKey: "common.cancel", action: "cancel", separator: false })
         } else {
-            items.push({ label: "", action: "", separator: true })
-            items.push({ label: "Изменить расположение", action: "edit", separator: false })
+            items.push({ labelKey: "", action: "", separator: true })
+            items.push({ labelKey: "widgets.menu.edit", action: "edit", separator: false })
         }
         return items
     }
@@ -117,7 +117,8 @@ Item {
                         color: Theme.scheme.onSurface
                         font: Theme.typeLabelLarge
                         elide: Text.ElideRight
-                        text: menuRow.modelData.label
+                        text: menuRow.modelData.labelKey !== ""
+                              ? I18n.tr(menuRow.modelData.labelKey) : ""
                     }
 
                     MouseArea {

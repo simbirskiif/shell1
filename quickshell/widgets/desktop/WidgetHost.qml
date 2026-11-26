@@ -52,7 +52,7 @@ Item {
                                     : null
     readonly property string widgetId: root.instance ? root.instance.id : ""
     readonly property string displayName: root.widget
-                                           ? root.widget.name
+                                           ? WidgetRegistry.displayName(root.widget)
                                            : (root.instance && root.instance.name
                                               ? root.instance.name : root.widgetId)
 
@@ -561,7 +561,7 @@ Item {
         visible: root.widget !== null && loader.status === Loader.Error
         icon: "⚠"
         title: root.displayName
-        message: "Не удалось загрузить QML. Подробности в логе shell."
+        message: I18n.tr("widgets.host.loadFailed")
         showReload: true
         onReloadRequested: root.reloadWidget()
         onDeleteRequested: {
@@ -577,7 +577,7 @@ Item {
         visible: root.widget === null
         icon: "◌"
         title: root.displayName
-        message: "Виджет недоступен: " + root.widgetId
+        message: I18n.tr("widgets.host.unavailable", { id: root.widgetId })
         showReload: false
         onDeleteRequested: {
             if (root.instance)

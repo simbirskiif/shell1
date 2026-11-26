@@ -1,4 +1,5 @@
 import QtQuick
+import "../../singletons"
 
 // Пример: статичный цветной блок без настроек и без ресайза (min == max).
 Item {
@@ -17,6 +18,6 @@ Item {
         color: root.ctx.colors.onPrimaryContainer
         font.family: root.ctx.fontFamily
         font.pixelSize: Math.max(10, Math.round(root.ctx.dp * 12))
-        text: "Цвет"
+        text: I18n.tr("widget.color")
     }
 }

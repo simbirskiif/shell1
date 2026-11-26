@@ -79,16 +79,16 @@ Singleton {
         if (!ethernetConnected)
             return "";
         if (internetViaEthernet)
-            return ethernetSpeed !== "" ? ethernetSpeed : "Connected";
-        return "Not active";
+            return ethernetSpeed !== "" ? ethernetSpeed : I18n.tr("network.connected");
+        return I18n.tr("network.notActive");
     }
 
     readonly property string internetSummary: {
         if (internetViaEthernet)
             return ethernetName;
         if (!wifiEnabled)
-            return "Off";
-        return connectedSsid !== "" ? connectedSsid : "Not connected";
+            return I18n.tr("network.off");
+        return connectedSsid !== "" ? connectedSsid : I18n.tr("network.notConnected");
     }
 
     // Имя активной Wi-Fi сети (для плитки и заголовка).
@@ -1128,7 +1128,7 @@ Singleton {
         enqueue(["nmcli", "connection", "delete", "uuid", profile.uuid], (code, out, err) => {
             if (code !== 0) {
                 log("forget " + name + ": " + (err || "").trim());
-                notifyError("Could not forget " + name);
+                notifyError(I18n.tr("network.error.forget", { name: name }));
             }
             scheduleRefresh();
         });
@@ -1415,14 +1415,14 @@ Singleton {
 
     function shortError(kind) {
         if (kind === "timeout")
-            return "Connection timed out";
+            return I18n.tr("network.error.timeout");
         if (kind === "dhcp")
-            return "Connected, but no IP address";
+            return I18n.tr("network.error.dhcp");
         if (kind === "notfound")
-            return "Network is out of range";
+            return I18n.tr("network.error.notfound");
         if (kind === "auth")
-            return "Authentication failed";
-        return "Could not connect";
+            return I18n.tr("network.error.auth");
+        return I18n.tr("network.error.generic");
     }
 
     function cancelActiveConnect() {
@@ -1515,7 +1515,7 @@ Singleton {
             return;
         if (expectedDisconnect || connectingSsid !== "")
             return;
-        notifyError("Connection to " + lost + " lost");
+        notifyError(I18n.tr("network.error.lost", { name: lost }));
     }
 
     onConnectingSsidChanged: updateModels()
@@ -1659,7 +1659,7 @@ Singleton {
     function openPortal() {
         getPortalUri((uri) => {
             if (uri === "") {
-                notifyError("Could not find the sign-in page");
+                notifyError(I18n.tr("network.error.noPortal"));
                 return;
             }
             // Сначала пробуем узнать конечный адрес портала без браузера.
@@ -1707,7 +1707,7 @@ Singleton {
 
     function setupEnterprise(network) {
         if (editorRunning) {
-            notifyError("Network editor is already open");
+            notifyError(I18n.tr("network.error.editorOpen"));
             return;
         }
         rememberProfiles();
@@ -1721,12 +1721,12 @@ Singleton {
                 if (code !== 0) {
                     connectError = "other";
                     connectErrorText = err;
-                    notifyError("Could not create the profile");
+                    notifyError(I18n.tr("network.error.profile"));
                     return;
                 }
                 const uuid = extractUuid(out);
                 if (uuid === "") {
-                    notifyError("Could not create the profile");
+                    notifyError(I18n.tr("network.error.profile"));
                     return;
                 }
                 const cache = root.profileSsid;
@@ -1764,7 +1764,7 @@ Singleton {
                 const identity = cols.length > 1 ? cols[1] : "";
                 if (identity === "") {
                     if (exitCode !== 0)
-                        notifyError("Network editor is not available");
+                        notifyError(I18n.tr("network.error.editorUnavailable"));
                     enqueue(["nmcli", "connection", "delete", "uuid", uuid], () => scheduleRefresh());
                     return;
                 }
@@ -1784,7 +1784,7 @@ Singleton {
                             if (code2 !== 0) {
                                 enqueue(["nmcli", "connection", "delete", "uuid", uuid],
                                         () => scheduleRefresh());
-                                notifyError("Enterprise network is not configured");
+                                notifyError(I18n.tr("network.error.enterprise"));
                                 connectingName = "";
                                 connectError = "other";
                                 connectErrorText = err2;

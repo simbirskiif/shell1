@@ -119,7 +119,8 @@ Singleton {
             if (code !== 0) {
                 root.lastError = switchErr.text.trim();
                 if (root.lastError === "")
-                    root.lastError = "hypr-profile завершился с кодом " + code;
+                    root.lastError = I18n.tr("switcher.commandFailed",
+                                               { command: "hypr-profile", code: code });
             } else {
                 root.lastError = "";
                 root.pickerOpen = false;

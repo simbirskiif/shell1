@@ -239,7 +239,7 @@ Item {
             anchors.left: parent.left
             anchors.leftMargin: Theme.space.xs
             anchors.verticalCenter: parent.verticalCenter
-            text: "Приложения"
+            text: I18n.tr("dock.apps")
             color: Theme.scheme.onSurface
             font: Theme.typeTitleLarge
         }
@@ -512,7 +512,8 @@ Item {
     Text {
         anchors.centerIn: appList
         visible: appList.count === 0
-        text: DockState.query !== "" ? "Ничего не найдено" : "Список приложений пуст"
+        text: DockState.query !== "" ? I18n.tr("dock.noResults")
+                                     : I18n.tr("dock.empty")
         color: Theme.scheme.onSurfaceVariant
         font: Theme.typeBodyMedium
     }

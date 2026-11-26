@@ -15,5 +15,11 @@
     ],
     "default": "2x1"
   },
-  "settings": []
+  "settings": [],
+  "i18n": {
+    "en": {
+      "name": "Sizes from list",
+      "description": "Widget with only allowed sizes"
+    }
+  }
 }

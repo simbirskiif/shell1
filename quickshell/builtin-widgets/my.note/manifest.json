@@ -35,5 +35,26 @@
       "label": "Выделить",
       "default": false
     }
-  ]
+  ],
+  "i18n": {
+    "en": {
+      "name": "Note",
+      "description": "A short note on the desktop",
+      "settings": {
+        "text": {
+          "label": "Text"
+        },
+        "align": {
+          "label": "Alignment",
+          "options": {
+            "left": "Left",
+            "center": "Center"
+          }
+        },
+        "accent": {
+          "label": "Highlight"
+        }
+      }
+    }
+  }
 }

@@ -53,17 +53,17 @@ Item {
             if (result === PamResult.Success) {
                 root.finishAttempt(true, "");
             } else if (result === PamResult.MaxTries) {
-                root.finishAttempt(false, "Too many attempts, try again later");
+                root.finishAttempt(false, I18n.tr("lock.auth.tooMany"));
             } else if (result === PamResult.Failed) {
-                root.finishAttempt(false, "Wrong password, try again");
+                root.finishAttempt(false, I18n.tr("lock.auth.wrong"));
             } else {
-                root.finishAttempt(false, "Authentication is unavailable");
+                root.finishAttempt(false, I18n.tr("lock.auth.unavailable"));
             }
         }
 
         onError: error => {
             console.warn("[lock] PAM error: " + PamError.toString(error));
-            root.finishAttempt(false, "Authentication is unavailable");
+            root.finishAttempt(false, I18n.tr("lock.auth.unavailable"));
         }
 
         onResponseRequiredChanged: {
@@ -78,7 +78,7 @@ Item {
             // у нас нет: попытка уже провалилась, второй раз не спрашиваем.
             if (response === "") {
                 pam.abort();
-                root.finishAttempt(false, "Wrong password, try again");
+                root.finishAttempt(false, I18n.tr("lock.auth.wrong"));
                 return;
             }
             root.pendingResponse = "";
@@ -96,7 +96,7 @@ Item {
             if (!root.authInFlight)
                 return;
             pam.abort();
-            root.finishAttempt(false, "Authentication timed out");
+            root.finishAttempt(false, I18n.tr("lock.auth.timeout"));
         }
     }
 
@@ -109,7 +109,7 @@ Item {
         root.authInFlight = true;
         if (!pam.start()) {
             root.pendingResponse = "";
-            root.finishAttempt(false, "Authentication is unavailable");
+            root.finishAttempt(false, I18n.tr("lock.auth.unavailable"));
         }
     }
 
@@ -175,7 +175,7 @@ Item {
             // Helper штатно выходит только если устройства нет; всё
             // остальное — падение, и отпечаток до конца блокировки недоступен.
             root.helperWanted = false;
-            LockState.setFingerprint("unavailable", "Fingerprint helper stopped");
+            LockState.setFingerprint("unavailable", I18n.tr("lock.fingerprint.stopped"));
             console.warn("[lock] fprint-helper завершился (код " + exitCode + ")");
         }
     }
@@ -188,7 +188,7 @@ Item {
         onTriggered: {
             if (!root.helperWanted || root.helperOnline)
                 return;
-            LockState.setFingerprint("unavailable", "Fingerprint sensor is not responding");
+            LockState.setFingerprint("unavailable", I18n.tr("lock.fingerprint.noResponse"));
         }
     }
 
@@ -298,7 +298,7 @@ Item {
             root.helperWanted = false;
             LockState.setFingerprint("unavailable",
                                      event.reason !== undefined ? event.reason
-                                                                : "Fingerprint is unavailable");
+                                                                : I18n.tr("lock.fingerprint.unavailable"));
             break;
 
         case "error":
@@ -308,7 +308,7 @@ Item {
             retryTimer.stop();
             LockState.setFingerprint(event.reason === "busy" ? "busy" : "error",
                                      event.message !== undefined ? event.message
-                                                                : "Fingerprint error");
+                                                                : I18n.tr("lock.fingerprint.error"));
             break;
 
         case "stopped":

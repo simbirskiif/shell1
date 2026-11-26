@@ -29,7 +29,7 @@ Item {
         spacing: 0
 
         PanelHeader {
-            title: "Battery"
+            title: I18n.tr("quick.tile.battery")
             checked: false
             switchable: false
             onBackRequested: root.backRequested()
@@ -78,7 +78,7 @@ Item {
                 anchors.topMargin: Theme.space.xs
                 text: {
                     if (!PowerService.present)
-                        return "No battery detected";
+                        return I18n.tr("power.state.none");
                     if (PowerService.timeText === "")
                         return PowerService.stateText;
                     return PowerService.stateText + " · " + PowerService.timeText;
@@ -94,7 +94,7 @@ Item {
             color: Theme.outlineVariant
         }
 
-        PanelSection { text: "Power mode" }
+        PanelSection { text: I18n.tr("quick.battery.powerMode") }
 
         // power-profiles-daemon не отвечает: выбор режима невозможен, вместо
         // него — плашка с причиной и кнопкой повторной проверки.
@@ -106,9 +106,9 @@ Item {
             readonly property bool shown: !PowerService.profilesAvailable
             visible: shown
             height: shown ? implicitHeight : 0
-            title: "Power modes unavailable"
-            description: "power-profiles-daemon is not running"
-            actionText: "Retry"
+            title: I18n.tr("quick.battery.profilesUnavailable")
+            description: I18n.tr("quick.battery.profilesDaemon")
+            actionText: I18n.tr("common.retry")
             onActionRequested: PowerService.probeProfiles()
         }
 
@@ -210,14 +210,14 @@ Item {
             height: shown ? implicitHeight : 0
             spacing: 0
 
-            PanelSection { text: "Details" }
+            PanelSection { text: I18n.tr("common.details") }
 
             // Строки с пустым значением скрываются сами.
-            PanelInfoRow { label: "Source"; value: PowerService.sourceText }
-            PanelInfoRow { label: "Energy"; value: PowerService.energyText }
-            PanelInfoRow { label: "Power draw"; value: PowerService.powerText }
-            PanelInfoRow { label: "Health"; value: PowerService.healthText }
-            PanelInfoRow { label: "Model"; value: PowerService.model }
+            PanelInfoRow { label: I18n.tr("quick.battery.source"); value: PowerService.sourceText }
+            PanelInfoRow { label: I18n.tr("quick.battery.energy"); value: PowerService.energyText }
+            PanelInfoRow { label: I18n.tr("quick.battery.power"); value: PowerService.powerText }
+            PanelInfoRow { label: I18n.tr("quick.battery.health"); value: PowerService.healthText }
+            PanelInfoRow { label: I18n.tr("quick.battery.model"); value: PowerService.model }
         }
     }
 }

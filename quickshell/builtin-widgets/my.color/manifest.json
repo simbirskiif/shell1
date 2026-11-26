@@ -12,5 +12,11 @@
     "max": "1x1",
     "default": "1x1"
   },
-  "settings": []
+  "settings": [],
+  "i18n": {
+    "en": {
+      "name": "Color block",
+      "description": "Static color block"
+    }
+  }
 }

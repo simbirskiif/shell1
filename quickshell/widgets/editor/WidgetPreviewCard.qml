@@ -80,7 +80,7 @@ Item {
                                    : Theme.scheme.onSurface
         font: Theme.typeLabelMedium
         elide: Text.ElideRight
-        text: root.widget ? root.widget.name : ""
+        text: root.widget ? WidgetRegistry.displayName(root.widget) : ""
     }
 
     Text {
@@ -88,7 +88,7 @@ Item {
         visible: previewLoader.status === Loader.Error
         color: Theme.error
         font: Theme.typeBodySmall
-        text: "Ошибка превью"
+        text: I18n.tr("widgets.preview.error")
     }
 
     WidgetContext {

@@ -56,7 +56,7 @@ Item {
             anchors.rightMargin: Theme.space.md
             anchors.verticalCenter: parent.verticalCenter
             elide: Text.ElideRight
-            text: "Войти в сеть"
+            text: I18n.tr("quick.portal.signIn")
             color: Theme.scheme.onSecondaryContainer
             font: Theme.typeLabelLarge
         }
@@ -66,7 +66,7 @@ Item {
             anchors.right: parent.right
             anchors.rightMargin: Theme.space.lg
             anchors.verticalCenter: parent.verticalCenter
-            text: "Открыть"
+            text: I18n.tr("quick.portal.open")
             color: Theme.scheme.onSecondaryContainer
             font: Theme.typeLabelLarge
         }

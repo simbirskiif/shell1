@@ -5,26 +5,26 @@ import "../../singletons"
 SettingsPage {
     id: root
 
-    title: "Уведомления"
-    description: "Поведение тостов и истории уведомлений."
+    title: I18n.tr("settings.notifications.title")
+    description: I18n.tr("settings.notifications.description")
 
     SettingsCard {
-        title: "Режим"
+        title: I18n.tr("settings.notifications.mode.title")
 
         SettingsSwitchRow {
-            title: "Не беспокоить"
-            description: "История пополняется, тосты не показываются. Критичные уведомления приходят."
+            title: I18n.tr("quick.tile.dnd")
+            description: I18n.tr("settings.notifications.dnd.description")
             checked: NotificationService.doNotDisturb
             onToggled: NotificationService.doNotDisturb = !NotificationService.doNotDisturb
         }
     }
 
     SettingsCard {
-        title: "Жест"
+        title: I18n.tr("settings.notifications.gesture.title")
 
         SettingsSliderRow {
-            title: "Чувствительность свайпа"
-            description: "1.00× — карточка идёт ровно за пальцами"
+            title: I18n.tr("settings.notifications.swipe.title")
+            description: I18n.tr("settings.notifications.swipe.description")
             value: (NotificationService.swipeSensitivity - 0.5) / 2.5
             valueText: NotificationService.swipeSensitivity.toFixed(2) + "×"
             onMoved: v => NotificationService.swipeSensitivity =
@@ -33,7 +33,7 @@ SettingsPage {
     }
 
     SettingsButton {
-        text: "Сбросить"
+        text: I18n.tr("common.reset")
         variant: "outlined"
         onClicked: {
             NotificationService.doNotDisturb = false;

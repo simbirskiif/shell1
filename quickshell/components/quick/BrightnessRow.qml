@@ -71,7 +71,8 @@ Item {
         // яркость недоступна: пользователю важно знать, что делать.
         text: root.controllable
               ? root.subtitle
-              : (root.hint !== "" ? root.hint : "Not adjustable")
+              : (root.hint !== "" ? root.hint
+                                  : I18n.tr("quick.brightness.notAdjustable"))
         elide: Text.ElideRight
         color: Theme.scheme.onSurfaceVariant
         font: Theme.typeBodySmall

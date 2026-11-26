@@ -103,7 +103,7 @@ Singleton {
         if (value.length === 0)
             return false;
         root.authenticating = true;
-        root.setStatus("hint", "Checking password…");
+        root.setStatus("hint", I18n.tr("lock.checking"));
         root.passwordRequested(value);
         return true;
     }
@@ -124,7 +124,7 @@ Singleton {
         root.unlocking = true;
         root.authenticating = false;
         root.statusKind = "success";
-        root.statusText = "Unlocked";
+        root.statusText = I18n.tr("lock.unlocked");
         root.fingerprintState = "matched";
         root.fingerprintHint = "";
         console.info("[lock] аутентификация успешна");

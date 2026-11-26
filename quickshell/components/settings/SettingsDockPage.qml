@@ -16,20 +16,21 @@ SettingsPage {
     readonly property real panelNorm: (DockSettings.panelMaxHeight - DockSettings.minPanelHeight)
         / (DockSettings.maxPanelHeightLimit - DockSettings.minPanelHeight)
 
-    readonly property string searchStatus: DockSearch.probing ? "Проверяем Elephant…"
-        : DockSearch.serviceStarting ? "Запускаем Elephant…"
+    readonly property string searchStatus: DockSearch.probing
+        ? I18n.tr("settings.dock.search.probing")
+        : DockSearch.serviceStarting ? I18n.tr("settings.dock.search.starting")
         : (DockSearch.elephantEnabled
-           ? (DockSearch.elephantAvailable ? "Elephant подключён"
-              : (DockSearch.installed ? "Elephant установлен, сервис не запущен"
-                                      : "Elephant не найден"))
-           : "Встроенный поиск")
+           ? (DockSearch.elephantAvailable ? I18n.tr("settings.dock.search.connected")
+              : (DockSearch.installed ? I18n.tr("settings.dock.search.installed")
+                                      : I18n.tr("settings.dock.search.missing")))
+           : I18n.tr("settings.dock.search.builtin"))
 
     readonly property bool searchWarning: DockSearch.elephantEnabled
         && !DockSearch.probing && !DockSearch.serviceStarting
         && (!DockSearch.elephantAvailable || DockSearch.enabledProviders.length === 0)
 
-    title: "Док"
-    description: "Размеры и поведение нижней панели приложений."
+    title: I18n.tr("settings.dock.title")
+    description: I18n.tr("settings.dock.description")
 
     Component.onCompleted: {
         if (DockSearch.elephantEnabled && DockSearch.providers.length === 0)
@@ -37,7 +38,7 @@ SettingsPage {
     }
 
     SettingsCard {
-        title: "Поиск"
+        title: I18n.tr("settings.dock.search.title")
 
         SettingsSwitchRow {
             title: "Elephant"
@@ -65,16 +66,16 @@ SettingsPage {
                 wrapMode: Text.WordWrap
                 text: !DockSearch.elephantAvailable
                       ? (DockSearch.installed
-                         ? "Elephant установлен, но сервис не запущен — используется встроенный поиск."
-                         : "Elephant не найден — используется встроенный поиск.")
-                      : "Не выбран ни один провайдер — используется встроенный поиск."
+                         ? I18n.tr("settings.dock.search.warning.installed")
+                         : I18n.tr("settings.dock.search.warning.missing"))
+                      : I18n.tr("settings.dock.search.warning.noProvider")
                 color: Theme.warningColor
                 font: Theme.typeBodySmall
             }
         }
 
         SettingsButton {
-            text: "Запустить сервис"
+            text: I18n.tr("settings.dock.startService")
             variant: "tonal"
             visible: DockSearch.elephantEnabled && DockSearch.installed
                      && !DockSearch.elephantAvailable
@@ -85,7 +86,7 @@ SettingsPage {
         Text {
             width: parent.width
             visible: DockSearch.elephantEnabled && DockSearch.providers.length > 0
-            text: "Провайдеры Elephant"
+            text: I18n.tr("settings.dock.providers")
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeBodyMedium
         }
@@ -147,11 +148,11 @@ SettingsPage {
     }
 
     SettingsCard {
-        title: "Иконки и список"
+        title: I18n.tr("settings.dock.icons.title")
 
         SettingsSliderRow {
-            title: "Размер иконок"
-            description: "Высота иконок в компактной полосе"
+            title: I18n.tr("settings.dock.iconSize.title")
+            description: I18n.tr("settings.dock.iconSize.description")
             value: root.iconNorm
             valueText: DockSettings.iconSize + " px"
             onMoved: v => DockSettings.setIconSize(
@@ -159,15 +160,15 @@ SettingsPage {
         }
 
         SettingsSwitchRow {
-            title: "Плитки вместо строк"
-            description: "Сетка приложений в раскрытой панели"
+            title: I18n.tr("settings.dock.tiles.title")
+            description: I18n.tr("settings.dock.tiles.description")
             checked: DockSettings.tileLayout
             onToggled: DockSettings.setTileLayout(!DockSettings.tileLayout)
         }
 
         SettingsSliderRow {
-            title: "Прокрутка"
-            description: "Шаг колеса и тачпада в списке приложений"
+            title: I18n.tr("settings.dock.scroll.title")
+            description: I18n.tr("settings.dock.scroll.description")
             value: root.scrollNorm
             valueText: DockSettings.scrollFactor.toFixed(2) + "×"
             onMoved: v => DockSettings.setScrollFactor(
@@ -176,10 +177,10 @@ SettingsPage {
     }
 
     SettingsCard {
-        title: "Поле поиска"
+        title: I18n.tr("settings.dock.searchField.title")
 
         SettingsSliderRow {
-            title: "Высота поля"
+            title: I18n.tr("settings.dock.searchHeight.title")
             value: root.searchNorm
             valueText: DockSettings.searchHeight + " px"
             onMoved: v => DockSettings.setSearchHeight(
@@ -187,10 +188,10 @@ SettingsPage {
         }
 
         SettingsChoice {
-            title: "Положение"
+            title: I18n.tr("settings.dock.position.title")
             options: [
-                { key: "top", label: "Сверху" },
-                { key: "bottom", label: "Снизу" }
+                { key: "top", label: I18n.tr("settings.dock.position.top") },
+                { key: "bottom", label: I18n.tr("settings.dock.position.bottom") }
             ]
             value: DockSettings.searchAtBottom ? "bottom" : "top"
             onSelected: key => DockSettings.setSearchAtBottom(key === "bottom")
@@ -198,10 +199,10 @@ SettingsPage {
     }
 
     SettingsCard {
-        title: "Раскрытая панель"
+        title: I18n.tr("settings.dock.expanded.title")
 
         SettingsSliderRow {
-            title: "Максимальная высота"
+            title: I18n.tr("settings.dock.maxHeight.title")
             value: root.panelNorm
             valueText: DockSettings.panelMaxHeight + " px"
             onMoved: v => DockSettings.setPanelMaxHeight(
@@ -209,17 +210,17 @@ SettingsPage {
         }
 
         SettingsSwitchRow {
-            title: "По размеру списка"
-            description: "Панель подстраивается под число приложений"
+            title: I18n.tr("settings.dock.fit.title")
+            description: I18n.tr("settings.dock.fit.description")
             checked: DockSettings.fitPanelToContent
             onToggled: DockSettings.setFitPanelToContent(!DockSettings.fitPanelToContent)
         }
 
         SettingsChoice {
-            title: "Кнопка раскрытия"
+            title: I18n.tr("settings.dock.buttonSide.title")
             options: [
-                { key: "left", label: "Слева" },
-                { key: "right", label: "Справа" }
+                { key: "left", label: I18n.tr("settings.dock.buttonSide.left") },
+                { key: "right", label: I18n.tr("settings.dock.buttonSide.right") }
             ]
             value: DockSettings.buttonSide
             onSelected: key => DockSettings.setButtonSide(key)
@@ -227,7 +228,7 @@ SettingsPage {
     }
 
     SettingsButton {
-        text: "Сбросить настройки дока"
+        text: I18n.tr("settings.dock.reset")
         variant: "outlined"
         onClicked: DockSettings.reset()
     }

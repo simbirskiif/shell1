@@ -4,6 +4,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import "../core"
+import "../../singletons"
 
 // Состояние drag-and-drop из каталога на сетку (раздел 8.5 ТЗ).
 // Геометрия ghost считается в координатах окна слоя, как и DragController.
@@ -72,7 +73,8 @@ Singleton {
                                       root.col, root.row, root.cols, root.rows)
             : null
         if (!added)
-            root.message = root.valid ? "Нет места" : "Здесь нельзя разместить виджет"
+            root.message = root.valid ? I18n.tr("widgets.picker.noSpace")
+                                      : I18n.tr("widgets.picker.cannotPlace")
         root.reset()
         return added !== null
     }

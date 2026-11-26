@@ -180,7 +180,8 @@ Singleton {
                             continue;
                         list.push({
                             address: client.address,
-                            title: client.title || client.class || "окно",
+                            title: client.title || client.class
+                                   || I18n.tr("switcher.windowFallback"),
                             appClass: client.class || client.initialClass || "",
                             workspace: client.workspace ? client.workspace.name : "",
                             history: client.focusHistoryID !== undefined ? client.focusHistoryID : 9999
@@ -206,7 +207,7 @@ Singleton {
                     }
                 } catch (error) {
                     root.windows = [];
-                    root.lastError = "не удалось прочитать список окон: " + error;
+                    root.lastError = I18n.tr("switcher.windowListError", { error: error });
                 }
             }
         }
@@ -226,7 +227,9 @@ Singleton {
         onExited: (code, status) => {
             root.busy = false;
             if (code !== 0) {
-                root.lastError = focusErr.text.trim() || ("hyprctl завершился с кодом " + code);
+                root.lastError = focusErr.text.trim()
+                                 || I18n.tr("switcher.commandFailed",
+                                            { command: "hyprctl", code: code });
                 return;
             }
             root.lastError = "";

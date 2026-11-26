@@ -54,19 +54,24 @@ PanelWindow {
     }
     readonly property string title: {
         if (root.informational)
-            return "Код сопряжения";
+            return I18n.tr("dialogs.bluetoothPin.pairingCode");
         if (root.needsInput)
-            return root.kind === "passkey" ? "Введите passkey" : "Введите PIN";
-        return "Подтвердите сопряжение";
+            return root.kind === "passkey"
+                ? I18n.tr("dialogs.bluetoothPin.enterPasskey")
+                : I18n.tr("dialogs.bluetoothPin.enterPin");
+        return I18n.tr("dialogs.bluetoothPin.confirm");
     }
     readonly property string subtitle: {
         if (root.informational)
             return root.deviceName;
         if (root.needsInput)
-            return root.deviceName + " запрашивает код";
+            return I18n.tr("dialogs.bluetoothPin.requestsCode",
+                           { device: root.deviceName });
         if (root.requestName === "RequestConfirmation")
-            return "Совпадает ли код на " + root.deviceName + "?";
-        return "Разрешить подключение к " + root.deviceName + "?";
+            return I18n.tr("dialogs.bluetoothPin.codeMatch",
+                           { device: root.deviceName });
+        return I18n.tr("dialogs.bluetoothPin.allow",
+                       { device: root.deviceName });
     }
 
     screen: dialogScreen
@@ -255,7 +260,8 @@ PanelWindow {
                     layoutDirection: Qt.RightToLeft
 
                     DialogButton {
-                        text: root.informational ? "Готово" : "Подтвердить"
+                        text: root.informational ? I18n.tr("common.done")
+                                                 : I18n.tr("common.confirm")
                         primary: true
                         enabled: !root.needsInput || pinInput.text !== ""
                         onTriggered: {
@@ -270,7 +276,7 @@ PanelWindow {
 
                     DialogButton {
                         visible: !root.informational
-                        text: "Отмена"
+                        text: I18n.tr("common.cancel")
                         onTriggered: root.reject()
                     }
                 }

@@ -1,4 +1,5 @@
 import QtQuick
+import "../../singletons"
 
 // Пример-переключатель: показывает ctx.settings и ctx.setSetting.
 Item {
@@ -12,7 +13,8 @@ Item {
         color: root.ctx.colors.onSurfaceVariant
         font.family: root.ctx.fontFamily
         font.pixelSize: Math.max(9, Math.round(root.ctx.dp * 10))
-        text: root.ctx.settings.enabled ? "вкл" : "выкл"
+        text: root.ctx.settings.enabled ? I18n.tr("widget.switch.on")
+                                       : I18n.tr("widget.switch.off")
     }
 
     Rectangle {

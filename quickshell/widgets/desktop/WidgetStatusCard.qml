@@ -75,13 +75,13 @@ Item {
             spacing: Theme.space.xs
 
             HostButton {
-                text: root.compact ? "↻" : "Перезагрузить"
+                text: root.compact ? "↻" : I18n.tr("widgets.reload")
                 visible: root.showReload
                 onClicked: root.reloadRequested()
             }
 
             HostButton {
-                text: root.compact ? "✕" : "Удалить"
+                text: root.compact ? "✕" : I18n.tr("common.delete")
                 onClicked: root.deleteRequested()
             }
         }

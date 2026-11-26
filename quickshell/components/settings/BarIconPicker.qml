@@ -74,7 +74,8 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     horizontalAlignment: Text.AlignHCenter
-                    text: cell.modelData.label
+                    text: cell.modelData.labelKey !== ""
+                          ? I18n.tr(cell.modelData.labelKey) : ""
                     color: cell.selected ? Theme.primary : Theme.scheme.onSurfaceVariant
                     font: Theme.typeLabelSmall
                     elide: Text.ElideRight

@@ -18,6 +18,7 @@ Item {
     property var filtered: []
     property string query: ""
     property string message: ""
+    property bool messageError: false
     property bool showPathInput: false
     property bool hiding: false
     property real slideOffset: 0
@@ -89,6 +90,7 @@ Item {
 
         function onMessageChanged() {
             root.message = PickerState.message
+            root.messageError = root.message !== ""
         }
     }
 
@@ -98,9 +100,9 @@ Item {
         const result = []
         for (const widget of source) {
             if (needle.length === 0
-                || widget.name.toLowerCase().indexOf(needle) >= 0
+                || WidgetRegistry.displayName(widget).toLowerCase().indexOf(needle) >= 0
                 || widget.id.toLowerCase().indexOf(needle) >= 0
-                || widget.description.toLowerCase().indexOf(needle) >= 0)
+                || WidgetRegistry.displayDescription(widget).toLowerCase().indexOf(needle) >= 0)
                 result.push(widget)
         }
         root.filtered = result
@@ -109,9 +111,13 @@ Item {
     function add(widget: var): void {
         const instance = LayoutStore.addWidget(root.screen.name, widget, root.metrics)
         if (!instance) {
-            root.message = "Нет места для «" + widget.name + "»"
+            root.message = I18n.tr("widgets.picker.noSpaceFor",
+                                   { name: WidgetRegistry.displayName(widget) })
+            root.messageError = true
         } else {
-            root.message = "Добавлен: " + widget.name
+            root.message = I18n.tr("widgets.picker.added",
+                                   { name: WidgetRegistry.displayName(widget) })
+            root.messageError = false
             root.dismiss()
         }
     }
@@ -146,7 +152,7 @@ Item {
                 color: Theme.scheme.onSurface
                 font: Theme.typeTitleLarge
                 elide: Text.ElideRight
-                text: "Виджеты"
+                text: I18n.tr("settings.widgets.title")
             }
 
             Item {
@@ -230,7 +236,7 @@ Item {
                     visible: search.text.length === 0
                     color: Theme.scheme.onSurfaceVariant
                     font: Theme.typeBodyMedium
-                    text: "Поиск по имени или id"
+                    text: I18n.tr("widgets.picker.search")
                 }
             }
         }
@@ -280,14 +286,13 @@ Item {
             width: parent.width
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeBodySmall
-            text: "Доступно: " + root.filtered.length
+            text: I18n.tr("widgets.picker.available", { n: root.filtered.length })
         }
 
         Text {
             width: parent.width
             visible: root.message.length > 0
-            color: root.message.indexOf("Нет места") >= 0
-                   ? Theme.error : Theme.scheme.onSurfaceVariant
+            color: root.messageError ? Theme.error : Theme.scheme.onSurfaceVariant
             font: Theme.typeBodySmall
             wrapMode: Text.WordWrap
             text: root.message
@@ -302,7 +307,7 @@ Item {
         Text {
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeLabelLarge
-            text: "Пользовательские пути"
+            text: I18n.tr("widgets.picker.paths")
         }
 
         Repeater {
@@ -332,7 +337,8 @@ Item {
                 id: pathToggleLabel
 
                 anchors.centerIn: parent
-                text: root.showPathInput ? "Скрыть ввод пути" : "Добавить папку…"
+                text: root.showPathInput ? I18n.tr("widgets.picker.hidePath")
+                                         : I18n.tr("widgets.picker.addFolder")
                 color: Theme.scheme.onSecondaryContainer
                 font: Theme.typeLabelLarge
             }
@@ -396,7 +402,7 @@ Item {
                         visible: pathInput.text.length === 0
                         color: Theme.scheme.onSurfaceVariant
                         font: Theme.typeBodyMedium
-                        text: "/путь/к/папке"
+                        text: I18n.tr("widgets.picker.pathPlaceholder")
                     }
                 }
             }
@@ -413,7 +419,7 @@ Item {
                     id: pathAddLabel
 
                     anchors.centerIn: parent
-                    text: "Добавить"
+                    text: I18n.tr("common.add")
                     color: Theme.scheme.onPrimary
                     font: Theme.typeLabelLarge
                 }
@@ -433,10 +439,12 @@ Item {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                         if (Config.addExtraPath(pathInput.text)) {
-                            root.message = "Путь добавлен, каталог обновляется"
+                            root.message = I18n.tr("widgets.picker.pathAdded")
+                            root.messageError = false
                             pathInput.text = ""
                         } else {
-                            root.message = "Путь уже добавлен или указан неверно"
+                            root.message = I18n.tr("widgets.picker.pathInvalid")
+                            root.messageError = true
                         }
                     }
                 }

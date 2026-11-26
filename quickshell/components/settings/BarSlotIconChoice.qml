@@ -42,7 +42,7 @@ Item {
                     required property var modelData
 
                     readonly property bool selected: root.value === modelData.value
-                    readonly property bool textChip: modelData.label !== ""
+                    readonly property bool textChip: modelData.labelKey !== ""
 
                     width: option.textChip ? optionLabel.implicitWidth + Theme.space.xl * 2 : 40
                     height: 40
@@ -74,7 +74,7 @@ Item {
 
                         anchors.centerIn: parent
                         visible: option.textChip
-                        text: option.modelData.label
+                        text: I18n.tr(option.modelData.labelKey)
                         color: option.selected ? Theme.scheme.onSecondaryContainer
                                                : Theme.scheme.onSurfaceVariant
                         font: Theme.typeLabelLarge

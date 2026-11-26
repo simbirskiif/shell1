@@ -12,5 +12,11 @@
     "max": "2x4",
     "default": "2x2"
   },
-  "settings": []
+  "settings": [],
+  "i18n": {
+    "en": {
+      "name": "System palette",
+      "description": "Shows the colors provided by the system"
+    }
+  }
 }

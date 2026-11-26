@@ -138,7 +138,7 @@ Item {
             Text {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
-                text: clock.date.toLocaleTimeString(Qt.locale(), "HH:mm")
+                text: clock.date.toLocaleTimeString(Qt.locale(I18n.locale), "HH:mm")
                 color: Theme.scheme.onSurface
                 font: Theme.typeDisplayLarge
             }
@@ -148,7 +148,7 @@ Item {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 topPadding: Math.round(2 * root.scale)
-                text: clock.date.toLocaleDateString(Qt.locale(), "dddd, d MMMM")
+                text: clock.date.toLocaleDateString(Qt.locale(I18n.locale), "dddd, d MMMM")
                 color: Theme.scheme.onSurfaceVariant
                 font: Theme.typeTitleLarge
             }
@@ -279,7 +279,7 @@ Item {
                             anchors.left: passwordInput.left
                             anchors.verticalCenter: parent.verticalCenter
                             visible: passwordInput.text.length === 0
-                            text: "Enter Password"
+                            text: I18n.tr("lock.enterPassword")
                             color: Theme.scheme.onSurfaceVariant
                             font: Theme.typeBodyLarge
                         }
@@ -407,17 +407,17 @@ Item {
         if (LockState.authenticating)
             return LockState.statusText;
         if (LockState.capsLock)
-            return "Caps Lock is on";
+            return I18n.tr("lock.capsLock");
         switch (LockState.fingerprintState) {
         case "scanning":
-            return "Touch the fingerprint sensor";
+            return I18n.tr("lock.fingerprint.touch");
         case "retry":
-            return "Fingerprint not recognized, try again";
+            return I18n.tr("lock.fingerprint.retry");
         case "busy":
-            return "Fingerprint sensor is busy";
+            return I18n.tr("lock.fingerprint.busy");
         case "error":
             return LockState.fingerprintHint !== "" ? LockState.fingerprintHint
-                                                   : "Fingerprint is unavailable";
+                                                   : I18n.tr("lock.fingerprint.unavailable");
         case "unavailable":
             return "";
         }

@@ -60,7 +60,8 @@ Singleton {
 
     readonly property string summary: {
         if (root.primary === null)
-            return root.targets.length > 0 ? "Not adjustable" : "No displays";
+            return root.targets.length > 0 ? I18n.tr("quick.brightness.notAdjustable")
+                                           : I18n.tr("quick.brightness.noDisplays");
         return Math.round(root.valueFor(root.primary.key) * 100) + "%";
     }
 
@@ -415,7 +416,8 @@ Singleton {
         return {
             key: "backlight:" + device,
             label: screen.name,
-            subtitle: screen.model !== "" ? screen.model : "Backlight",
+            subtitle: screen.model !== "" ? screen.model
+                                           : I18n.tr("quick.brightness.backlight"),
             method: "backlight",
             device: device,
             controllable: true,
@@ -433,19 +435,19 @@ Singleton {
             method: "ddc",
             device: display.number,
             controllable: supported,
-            hint: supported ? "" : "Brightness is not supported over DDC/CI"
+            hint: supported ? "" : I18n.tr("quick.brightness.ddcUnsupported")
         };
     }
 
     function makePlainTarget(screen) {
-        let hint = "No brightness control found";
+        let hint = I18n.tr("quick.brightness.noControl");
         if (!root.looksInternal(screen.name)) {
             if (!root.ddcProbed)
-                hint = "Checking DDC/CI…";
+                hint = I18n.tr("quick.brightness.checking");
             else if (root.ddcDisplays.length === 0)
-                hint = "DDC/CI unavailable (ddcutil / i2c-dev?)";
+                hint = I18n.tr("quick.brightness.ddcUnavailable");
             else
-                hint = "Monitor does not report brightness over DDC/CI";
+                hint = I18n.tr("quick.brightness.monitorNoBrightness");
         }
         return {
             key: "screen:" + screen.name,

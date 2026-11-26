@@ -104,12 +104,15 @@ Item {
             anchors.centerIn: parent
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeLabelSmall
-            text: root.metrics.screenName
-                  + "  •  " + root.metrics.cols + " × " + root.metrics.rows + " клеток"
-                  + "  •  клетка " + Math.round(root.metrics.cell) + " px = "
-                  + root.metrics.cellMm.toFixed(1) + " мм"
-                  + "  •  dpr " + root.metrics.dpr.toFixed(2)
-                  + "  •  dp " + root.metrics.dp.toFixed(2)
+            text: I18n.tr("widgets.grid.info", {
+                screen: root.metrics.screenName,
+                cols: root.metrics.cols,
+                rows: root.metrics.rows,
+                px: Math.round(root.metrics.cell),
+                mm: root.metrics.cellMm.toFixed(1),
+                dpr: root.metrics.dpr.toFixed(2),
+                dp: root.metrics.dp.toFixed(2)
+            })
         }
     }
 }

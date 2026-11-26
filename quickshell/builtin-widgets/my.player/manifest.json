@@ -13,6 +13,22 @@
     "default": "2x4"
   },
   "settings": [
-    { "key": "showArt", "type": "bool", "label": "Показывать обложку", "default": true }
-  ]
+    {
+      "key": "showArt",
+      "type": "bool",
+      "label": "Показывать обложку",
+      "default": true
+    }
+  ],
+  "i18n": {
+    "en": {
+      "name": "Player",
+      "description": "Current track (MPRIS) and playback controls",
+      "settings": {
+        "showArt": {
+          "label": "Show artwork"
+        }
+      }
+    }
+  }
 }

@@ -83,8 +83,9 @@ Singleton {
     // Короткая подпись для плитки: mute важнее процента, а без backend
     // процент был бы обманом — там нечего показывать.
     readonly property string outputSummary: !root.available
-        ? "Unavailable"
-        : root.outputMuted ? "Muted" : Math.round(root.outputVolume * 100) + "%"
+        ? I18n.tr("quick.audio.unavailable")
+        : root.outputMuted ? I18n.tr("quick.audio.muted")
+                           : Math.round(root.outputVolume * 100) + "%"
 
     // ───────────── подписи ─────────────
 

@@ -20,8 +20,11 @@ Item {
     readonly property bool camera: root.device === "camera"
     readonly property bool screen: root.device === "screen"
 
-    readonly property string deviceTitle: root.microphone ? "Microphone"
-        : root.camera ? "Camera" : root.screen ? "Screen" : "Location"
+    readonly property string deviceTitle: root.microphone
+        ? I18n.tr("privacy.device.microphone")
+        : root.camera ? I18n.tr("privacy.device.camera")
+        : root.screen ? I18n.tr("privacy.device.screen")
+        : I18n.tr("privacy.device.location")
 
     readonly property string title: root.apps.length > 0
         ? root.apps.join(", ") : root.deviceTitle
@@ -56,20 +59,23 @@ Item {
         if (day === startOfDay)
             return "";
         if (day === startOfDay - dayMs)
-            return "Yesterday ";
+            return I18n.tr("quick.privacy.yesterday") + " ";
         return root.twoDigits(date.getDate()) + "." + root.twoDigits(date.getMonth() + 1) + " ";
     }
 
     function durationText() {
         const seconds = Math.max(1, Math.round((root.end - root.start) / 1000));
         if (seconds < 60)
-            return seconds + " s";
+            return I18n.trn("quick.privacy.duration.seconds", seconds);
         const minutes = Math.round(seconds / 60);
         if (minutes < 60)
-            return minutes + " min";
+            return I18n.trn("quick.privacy.duration.minutes", minutes);
         const hours = Math.floor(minutes / 60);
         const rest = minutes % 60;
-        return hours + " h" + (rest > 0 ? " " + rest + " min" : "");
+        return rest > 0
+            ? I18n.tr("quick.privacy.duration.hoursMinutes",
+                      { hours: hours, minutes: rest })
+            : I18n.trn("quick.privacy.duration.hours", hours);
     }
 
     readonly property string details: {

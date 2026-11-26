@@ -22,7 +22,7 @@ Item {
         spacing: 0
 
         PanelHeader {
-            title: "Sound"
+            title: I18n.tr("quick.tile.sound")
             // Тумблер в шапке — mute вывода: отдельного «выключить звук
             // целиком» у PipeWire нет. Без backend переключать нечего.
             checked: !AudioService.outputMuted
@@ -44,8 +44,8 @@ Item {
             visible: shown
             height: shown ? implicitHeight : 0
             icon: SystemIcons.soundGlyph
-            title: "Audio unavailable"
-            description: "PipeWire is not running"
+            title: I18n.tr("quick.audio.unavailable")
+            description: I18n.tr("quick.audio.pipewire")
             actionText: ""
             // Действия, которое можно предложить, нет — кнопку не рисуем.
             showAction: false
@@ -62,8 +62,8 @@ Item {
             PanelTabs {
                 width: parent.width
                 tabs: [
-                    { key: "output", title: "Speakers" },
-                    { key: "input", title: "Microphone" }
+                    { key: "output", title: I18n.tr("quick.sound.speakers") },
+                    { key: "input", title: I18n.tr("quick.sound.microphone") }
                 ]
                 current: UiState.soundTab
                 onSelected: key => {
@@ -98,7 +98,7 @@ Item {
                     onClicked: UiState.openDetail("sound-output")
                 }
 
-                PanelSection { text: "Applications" }
+                PanelSection { text: I18n.tr("quick.sound.applications") }
 
                 Text {
                     width: parent.width
@@ -110,7 +110,7 @@ Item {
                     height: shown ? Theme.touchTarget : 0
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
-                    text: "No applications are playing audio"
+                    text: I18n.tr("quick.sound.noApps")
                     color: Theme.scheme.onSurfaceVariant
                     font: Theme.typeBodyMedium
                 }

@@ -21,7 +21,7 @@ Item {
         spacing: 0
 
         PanelHeader {
-            title: "Кофеин"
+            title: I18n.tr("quick.tile.caffeine")
             checked: CaffeineService.active
             onBackRequested: root.backRequested()
             onToggled: CaffeineService.toggle()

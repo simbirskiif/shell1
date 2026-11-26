@@ -42,7 +42,7 @@ Item {
         anchors.right: chevron.left
         anchors.rightMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
-        text: root.text !== "" ? root.text : "No device"
+        text: root.text !== "" ? root.text : I18n.tr("quick.audio.noDevice")
         elide: Text.ElideRight
         color: Theme.scheme.onSurface
         font: Theme.typeBodyLarge

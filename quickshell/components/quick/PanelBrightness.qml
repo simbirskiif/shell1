@@ -21,7 +21,7 @@ Item {
         spacing: 0
 
         PanelHeader {
-            title: "Brightness"
+            title: I18n.tr("quick.tile.brightness")
             checked: false
             switchable: false
             onBackRequested: root.backRequested()
@@ -40,8 +40,8 @@ Item {
             visible: shown
             height: shown ? implicitHeight : 0
             icon: SystemIcons.brightnessGlyph
-            title: "No displays"
-            description: "The compositor reported no screens"
+            title: I18n.tr("quick.brightness.noDisplays")
+            description: I18n.tr("quick.brightness.noScreens")
             actionText: ""
             showAction: false
         }

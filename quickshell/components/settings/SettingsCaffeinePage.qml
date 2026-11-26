@@ -7,8 +7,8 @@ import "../../singletons"
 SettingsPage {
     id: root
 
-    title: "Кофеин"
-    description: "Сроки, которые предлагаются в панели и на плитке."
+    title: I18n.tr("settings.caffeine.title")
+    description: I18n.tr("settings.caffeine.description")
 
     function commit(text) {
         root.applied = text;
@@ -20,8 +20,8 @@ SettingsPage {
     Component.onCompleted: root.applied = CaffeineService.durations
 
     SettingsCard {
-        title: "Длительности"
-        description: "Через запятую: 30, 1h, 2h 30m. Число без единицы — минуты."
+        title: I18n.tr("settings.caffeine.durations.title")
+        description: I18n.tr("settings.caffeine.durations.description")
 
         Item {
             width: parent.width
@@ -69,7 +69,7 @@ SettingsPage {
 
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Применить"
+                text: I18n.tr("common.apply")
                 variant: "tonal"
                 onClicked: root.commit(field.text)
             }
@@ -78,9 +78,9 @@ SettingsPage {
         Text {
             width: parent.width
             text: CaffeineService.options.length > 0
-                  ? "Сейчас в панели: "
-                    + CaffeineService.options.map(o => o.title).join(" · ")
-                  : "Строку не удалось разобрать — используется набор по умолчанию."
+                  ? I18n.tr("settings.caffeine.current",
+                            { list: CaffeineService.options.map(o => o.title).join(" · ") })
+                  : I18n.tr("settings.caffeine.parseError")
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeBodySmall
             wrapMode: Text.WordWrap
@@ -88,13 +88,14 @@ SettingsPage {
     }
 
     SettingsCard {
-        title: "Текущее состояние"
+        title: I18n.tr("settings.caffeine.state.title")
 
         SettingsRow {
-            title: "Режим"
+            title: I18n.tr("settings.caffeine.mode.title")
             description: CaffeineService.expiresAt > 0
-                         ? "Закончится автоматически"
-                         : (CaffeineService.active ? "Действует до выключения" : "Выключен")
+                         ? I18n.tr("settings.caffeine.mode.timed")
+                         : (CaffeineService.active ? I18n.tr("settings.caffeine.mode.untilOff")
+                                                   : I18n.tr("settings.caffeine.mode.off"))
 
             Text {
                 text: CaffeineService.label
@@ -105,7 +106,7 @@ SettingsPage {
     }
 
     SettingsButton {
-        text: "Вернуть сроки по умолчанию"
+        text: I18n.tr("settings.caffeine.reset")
         variant: "outlined"
         onClicked: {
             root.commit("30, 1h, 2h");

@@ -23,7 +23,7 @@ Item {
         spacing: 0
 
         PanelHeader {
-            title: "Internet"
+            title: I18n.tr("quick.tile.internet")
             wifiStatus: true
             checked: NetworkService.wifiEnabled
             refreshable: true
@@ -56,8 +56,8 @@ Item {
                 visible: shown
                 height: shown ? implicitHeight : 0
                 icon: "\uf1eb"
-                title: "No network backend"
-                description: "NetworkManager is not available"
+                title: I18n.tr("quick.net.noBackend")
+                description: I18n.tr("quick.net.noNetworkManager")
                 actionText: ""
             }
 
@@ -136,11 +136,12 @@ Item {
                 height: shown ? implicitHeight : 0
                 wifiIcon: true
                 icon: "\uf1eb"
-                title: NetworkService.wifiHardBlocked ? "Wi-Fi is blocked" : "Wi-Fi is off"
+                title: NetworkService.wifiHardBlocked
+                       ? I18n.tr("quick.net.wifiBlocked") : I18n.tr("quick.net.wifiOff")
                 description: NetworkService.wifiHardBlocked
-                             ? "Disabled by hardware switch"
-                             : "Turn Wi-Fi on to see available networks"
-                actionText: "Turn on"
+                             ? I18n.tr("quick.net.wifiBlocked.description")
+                             : I18n.tr("quick.net.wifiOff.description")
+                actionText: I18n.tr("common.turnOn")
                 showAction: !NetworkService.wifiHardBlocked
                 onActionRequested: NetworkService.toggleWifi()
             }
@@ -154,7 +155,7 @@ Item {
                 height: shown ? implicitHeight : 0
                 spacing: 0
 
-                PanelSection { text: "Saved" }
+                PanelSection { text: I18n.tr("common.saved") }
 
                 PanelList {
                     width: parent.width
@@ -173,7 +174,7 @@ Item {
                     }
                 }
 
-                PanelSection { text: "Available" }
+                PanelSection { text: I18n.tr("common.available") }
 
                 PanelList {
                     width: parent.width

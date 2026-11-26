@@ -1041,8 +1041,9 @@ ShellRoot {
 
         // Открыть окно правки длительностей и подтвердить ввод (без мыши).
         function caffeineEdit(): string {
-            UiState.requestInput("caffeine.durations", "Длительности кофеина",
-                                 "Например: 30, 1h, 2h 30m. Число без единицы — минуты.",
+            UiState.requestInput("caffeine.durations",
+                                 I18n.tr("settings.caffeine.dialog.title"),
+                                 I18n.tr("settings.caffeine.durations.description"),
                                  CaffeineService.durations);
             return state();
         }

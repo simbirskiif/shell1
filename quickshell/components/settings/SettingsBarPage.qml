@@ -22,8 +22,8 @@ SettingsPage {
     readonly property real dragDeltaX: dragPoint.x - dragStart.x
     readonly property real dragDeltaY: dragPoint.y - dragStart.y
 
-    title: "Бар"
-    description: "Клик открывает окно иконки, перетаскивание меняет порядок."
+    title: I18n.tr("settings.bar.title")
+    description: I18n.tr("settings.bar.description")
 
     Component.onCompleted: {
         if (!MockState.barItemPresent(root.selectedKey))
@@ -41,7 +41,7 @@ SettingsPage {
     }
 
     function titleFor(key) {
-        return MockState.barItemTitles[key] || key;
+        return I18n.trOr("bar.item." + key, MockState.barItemTitles[key] || key);
     }
 
     function beginDrag(key, fromBar, index, x, y) {
@@ -135,8 +135,8 @@ SettingsPage {
     }
 
     SettingsCard {
-        title: "Правая часть бара"
-        description: "Перетащите элемент, чтобы поменять порядок. Потяните из «Добавить действие» в полосу, чтобы добавить, и вытащите из полосы, чтобы убрать."
+        title: I18n.tr("settings.bar.right.title")
+        description: I18n.tr("settings.bar.right.description")
 
         BarPreview {
             id: preview
@@ -156,8 +156,8 @@ SettingsPage {
         }
 
         SettingsSwitchRow {
-            title: "Процент батареи"
-            description: "Показывать уровень заряда рядом с иконкой"
+            title: I18n.tr("settings.bar.batteryPercent.title")
+            description: I18n.tr("settings.bar.batteryPercent.description")
             checked: MockState.showBatteryPercent
             onToggled: MockState.showBatteryPercent = !MockState.showBatteryPercent
         }
@@ -166,8 +166,8 @@ SettingsPage {
             width: parent.width
             visible: root.dragMoved && root.dragFromBar
             text: root.dropMode === "bar"
-                  ? "Отпустите, чтобы поставить на новое место."
-                  : "Отпустите вне бара, чтобы убрать элемент."
+                  ? I18n.tr("settings.bar.dropMove")
+                  : I18n.tr("settings.bar.dropRemove")
             color: root.dropMode === "bar" ? Theme.primary : Theme.warningColor
             font: Theme.typeBodySmall
             wrapMode: Text.WordWrap
@@ -176,15 +176,15 @@ SettingsPage {
         Text {
             width: parent.width
             visible: MockState.barItems.count === 0
-            text: "Бар пуст. Перетащите действие из списка ниже."
+            text: I18n.tr("settings.bar.empty")
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeBodyMedium
         }
     }
 
     SettingsCard {
-        title: "Добавить действие"
-        description: "Каждое действие открывает свою панель. Перетащите его в бар или нажмите «Добавить»."
+        title: I18n.tr("settings.bar.add.title")
+        description: I18n.tr("settings.bar.add.description")
 
         Repeater {
             model: MockState.availableBarItems()
@@ -241,7 +241,7 @@ SettingsPage {
 
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Добавить"
+                    text: I18n.tr("common.add")
                     variant: "tonal"
                     onClicked: root.addItem(modelData)
                 }
@@ -294,7 +294,7 @@ SettingsPage {
         Text {
             width: parent.width
             visible: MockState.availableBarItems().length === 0
-            text: "Все доступные действия уже на барах."
+            text: I18n.tr("settings.bar.allAdded")
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeBodyMedium
         }
@@ -304,13 +304,13 @@ SettingsPage {
         spacing: Theme.space.sm
 
         SettingsButton {
-            text: "Сбросить иконки"
+            text: I18n.tr("settings.bar.resetIcons")
             variant: "outlined"
             onClicked: MockState.resetBarIcons()
         }
 
         SettingsButton {
-            text: "Сбросить бар"
+            text: I18n.tr("settings.bar.reset")
             variant: "outlined"
             onClicked: {
                 MockState.resetBarSettings();

@@ -71,22 +71,22 @@ Singleton {
         target: AudioService
 
         function onOutputVolumeChanged() {
-            root.show("volume", root.sourceName(AudioService.outputName, "Speakers"),
+            root.show("volume", root.sourceName(AudioService.outputName, I18n.tr("quick.sound.speakers")),
                       AudioService.outputVolume, AudioService.outputMuted);
         }
 
         function onOutputMutedChanged() {
-            root.show("volume", root.sourceName(AudioService.outputName, "Speakers"),
+            root.show("volume", root.sourceName(AudioService.outputName, I18n.tr("quick.sound.speakers")),
                       AudioService.outputVolume, AudioService.outputMuted);
         }
 
         function onInputVolumeChanged() {
-            root.show("input", root.sourceName(AudioService.inputName, "Microphone"),
+            root.show("input", root.sourceName(AudioService.inputName, I18n.tr("privacy.device.microphone")),
                       AudioService.inputVolume, AudioService.inputMuted);
         }
 
         function onInputMutedChanged() {
-            root.show("input", root.sourceName(AudioService.inputName, "Microphone"),
+            root.show("input", root.sourceName(AudioService.inputName, I18n.tr("privacy.device.microphone")),
                       AudioService.inputVolume, AudioService.inputMuted);
         }
     }
@@ -118,7 +118,8 @@ Singleton {
             if (changedKey === "")
                 return;
             const target = BrightnessService.targetByKey(changedKey);
-            root.show("brightness", root.sourceName(target !== null ? target.label : "", "Brightness"),
+            root.show("brightness", root.sourceName(target !== null ? target.label : "",
+                                           I18n.tr("quick.tile.brightness")),
                       values[changedKey], false);
         }
     }

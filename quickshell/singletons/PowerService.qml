@@ -76,18 +76,18 @@ Singleton {
 
     readonly property string stateText: {
         if (!root.present)
-            return "No battery";
+            return I18n.tr("power.state.none");
         if (root.charging)
-            return "Charging";
+            return I18n.tr("power.state.charging");
         if (root.fullyCharged)
-            return "Fully charged";
+            return I18n.tr("power.state.full");
         if (root.deviceState === UPowerDeviceState.Empty)
-            return "Empty";
+            return I18n.tr("power.state.empty");
         if (root.onAc)
-            return "Plugged in";
+            return I18n.tr("power.state.plugged");
         if (root.deviceState === UPowerDeviceState.Discharging
                 || root.deviceState === UPowerDeviceState.PendingDischarge)
-            return "Discharging";
+            return I18n.tr("power.state.discharging");
         return UPowerDeviceState.toString(root.deviceState);
     }
 
@@ -97,9 +97,11 @@ Singleton {
         if (!root.present)
             return "";
         if (root.charging && root.battery.timeToFull > 0)
-            return formatDuration(root.battery.timeToFull) + " until full";
+            return I18n.tr("power.time.untilFull",
+                           { time: formatDuration(root.battery.timeToFull) });
         if (!root.charging && !root.fullyCharged && root.battery.timeToEmpty > 0)
-            return formatDuration(root.battery.timeToEmpty) + " remaining";
+            return I18n.tr("power.time.remaining",
+                           { time: formatDuration(root.battery.timeToEmpty) });
         return "";
     }
 
@@ -110,10 +112,11 @@ Singleton {
         const hours = Math.floor(total / 60);
         const minutes = total % 60;
         if (hours <= 0)
-            return minutes + " min";
+            return I18n.trn("power.duration.minutes", minutes);
         if (minutes === 0)
-            return hours + " h";
-        return hours + " h " + minutes + " min";
+            return I18n.trn("power.duration.hours", hours);
+        return I18n.tr("power.duration.hoursMinutes",
+                       { hours: hours, minutes: minutes });
     }
 
     readonly property string energyText: root.present && root.energyCapacity > 0
@@ -122,7 +125,7 @@ Singleton {
         ? root.powerDraw.toFixed(1) + " W" : ""
     readonly property string healthText: root.health >= 0 ? root.health + "%" : ""
     readonly property string sourceText: root.present
-        ? (root.onAc ? "AC adapter" : "Battery") : ""
+        ? (root.onAc ? I18n.tr("power.source.ac") : I18n.tr("power.source.battery")) : ""
 
     // ───────────── режимы питания ─────────────
 
@@ -139,9 +142,9 @@ Singleton {
 
     // Сегменты режима: значение enum + подпись. Порядок как в GNOME.
     readonly property var profiles: [
-        { value: PowerProfile.PowerSaver, label: "Saver" },
-        { value: PowerProfile.Balanced, label: "Balanced" },
-        { value: PowerProfile.Performance, label: "Performance" }
+        { value: PowerProfile.PowerSaver, label: I18n.tr("power.profile.saver") },
+        { value: PowerProfile.Balanced, label: I18n.tr("power.profile.balanced") },
+        { value: PowerProfile.Performance, label: I18n.tr("power.profile.performance") }
     ]
 
     // Performance есть не на каждом железе: без него сегмент неактивен.
@@ -171,9 +174,9 @@ Singleton {
 
     readonly property string degradationText: {
         if (root.degradationReason === PerformanceDegradationReason.LapDetected)
-            return "Performance reduced: laptop is on a lap";
+            return I18n.tr("power.degradation.lap");
         if (root.degradationReason === PerformanceDegradationReason.HighTemperature)
-            return "Performance reduced: high temperature";
+            return I18n.tr("power.degradation.highTemp");
         return "";
     }
 
@@ -188,7 +191,7 @@ Singleton {
             if (name !== "" && names.indexOf(name) < 0)
                 names.push(name);
         }
-        return names.length > 0 ? "Held by " + names.join(", ") : "";
+        return names.length > 0 ? I18n.tr("power.heldBy", { names: names.join(", ") }) : "";
     }
 
     // Один D-Bus-запрос вместо таймера: сервиса нет — значит нет и режимов.

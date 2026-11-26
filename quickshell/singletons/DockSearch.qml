@@ -380,9 +380,9 @@ Singleton {
 
     function providerLabel(name) {
         if (name === "desktopapplications")
-            return "Приложения";
+            return I18n.tr("dock.search.provider.apps");
         if (name.indexOf("menus:") === 0)
-            return "Меню: " + name.substring(6);
+            return I18n.tr("dock.search.provider.menu", { name: name.substring(6) });
         return name;
     }
 

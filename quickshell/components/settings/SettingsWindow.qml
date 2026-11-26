@@ -165,13 +165,13 @@ PanelWindow {
                 spacing: 2
 
                 Text {
-                    text: "Настройки"
+                    text: I18n.tr("settings.window.title")
                     color: Theme.scheme.onSurface
                     font: Theme.typeTitleLarge
                 }
 
                 Text {
-                    text: "Изменения сохраняются автоматически"
+                    text: I18n.tr("settings.window.subtitle")
                     color: Theme.scheme.onSurfaceVariant
                     font: Theme.typeBodySmall
                 }
@@ -287,7 +287,7 @@ PanelWindow {
                             anchors.right: parent.right
                             anchors.rightMargin: Theme.space.md
                             anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.title
+                            text: I18n.tr(modelData.titleKey)
                             color: selected ? Theme.scheme.onSecondaryContainer
                                             : Theme.scheme.onSurface
                             font: Theme.typeLabelLarge
@@ -381,6 +381,7 @@ PanelWindow {
         SettingsWindowState.section === "player" ? playerPage :
         SettingsWindowState.section === "widgets" ? widgetsPage :
         SettingsWindowState.section === "appearance" ? appearancePage :
+        SettingsWindowState.section === "language" ? languagePage :
         barPage
 
     Component { id: barPage; SettingsBarPage {} }
@@ -391,4 +392,5 @@ PanelWindow {
     Component { id: playerPage; SettingsPlayerPage {} }
     Component { id: widgetsPage; SettingsWidgetsPage {} }
     Component { id: appearancePage; SettingsAppearancePage {} }
+    Component { id: languagePage; SettingsLanguagePage {} }
 }

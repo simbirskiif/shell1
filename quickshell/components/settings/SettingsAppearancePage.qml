@@ -7,17 +7,17 @@ import "../../widgets/core"
 SettingsPage {
     id: root
 
-    title: "Оформление"
-    description: "Палитра строится из обоев (pywal). Здесь же — служебные пути."
+    title: I18n.tr("settings.appearance.title")
+    description: I18n.tr("settings.appearance.description")
 
     SettingsCard {
-        title: "Обои и палитра"
+        title: I18n.tr("settings.appearance.wallpaper.title")
 
         SettingsRow {
-            title: "Палитра"
+            title: I18n.tr("settings.appearance.palette.title")
             description: Wal.walLoaded
-                         ? "Загружена из pywal"
-                         : "pywal не найден — используется запасная схема"
+                         ? I18n.tr("settings.appearance.palette.loaded")
+                         : I18n.tr("settings.appearance.palette.fallback")
 
             Rectangle {
                 width: Theme.space.xxl
@@ -39,7 +39,7 @@ SettingsPage {
                 width: parent.width
                 text: Wallpaper.path !== ""
                       ? Wallpaper.path
-                      : "Обои не заданы — материал glass спросит hyprpaper"
+                      : I18n.tr("settings.appearance.wallpaper.none")
                 color: Theme.scheme.onSurfaceVariant
                 font: Theme.typeBodySmall
                 wrapMode: Text.WrapAnywhere
@@ -47,7 +47,7 @@ SettingsPage {
         }
 
         SettingsButton {
-            text: "Перечитать палитру и обои"
+            text: I18n.tr("settings.appearance.reload")
             variant: "tonal"
             onClicked: {
                 Wal.reload();
@@ -57,8 +57,8 @@ SettingsPage {
     }
 
     SettingsCard {
-        title: "Файл настроек"
-        description: "Настройки оболочки хранятся в состоянии пользователя и переживают перезапуск."
+        title: I18n.tr("settings.appearance.settingsFile.title")
+        description: I18n.tr("settings.appearance.settingsFile.description")
 
         Text {
             width: parent.width
@@ -70,8 +70,10 @@ SettingsPage {
 
         Text {
             width: parent.width
-            text: "Загружено: " + (Settings.loaded ? "да" : "нет")
-                  + " · ключей: " + Object.keys(Settings.values).length
+            text: I18n.tr("settings.appearance.loaded", {
+                state: Settings.loaded ? I18n.tr("common.yes") : I18n.tr("common.no"),
+                count: Object.keys(Settings.values).length
+            })
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeBodySmall
         }

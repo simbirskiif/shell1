@@ -22,7 +22,7 @@ Item {
         spacing: 0
 
         PanelHeader {
-            title: "Privacy"
+            title: I18n.tr("quick.tile.privacy")
             checked: PrivacyService.anyActive
             switchable: false
             onBackRequested: root.backRequested()
@@ -53,7 +53,7 @@ Item {
                 PrivacyCard {
                     width: parent.width
                     icon: SystemIcons.microphoneGlyph
-                    title: "Microphone"
+                    title: I18n.tr("privacy.device.microphone")
                     subtitle: PrivacyService.microphoneStatus
                     active: PrivacyService.microphoneActive
                     available: PrivacyService.microphoneAvailable
@@ -68,7 +68,7 @@ Item {
                 PrivacyCard {
                     width: parent.width
                     icon: SystemIcons.cameraGlyph
-                    title: "Camera"
+                    title: I18n.tr("privacy.device.camera")
                     subtitle: PrivacyService.cameraStatus
                     active: PrivacyService.cameraActive
                     available: PrivacyService.cameraAvailable
@@ -83,7 +83,7 @@ Item {
                 PrivacyCard {
                     width: parent.width
                     icon: SystemIcons.screenGlyph
-                    title: "Screen"
+                    title: I18n.tr("privacy.device.screen")
                     subtitle: PrivacyService.screenStatus
                     active: PrivacyService.screenActive
                     available: PrivacyService.screenAvailable
@@ -98,7 +98,7 @@ Item {
                 PrivacyCard {
                     width: parent.width
                     icon: SystemIcons.locationGlyph
-                    title: "Location"
+                    title: I18n.tr("privacy.device.location")
                     subtitle: PrivacyService.locationStatus
                     active: PrivacyService.locationActive
                     available: PrivacyService.locationAvailable
@@ -126,7 +126,7 @@ Item {
                 anchors.left: parent.left
                 anchors.leftMargin: Theme.space.lg
                 anchors.verticalCenter: parent.verticalCenter
-                text: "History"
+                text: I18n.tr("common.history")
                 color: Theme.primary
                 font: Theme.typeLabelLarge
             }
@@ -146,7 +146,7 @@ Item {
                 Text {
                     id: clearLabel
                     anchors.centerIn: parent
-                    text: "Clear"
+                    text: I18n.tr("common.clear")
                     color: Theme.scheme.onSurfaceVariant
                     font: Theme.typeLabelLarge
                 }
@@ -173,7 +173,7 @@ Item {
                 anchors.left: parent.left
                 anchors.leftMargin: Theme.space.lg
                 anchors.top: parent.top
-                text: "No sessions yet."
+                text: I18n.tr("quick.privacy.noSessions")
                 color: Theme.scheme.onSurfaceVariant
                 font: Theme.typeBodySmall
             }
@@ -219,7 +219,7 @@ Item {
                 anchors.leftMargin: Theme.space.lg
                 anchors.rightMargin: Theme.space.lg
                 anchors.topMargin: Theme.space.lg
-                text: "Only devices that are in use appear in the bar. Stop ends the app's PipeWire capture; V4L2 cameras and GeoClue can't be revoked from the shell."
+                text: I18n.tr("quick.privacy.note")
                 color: Theme.scheme.onSurfaceVariant
                 font: Theme.typeBodySmall
                 wrapMode: Text.WordWrap

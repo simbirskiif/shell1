@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import Quickshell.Services.Mpris
+import "../../singletons"
 
 Item {
     id: root
@@ -17,10 +18,13 @@ Item {
     }
     readonly property bool hasPlayer: ctx.preview || player !== null
     readonly property bool playing: ctx.preview ? true : (player ? player.isPlaying : false)
-    readonly property string title: ctx.preview ? "Название трека"
-        : (player ? (player.trackTitle || "Без названия") : "Ничего не играет")
-    readonly property string artist: ctx.preview ? "Исполнитель"
-        : (player ? player.trackArtist : "Запустите музыку")
+    readonly property string title: ctx.preview
+        ? I18n.tr("widget.player.preview.title")
+        : (player ? (player.trackTitle || I18n.tr("player.untitled"))
+                  : I18n.tr("player.nothingPlaying"))
+    readonly property string artist: ctx.preview
+        ? I18n.tr("widget.player.preview.artist")
+        : (player ? player.trackArtist : I18n.tr("player.startMusic"))
     readonly property string artUrl: (!ctx.preview && player) ? (player.trackArtUrl || "") : ""
     readonly property bool interactive: !ctx.editing && !ctx.preview && player !== null
 

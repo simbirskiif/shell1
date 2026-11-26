@@ -14,116 +14,116 @@ Item {
     readonly property string key: SettingsWindowState.iconEditorKey
 
     function titleFor(key) {
-        return MockState.barItemTitles[key] || key;
+        return I18n.trOr("bar.item." + key, MockState.barItemTitles[key] || key);
     }
 
     function iconOptions(key) {
         if (key === "battery") {
             return [
-                { glyph: "", label: "Авто" },
-                { glyph: "\uf240", label: "Полная" },
-                { glyph: "\uf241", label: "3/4" },
-                { glyph: "\uf242", label: "1/2" },
-                { glyph: "\uf243", label: "1/4" },
-                { glyph: "\uf244", label: "Пустая" },
-                { glyph: "\uf0e7", label: "Молния" },
-                { glyph: "\uf1e6", label: "Вилка" }
+                { glyph: "", labelKey: "settings.barIcon.label.auto" },
+                { glyph: "\uf240", labelKey: "settings.barIcon.label.full" },
+                { glyph: "\uf241", labelKey: "settings.barIcon.label.threeQuarters" },
+                { glyph: "\uf242", labelKey: "settings.barIcon.label.half" },
+                { glyph: "\uf243", labelKey: "settings.barIcon.label.quarter" },
+                { glyph: "\uf244", labelKey: "settings.barIcon.label.empty" },
+                { glyph: "\uf0e7", labelKey: "settings.barIcon.label.bolt" },
+                { glyph: "\uf1e6", labelKey: "settings.barIcon.label.plug" }
             ];
         }
         if (key === "notifications") {
             return [
-                { glyph: "", label: "Авто" },
-                { glyph: "\uf0f3", label: "Колокол" },
-                { glyph: "\uf1f6", label: "Без звука" },
-                { glyph: "\uf0e0", label: "Конверт" },
-                { glyph: "\uf27a", label: "Сообщение" },
-                { glyph: "\uf12a", label: "Важно" },
-                { glyph: "\uf024", label: "Флаг" },
-                { glyph: "\uf111", label: "Точка" }
+                { glyph: "", labelKey: "settings.barIcon.label.auto" },
+                { glyph: "\uf0f3", labelKey: "settings.barIcon.label.bell" },
+                { glyph: "\uf1f6", labelKey: "settings.barIcon.label.silent" },
+                { glyph: "\uf0e0", labelKey: "settings.barIcon.label.envelope" },
+                { glyph: "\uf27a", labelKey: "settings.barIcon.label.message" },
+                { glyph: "\uf12a", labelKey: "settings.barIcon.label.important" },
+                { glyph: "\uf024", labelKey: "settings.barIcon.label.flag" },
+                { glyph: "\uf111", labelKey: "settings.barIcon.label.dot" }
             ];
         }
         if (key === "wifi") {
             return [
-                { glyph: "", label: "Авто" },
-                { glyph: "\uf1eb", label: "Wi-Fi" },
-                { glyph: "\uf0ac", label: "Глобус" },
-                { glyph: "\uf012", label: "Сигнал" }
+                { glyph: "", labelKey: "settings.barIcon.label.auto" },
+                { glyph: "\uf1eb", labelKey: "settings.barIcon.label.wifi" },
+                { glyph: "\uf0ac", labelKey: "settings.barIcon.label.globe" },
+                { glyph: "\uf012", labelKey: "settings.barIcon.label.signal" }
             ];
         }
         if (key === "bluetooth") {
             return [
-                { glyph: "", label: "Авто" },
-                { glyph: "\uf293", label: "Bluetooth" },
-                { glyph: "\uf294", label: "Bluetooth B" },
-                { glyph: "\uf10b", label: "Устройство" }
+                { glyph: "", labelKey: "settings.barIcon.label.auto" },
+                { glyph: "\uf293", labelKey: "settings.barIcon.label.bluetooth" },
+                { glyph: "\uf294", labelKey: "settings.barIcon.label.bluetoothB" },
+                { glyph: "\uf10b", labelKey: "settings.barIcon.label.device" }
             ];
         }
         if (key === "brightness") {
             return [
-                { glyph: "", label: "Авто" },
-                { glyph: "\uf185", label: "Солнце" },
-                { glyph: "\uf186", label: "Солнце 2" },
-                { glyph: "\uf0eb", label: "Лампа" },
-                { glyph: "\uf042", label: "Контраст" }
+                { glyph: "", labelKey: "settings.barIcon.label.auto" },
+                { glyph: "\uf185", labelKey: "settings.barIcon.label.sun" },
+                { glyph: "\uf186", labelKey: "settings.barIcon.label.sun2" },
+                { glyph: "\uf0eb", labelKey: "settings.barIcon.label.lamp" },
+                { glyph: "\uf042", labelKey: "settings.barIcon.label.contrast" }
             ];
         }
         if (key === "sound") {
             return [
-                { glyph: "", label: "Авто" },
-                { glyph: "\uf028", label: "Звук" },
-                { glyph: "\uf027", label: "Тише" },
-                { glyph: "\uf026", label: "Выключен" },
-                { glyph: "\uf130", label: "Микрофон" }
+                { glyph: "", labelKey: "settings.barIcon.label.auto" },
+                { glyph: "\uf028", labelKey: "settings.barIcon.label.sound" },
+                { glyph: "\uf027", labelKey: "settings.barIcon.label.quieter" },
+                { glyph: "\uf026", labelKey: "settings.barIcon.label.muted" },
+                { glyph: "\uf130", labelKey: "settings.barIcon.label.microphone" }
             ];
         }
         if (key === "privacy") {
             return [
-                { glyph: "", label: "Авто" },
-                { glyph: "\uf132", label: "Щит" },
-                { glyph: "\uf130", label: "Микрофон" },
-                { glyph: "\uf030", label: "Камера" },
-                { glyph: "\uf108", label: "Экран" },
-                { glyph: "\uf041", label: "Геометка" },
-                { glyph: "\uf06e", label: "Глаз" },
-                { glyph: "\uf070", label: "Без глаза" }
+                { glyph: "", labelKey: "settings.barIcon.label.auto" },
+                { glyph: "\uf132", labelKey: "settings.barIcon.label.shield" },
+                { glyph: "\uf130", labelKey: "settings.barIcon.label.microphone" },
+                { glyph: "\uf030", labelKey: "settings.barIcon.label.camera" },
+                { glyph: "\uf108", labelKey: "settings.barIcon.label.screen" },
+                { glyph: "\uf041", labelKey: "settings.barIcon.label.location" },
+                { glyph: "\uf06e", labelKey: "settings.barIcon.label.eye" },
+                { glyph: "\uf070", labelKey: "settings.barIcon.label.eyeOff" }
             ];
         }
         if (key === "player") {
             return [
-                { glyph: "", label: "Авто" },
-                { glyph: "\uf001", label: "Нота" },
-                { glyph: "\uf025", label: "Наушники" },
-                { glyph: "\uf008", label: "Плейлист" },
-                { glyph: "\uf03e", label: "Обложка" }
+                { glyph: "", labelKey: "settings.barIcon.label.auto" },
+                { glyph: "\uf001", labelKey: "settings.barIcon.label.note" },
+                { glyph: "\uf025", labelKey: "settings.barIcon.label.headphones" },
+                { glyph: "\uf008", labelKey: "settings.barIcon.label.playlist" },
+                { glyph: "\uf03e", labelKey: "settings.barIcon.label.artwork" }
             ];
         }
-        return [{ glyph: "", label: "Авто" }];
+        return [{ glyph: "", labelKey: "settings.barIcon.label.auto" }];
     }
 
     function statusOptions(slot) {
         if (slot === "wifi") {
             return [
-                { value: "auto", glyph: "\uf021", label: "Авто" },
-                { value: "", glyph: "\uf070", label: "Скрыть" },
-                { value: "\uf1eb", glyph: "\uf1eb", label: "" },
-                { value: "\uf0ac", glyph: "\uf0ac", label: "" },
-                { value: "\uf012", glyph: "\uf012", label: "" }
+                { value: "auto", glyph: "\uf021", labelKey: "settings.barIcon.label.auto" },
+                { value: "", glyph: "\uf070", labelKey: "settings.barIcon.label.hide" },
+                { value: "\uf1eb", glyph: "\uf1eb", labelKey: "" },
+                { value: "\uf0ac", glyph: "\uf0ac", labelKey: "" },
+                { value: "\uf012", glyph: "\uf012", labelKey: "" }
             ];
         }
         if (slot === "bluetooth") {
             return [
-                { value: "auto", glyph: "\uf021", label: "Авто" },
-                { value: "", glyph: "\uf070", label: "Скрыть" },
-                { value: "\uf293", glyph: "\uf293", label: "" },
-                { value: "\uf294", glyph: "\uf294", label: "" }
+                { value: "auto", glyph: "\uf021", labelKey: "settings.barIcon.label.auto" },
+                { value: "", glyph: "\uf070", labelKey: "settings.barIcon.label.hide" },
+                { value: "\uf293", glyph: "\uf293", labelKey: "" },
+                { value: "\uf294", glyph: "\uf294", labelKey: "" }
             ];
         }
         return [
-            { value: "auto", glyph: "\uf021", label: "Авто" },
-            { value: "", glyph: "\uf070", label: "Скрыть" },
-            { value: "\uf028", glyph: "\uf028", label: "" },
-            { value: "\uf026", glyph: "\uf026", label: "" },
-            { value: "\uf130", glyph: "\uf130", label: "" }
+            { value: "auto", glyph: "\uf021", labelKey: "settings.barIcon.label.auto" },
+            { value: "", glyph: "\uf070", labelKey: "settings.barIcon.label.hide" },
+            { value: "\uf028", glyph: "\uf028", labelKey: "" },
+            { value: "\uf026", glyph: "\uf026", labelKey: "" },
+            { value: "\uf130", glyph: "\uf130", labelKey: "" }
         ];
     }
 
@@ -179,7 +179,7 @@ Item {
 
             Text {
                 width: parent.width - closeButton.width - Theme.space.md
-                text: "Иконка: " + root.titleFor(root.key)
+                text: I18n.tr("settings.barIcon.title", { name: root.titleFor(root.key) })
                 color: Theme.scheme.onSurface
                 font: Theme.typeTitleLarge
                 elide: Text.ElideRight
@@ -188,8 +188,8 @@ Item {
             Text {
                 width: parent.width
                 text: root.key === "status"
-                      ? "Настройте входящие значки. Если скрыть все три, кнопка станет шестерёнкой."
-                      : "«Авто» возвращает штатный вид элемента."
+                      ? I18n.tr("settings.barIcon.status.description")
+                      : I18n.tr("settings.barIcon.description")
                 color: Theme.scheme.onSurfaceVariant
                 font: Theme.typeBodySmall
                 wrapMode: Text.WordWrap
@@ -279,7 +279,7 @@ Item {
 
                     BarSlotIconChoice {
                         width: parent.width
-                        title: "Звук"
+                        title: I18n.tr("settings.barIcon.slot.sound")
                         options: root.statusOptions("sound")
                         value: MockState.statusIconFor("sound")
                         onPicked: value => MockState.setStatusIcon("sound", value)
@@ -308,7 +308,7 @@ Item {
             SettingsButton {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Сбросить"
+                text: I18n.tr("common.reset")
                 variant: "outlined"
                 onClicked: root.resetIcon()
             }
@@ -316,7 +316,7 @@ Item {
             SettingsButton {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Готово"
+                text: I18n.tr("common.done")
                 variant: "filled"
                 onClicked: root.close()
             }

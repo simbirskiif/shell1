@@ -77,7 +77,7 @@ Item {
                 visible: !root.confirming
                 height: root.confirming ? 0 : implicitHeight
                 icon: "\uf084"
-                text: "Change password"
+                text: I18n.tr("quick.net.changePassword")
                 onTriggered: {
                     NetworkService.changePassword(UiState.menuNetwork);
                     root.close();
@@ -88,7 +88,7 @@ Item {
                 visible: !root.confirming
                 height: root.confirming ? 0 : implicitHeight
                 icon: "\uf1f8"
-                text: "Forget network"
+                text: I18n.tr("quick.net.forget")
                 danger: true
                 onTriggered: NetworkService.beginForget(UiState.menuNetwork)
             }
@@ -113,7 +113,7 @@ Item {
                         rightPadding: Theme.space.md
                         topPadding: Theme.space.sm
                         wrapMode: Text.WordWrap
-                        text: "Forget " + UiState.menuNetwork + "?"
+                        text: I18n.tr("quick.net.forget.confirm", { name: UiState.menuNetwork })
                         color: Theme.scheme.onSurface
                         font: Theme.typeBodyLarge
                     }
@@ -123,7 +123,7 @@ Item {
                         leftPadding: Theme.space.md
                         rightPadding: Theme.space.md
                         wrapMode: Text.WordWrap
-                        text: "Saved password and profile settings will be removed"
+                        text: I18n.tr("quick.net.forget.description")
                         color: Theme.scheme.onSurfaceVariant
                         font: Theme.typeBodyMedium
                     }
@@ -135,12 +135,12 @@ Item {
                         spacing: Theme.space.sm
 
                         MenuButton {
-                            text: "Cancel"
+                            text: I18n.tr("common.cancel")
                             onTriggered: NetworkService.cancelForget()
                         }
 
                         MenuButton {
-                            text: "Forget"
+                            text: I18n.tr("quick.net.forget.action")
                             primary: true
                             danger: true
                             onTriggered: {

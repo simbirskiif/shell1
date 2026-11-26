@@ -13,17 +13,20 @@ import Quickshell.Hyprland
 Singleton {
     id: root
 
-    // key — стабильный идентификатор раздела (он же IPC-аргумент), title и
-    // icon — то, что видно в навигации окна.
+    // key — стабильный идентификатор раздела (он же IPC-аргумент), titleKey —
+    // ключ строки в словаре I18n, icon — глиф в навигации окна. Подпись
+    // переводится в момент отрисовки, поэтому смена языка не требует
+    // пересобирать список.
     readonly property var sections: [
-        { key: "bar", title: "Бар", icon: "\uf0c9" },
-        { key: "quick", title: "Быстрые настройки", icon: "\uf009" },
-        { key: "dock", title: "Док", icon: "\uf108" },
-        { key: "notifications", title: "Уведомления", icon: "\uf0f3" },
-        { key: "caffeine", title: "Кофеин", icon: "\uf0f4" },
-        { key: "player", title: "Плеер", icon: "\uf001" },
-        { key: "widgets", title: "Виджеты", icon: "\uf1b2" },
-        { key: "appearance", title: "Оформление", icon: "\uf1fc" }
+        { key: "bar", titleKey: "settings.section.bar", icon: "\uf0c9" },
+        { key: "quick", titleKey: "settings.section.quick", icon: "\uf009" },
+        { key: "dock", titleKey: "settings.section.dock", icon: "\uf108" },
+        { key: "notifications", titleKey: "settings.section.notifications", icon: "\uf0f3" },
+        { key: "caffeine", titleKey: "settings.section.caffeine", icon: "\uf0f4" },
+        { key: "player", titleKey: "settings.section.player", icon: "\uf001" },
+        { key: "widgets", titleKey: "settings.section.widgets", icon: "\uf1b2" },
+        { key: "appearance", titleKey: "settings.section.appearance", icon: "\uf1fc" },
+        { key: "language", titleKey: "settings.section.language", icon: "\uf0ac" }
     ]
 
     property bool opened: false

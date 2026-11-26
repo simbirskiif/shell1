@@ -1,4 +1,5 @@
 import QtQuick
+import "../../singletons"
 
 // Пример: виджет с size.allowed. Показывает текущий размер в клетках;
 // на этапе 5 редактор будет привязывать ресайз только к этим размерам.
@@ -21,6 +22,6 @@ Item {
         color: root.ctx.colors.onSurfaceVariant
         font.family: root.ctx.fontFamily
         font.pixelSize: Math.max(9, Math.round(root.ctx.dp * 10))
-        text: "allowed"
+        text: I18n.tr("widget.allowed")
     }
 }

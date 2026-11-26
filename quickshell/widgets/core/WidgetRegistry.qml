@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import QtQml.Models
+import "../../singletons"
 
 // Реестр виджетов (раздел 4 ТЗ): поиск папок с manifest.json, валидация,
 // список доступных виджетов и наблюдение за изменениями.
@@ -83,6 +84,50 @@ Singleton {
 
     function widgetById(id: string): var {
         return root._byId[id] || null
+    }
+
+    // --- локализация манифестов -----------------------------------------
+    // name/description/подписи настроек в манифесте — исходные (русские).
+    // Необязательный блок i18n.<язык> даёт переводы; отсутствие ключа
+    // означает «взять исходную строку», поэтому сторонние виджеты работают
+    // без изменений. Функции читают I18n.locale, так что подписи в UI
+    // пересчитываются при смене языка сами.
+
+    function i18nBlock(widget: var): var {
+        if (!widget || !widget.i18n || typeof widget.i18n !== "object")
+            return null;
+        const block = widget.i18n[I18n.locale];
+        return (block && typeof block === "object") ? block : null;
+    }
+
+    function displayName(widget: var): string {
+        const block = root.i18nBlock(widget);
+        if (block && typeof block.name === "string" && block.name !== "")
+            return block.name;
+        return widget ? String(widget.name || "") : "";
+    }
+
+    function displayDescription(widget: var): string {
+        const block = root.i18nBlock(widget);
+        if (block && typeof block.description === "string")
+            return block.description;
+        return widget ? String(widget.description || "") : "";
+    }
+
+    function displaySettingLabel(widget: var, setting: var): string {
+        const block = root.i18nBlock(widget);
+        const entry = block && block.settings ? block.settings[setting.key] : null;
+        if (entry && typeof entry.label === "string" && entry.label !== "")
+            return entry.label;
+        return String(setting.label || setting.key || "");
+    }
+
+    function displaySettingOption(widget: var, settingKey: string, value: var): string {
+        const block = root.i18nBlock(widget);
+        const entry = block && block.settings ? block.settings[settingKey] : null;
+        if (entry && entry.options && entry.options[String(value)] !== undefined)
+            return String(entry.options[String(value)]);
+        return String(value);
     }
 
     function scheduleScan(): void {
@@ -448,6 +493,7 @@ Singleton {
                 entryUrl: root.pathToUrl(entryPath),
                 sizeSpec: size.spec,
                 settingsSchema: settings,
+                i18n: manifest.i18n,
                 builtin: root.isUnder(root.builtinRoot, raw.dir),
                 manifest: manifest
             }

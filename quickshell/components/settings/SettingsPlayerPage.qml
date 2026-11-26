@@ -5,23 +5,22 @@ import "../../singletons"
 SettingsPage {
     id: root
 
-    title: "Плеер"
-    description: "Иконка со спектром в баре и панель управления."
+    title: I18n.tr("settings.player.title")
+    description: I18n.tr("settings.player.description")
 
     SettingsCard {
-        title: "Иконка в баре"
+        title: I18n.tr("settings.player.barIcon.title")
 
         SettingsSwitchRow {
-            title: "Спектр"
-            description: "Живой анализ аудиопотока; когда ничего не играет, полосы стоят статично"
+            title: I18n.tr("settings.player.spectrum.title")
+            description: I18n.tr("settings.player.spectrum.description")
             checked: SpectrumService.enabled
             onToggled: SpectrumService.enabled = !SpectrumService.enabled
         }
 
         Text {
             width: parent.width
-            text: "Анализируется монитор системного выхода (parec + БПФ). "
-                  + "Спектр виден только у действия «Плеер» в баре."
+            text: I18n.tr("settings.player.spectrum.note")
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeBodySmall
             wrapMode: Text.WordWrap
@@ -29,11 +28,11 @@ SettingsPage {
     }
 
     SettingsCard {
-        title: "Панель"
+        title: I18n.tr("settings.player.panel.title")
 
         Text {
             width: parent.width
-            text: "Обложка, трек, перемотка и управление открываются справа под баром."
+            text: I18n.tr("settings.player.panel.description")
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeBodySmall
             wrapMode: Text.WordWrap
@@ -43,7 +42,7 @@ SettingsPage {
             spacing: Theme.space.sm
 
             SettingsButton {
-                text: "Открыть панель"
+                text: I18n.tr("settings.player.openPanel")
                 variant: "tonal"
                 onClicked: {
                     SettingsWindowState.close();
@@ -52,7 +51,7 @@ SettingsPage {
             }
 
             SettingsButton {
-                text: "Добавить в бар"
+                text: I18n.tr("settings.player.addToBar")
                 variant: "outlined"
                 visible: !MockState.barItemPresent("player")
                 onClicked: MockState.addBarItem("player")

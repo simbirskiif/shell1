@@ -394,7 +394,7 @@ PanelWindow {
                 id: commitLabel
 
                 anchors.centerIn: parent
-                text: "✓ Готово"
+                text: "✓ " + I18n.tr("common.done")
                 color: Theme.scheme.onPrimary
                 font: Theme.typeLabelLarge
             }
@@ -428,7 +428,7 @@ PanelWindow {
                 id: cancelLabel
 
                 anchors.centerIn: parent
-                text: "✕ Отмена"
+                text: "✕ " + I18n.tr("common.cancel")
                 color: Theme.scheme.onSecondaryContainer
                 font: Theme.typeLabelLarge
             }
@@ -480,7 +480,7 @@ PanelWindow {
             Text {
                 color: Theme.scheme.onSurface
                 font: Theme.typeTitleSmall
-                text: "Не помещается (" + root.tray.length + ")"
+                text: I18n.tr("widgets.editor.tray", { n: root.tray.length })
             }
 
             Repeater {
@@ -499,7 +499,9 @@ PanelWindow {
                         color: Theme.scheme.onSurfaceVariant
                         font: Theme.typeBodySmall
                         elide: Text.ElideRight
-                        text: trayRow.modelData.name || trayRow.modelData.id
+                        text: WidgetRegistry.displayName(
+                                  WidgetRegistry.widgetById(trayRow.modelData.id))
+                              || trayRow.modelData.name || trayRow.modelData.id
                     }
 
                     HostButton {

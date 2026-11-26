@@ -25,5 +25,19 @@
       "label": "Показывать секунды",
       "default": false
     }
-  ]
+  ],
+  "i18n": {
+    "en": {
+      "name": "Clock",
+      "description": "Digital clock with date",
+      "settings": {
+        "format24": {
+          "label": "24-hour format"
+        },
+        "seconds": {
+          "label": "Show seconds"
+        }
+      }
+    }
+  }
 }

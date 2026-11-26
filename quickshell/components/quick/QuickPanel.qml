@@ -286,7 +286,7 @@ Item {
                     anchors.right: battery.right
                     anchors.rightMargin: Theme.space.sm
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Быстрые настройки"
+                    text: I18n.tr("quick.title")
                     color: Theme.scheme.onSurface
                     font: Theme.typeTitleMedium
                     elide: Text.ElideRight
@@ -404,7 +404,7 @@ Item {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Изменить"
+                            text: I18n.tr("common.edit")
                             color: Theme.scheme.onSecondaryContainer
                             font: Theme.typeLabelLarge
                         }
@@ -444,7 +444,7 @@ Item {
                         Text {
                             id: cancelLabel
                             anchors.centerIn: parent
-                            text: "Отмена"
+                            text: I18n.tr("common.cancel")
                             color: Theme.primary
                             font: Theme.typeLabelLarge
                         }
@@ -477,7 +477,7 @@ Item {
                         Text {
                             id: saveLabel
                             anchors.centerIn: parent
-                            text: "Сохранить"
+                            text: I18n.tr("common.save")
                             color: Theme.scheme.onPrimary
                             font: Theme.typeLabelLarge
                         }
@@ -500,7 +500,7 @@ Item {
                 visible: root.editing
                 height: root.editing ? implicitHeight : 0
 
-                PanelSection { text: "Available" }
+                PanelSection { text: I18n.tr("common.available") }
 
                 Text {
                     width: mainColumn.width
@@ -512,7 +512,7 @@ Item {
                     height: root.poolEntries.length === 0 ? Theme.quickTileHeight : 0
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
-                    text: "All tiles are on the panel"
+                    text: I18n.tr("settings.quick.allShown")
                     color: Theme.scheme.onSurfaceVariant
                     font: Theme.typeBodyMedium
                 }
@@ -608,7 +608,7 @@ Item {
 
         readonly property bool inGrid: true
         readonly property string key: "bluetooth"
-        readonly property string title: "Bluetooth"
+        readonly property string title: I18n.tr("quick.tile.bluetooth")
         readonly property string icon: SystemIcons.bluetoothGlyph
         readonly property bool active: BluetoothBackend.enabled
         readonly property string subtitle: BluetoothBackend.connectedSummary
@@ -630,7 +630,8 @@ Item {
         readonly property string key: "internet"
         // Проводного соединения нет — плитка про Wi-Fi, и называться должна
         // так же; с подключённым проводом это уже «Internet».
-        readonly property string title: NetworkService.internetViaEthernet ? "Internet" : "Wi-Fi"
+        readonly property string title: NetworkService.internetViaEthernet
+                                         ? I18n.tr("quick.tile.internet") : I18n.tr("quick.tile.wifi")
         readonly property string icon: "\uf0ac"
         // С проводом — глобус, без провода — состояние Wi-Fi делениями.
         readonly property bool wifiTile: !NetworkService.internetViaEthernet
@@ -653,7 +654,7 @@ Item {
 
         readonly property bool inGrid: true
         readonly property string key: "sound"
-        readonly property string title: "Sound"
+        readonly property string title: I18n.tr("quick.tile.sound")
         readonly property string icon: SystemIcons.soundGlyph
         readonly property bool active: SystemIcons.soundAudible
         readonly property string subtitle: AudioService.outputSummary
@@ -676,7 +677,7 @@ Item {
 
         readonly property bool inGrid: false
         readonly property string key: "sound-output"
-        readonly property string title: "Output device"
+        readonly property string title: I18n.tr("quick.tile.output")
         readonly property string icon: "\uf028"
         readonly property bool active: false
         readonly property string subtitle: ""
@@ -697,7 +698,7 @@ Item {
 
         readonly property bool inGrid: false
         readonly property string key: "sound-input"
-        readonly property string title: "Input device"
+        readonly property string title: I18n.tr("quick.tile.input")
         readonly property string icon: "\uf130"
         readonly property bool active: false
         readonly property string subtitle: ""
@@ -720,10 +721,11 @@ Item {
 
         readonly property bool inGrid: true
         readonly property string key: "dnd"
-        readonly property string title: "Не беспокоить"
+        readonly property string title: I18n.tr("quick.tile.dnd")
         readonly property string icon: NotificationService.doNotDisturb ? "\uf1f6" : "\uf0f3"
         readonly property bool active: NotificationService.doNotDisturb
-        readonly property string subtitle: NotificationService.doNotDisturb ? "Включено" : "Выключено"
+        readonly property string subtitle: NotificationService.doNotDisturb
+                                           ? I18n.tr("common.enabled") : I18n.tr("common.disabled")
         readonly property Component view: null
 
         function open() {
@@ -742,11 +744,11 @@ Item {
 
         readonly property bool inGrid: true
         readonly property string key: "caffeine"
-        readonly property string title: "Кофеин"
+        readonly property string title: I18n.tr("quick.tile.caffeine")
         readonly property string icon: "\uf0f4"
         readonly property bool active: CaffeineService.active
         readonly property string subtitle: CaffeineService.active
-                                           ? CaffeineService.label : "Выключен"
+                                           ? CaffeineService.label : I18n.tr("caffeine.off")
         readonly property Component view: Component { PanelCaffeine {} }
 
         function open() {
@@ -765,7 +767,7 @@ Item {
 
         readonly property bool inGrid: true
         readonly property string key: "brightness"
-        readonly property string title: "Brightness"
+        readonly property string title: I18n.tr("quick.tile.brightness")
         readonly property string icon: SystemIcons.brightnessGlyph
         readonly property bool active: BrightnessService.available
         readonly property string subtitle: BrightnessService.summary
@@ -787,7 +789,7 @@ Item {
 
         readonly property bool inGrid: true
         readonly property string key: "layout"
-        readonly property string title: "Layout"
+        readonly property string title: I18n.tr("quick.tile.layout")
         readonly property string icon: "\uf00a"
         readonly property bool active: ProfileState.current !== ""
                                           && ProfileState.current !== "default"
@@ -815,10 +817,11 @@ Item {
 
         readonly property bool inGrid: false
         readonly property string key: "privacy"
-        readonly property string title: "Privacy"
+        readonly property string title: I18n.tr("quick.tile.privacy")
         readonly property string icon: "\uf132"
         readonly property bool active: PrivacyService.anyActive
-        readonly property string subtitle: PrivacyService.anyActive ? "In use" : "Not in use"
+        readonly property string subtitle: PrivacyService.anyActive
+                                           ? I18n.tr("privacy.inUse") : I18n.tr("privacy.notInUse")
         readonly property Component view: Component { PanelPrivacy {} }
 
         function open() {
@@ -837,7 +840,7 @@ Item {
 
         readonly property bool inGrid: false
         readonly property string key: "battery"
-        readonly property string title: "Battery"
+        readonly property string title: I18n.tr("quick.tile.battery")
         readonly property string icon: "\uf240"
         readonly property bool active: PowerService.charging
         readonly property string subtitle: PowerService.level + "%"

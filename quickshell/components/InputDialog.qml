@@ -161,7 +161,7 @@ PanelWindow {
                     Text {
                         id: cancelLabel
                         anchors.centerIn: parent
-                        text: "Отмена"
+                        text: I18n.tr("common.cancel")
                         color: Theme.primary
                         font: Theme.typeLabelLarge
                     }
@@ -194,7 +194,7 @@ PanelWindow {
                     Text {
                         id: saveLabel
                         anchors.centerIn: parent
-                        text: "Сохранить"
+                        text: I18n.tr("common.save")
                         color: Theme.scheme.onPrimary
                         font: Theme.typeLabelLarge
                     }

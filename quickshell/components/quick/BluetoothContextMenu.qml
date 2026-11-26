@@ -161,7 +161,7 @@ Item {
                 visible: !root.confirming
                 height: root.confirming ? 0 : implicitHeight
                 icon: "\uf1f8"
-                text: "Удалить устройство"
+                text: I18n.tr("quick.bluetooth.remove")
                 danger: true
                 enabled: root.menu !== null && root.menu.canForget
                 opacity: enabled ? 1 : Theme.disabledContent
@@ -191,7 +191,7 @@ Item {
                         leftPadding: Theme.space.md
                         rightPadding: Theme.space.md
                         wrapMode: Text.WordWrap
-                        text: "Удалить устройство и его спаривание?"
+                        text: I18n.tr("quick.bluetooth.remove.confirm")
                         color: Theme.scheme.onSurface
                         font: Theme.typeBodyMedium
                     }
@@ -207,7 +207,7 @@ Item {
                             anchors.right: deleteButton.left
                             anchors.rightMargin: Theme.space.sm
                             maxWidth: (parent.width - Theme.space.sm) / 2
-                            text: "Отмена"
+                            text: I18n.tr("common.cancel")
                             onTriggered: root.confirming = false
                         }
 
@@ -215,7 +215,7 @@ Item {
                             id: deleteButton
                             anchors.right: parent.right
                             maxWidth: (parent.width - Theme.space.sm) / 2
-                            text: "Удалить"
+                            text: I18n.tr("common.delete")
                             primary: true
                             danger: true
                             onTriggered: {

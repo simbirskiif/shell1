@@ -99,7 +99,7 @@ PanelWindow {
             spacing: Theme.notificationSpacing
 
             Text {
-                text: "Профиль Hyprland"
+                text: I18n.tr("switcher.profile.title")
                 color: Theme.scheme.onSurface
                 font: Theme.typeTitleMedium
             }
@@ -107,8 +107,8 @@ PanelWindow {
             Text {
                 width: parent.width
                 text: ProfileState.profiles.length === 0
-                      ? "Нет профилей в " + ProfileState.profilesDir
-                      : "Бинды, раскладка клавиатуры и правила окон"
+                      ? I18n.tr("switcher.profile.empty", { path: ProfileState.profilesDir })
+                      : I18n.tr("switcher.profile.description")
                 color: Theme.scheme.onSurfaceVariant
                 // Узкая карточка: вспомогательная подпись в одну строку,
                 // поэтому bodySmall, а не bodyMedium.
@@ -179,7 +179,7 @@ PanelWindow {
                         anchors.rightMargin: Theme.space.lg
                         anchors.verticalCenter: parent.verticalCenter
                         visible: row.modelData === ProfileState.current
-                        text: "текущий"
+                        text: I18n.tr("common.current")
                         color: row.selected
                                ? Theme.withAlpha(Theme.scheme.onSecondaryContainer, 0.8)
                                : Theme.scheme.onSurfaceVariant
@@ -191,7 +191,8 @@ PanelWindow {
             Text {
                 width: parent.width
                 visible: ProfileState.busy || ProfileState.lastError !== ""
-                text: ProfileState.busy ? "Применяю…" : ProfileState.lastError
+                text: ProfileState.busy ? I18n.tr("switcher.profile.applying")
+                                        : ProfileState.lastError
                 color: ProfileState.busy ? Theme.scheme.onSurfaceVariant : Theme.error
                 font: Theme.typeBodySmall
                 wrapMode: Text.Wrap
@@ -200,7 +201,7 @@ PanelWindow {
             Text {
                 width: parent.width
                 visible: ProfileState.profiles.length > 0
-                text: "↑/↓ — выбор, Enter — применить, Esc — закрыть"
+                text: I18n.tr("switcher.profile.hint")
                 color: Theme.scheme.onSurfaceVariant
                 font: Theme.typeBodySmall
             }

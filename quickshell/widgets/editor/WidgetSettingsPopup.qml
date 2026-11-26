@@ -168,7 +168,9 @@ SidePanel {
                 color: Theme.scheme.onSurface
                 font: Theme.typeTitleLarge
                 elide: Text.ElideRight
-                text: root.widget ? root.widget.name : "Настройки"
+                text: root.widget
+                      ? WidgetRegistry.displayName(root.widget)
+                      : I18n.tr("settings.window.title")
             }
 
             Item {
@@ -212,7 +214,7 @@ SidePanel {
         Text {
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeLabelLarge
-            text: "Материал"
+            text: I18n.tr("widgets.material")
         }
 
         Flow {
@@ -237,7 +239,7 @@ SidePanel {
                     id: defaultMaterialLabel
 
                     anchors.centerIn: parent
-                    text: "По умолчанию"
+                    text: I18n.tr("common.default")
                     color: defaultMaterialChip.selected
                            ? Theme.scheme.onSecondaryContainer
                            : Theme.scheme.onSurfaceVariant
@@ -291,7 +293,8 @@ SidePanel {
                         id: materialChipLabel
 
                         anchors.centerIn: parent
-                        text: materialChip.modelData.name
+                        text: I18n.trOr("material." + materialChip.modelData.id + ".name",
+                                        materialChip.modelData.name)
                         color: materialChip.selected
                                ? Theme.scheme.onSecondaryContainer
                                : Theme.scheme.onSurfaceVariant
@@ -326,7 +329,7 @@ SidePanel {
         Text {
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeLabelLarge
-            text: "Режим цвета"
+            text: I18n.tr("widgets.colorMode")
         }
 
         Row {
@@ -349,7 +352,7 @@ SidePanel {
                     id: defaultModeLabel
 
                     anchors.centerIn: parent
-                    text: "По умолчанию"
+                    text: I18n.tr("common.default")
                     color: defaultModeChip.selected
                            ? Theme.scheme.onSecondaryContainer
                            : Theme.scheme.onSurfaceVariant
@@ -396,7 +399,7 @@ SidePanel {
                     id: accentChipLabel
 
                     anchors.centerIn: parent
-                    text: "Акцент"
+                    text: I18n.tr("widgets.colorMode.accent")
                     color: accentChip.selected
                            ? Theme.scheme.onSecondaryContainer
                            : Theme.scheme.onSurfaceVariant
@@ -443,7 +446,7 @@ SidePanel {
                     id: neutralChipLabel
 
                     anchors.centerIn: parent
-                    text: "Нейтральная"
+                    text: I18n.tr("widgets.colorMode.neutral")
                     color: neutralChip.selected
                            ? Theme.scheme.onSecondaryContainer
                            : Theme.scheme.onSurfaceVariant
@@ -477,7 +480,7 @@ SidePanel {
         Text {
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeLabelLarge
-            text: "Затемнение материала"
+            text: I18n.tr("widgets.materialDim")
         }
 
         Row {
@@ -517,7 +520,7 @@ SidePanel {
                 id: defaultDimLabel
 
                 anchors.centerIn: parent
-                text: "По умолчанию"
+                text: I18n.tr("common.default")
                 color: defaultDimChip.selected
                        ? Theme.scheme.onSecondaryContainer
                        : Theme.scheme.onSurfaceVariant
@@ -593,7 +596,8 @@ SidePanel {
                         color: Theme.scheme.onSurfaceVariant
                         font: Theme.typeBodyMedium
                         elide: Text.ElideRight
-                        text: settingRow.modelData.label
+                        text: WidgetRegistry.displaySettingLabel(root.widget,
+                                                                 settingRow.modelData)
                     }
 
                     // Переключатель — общий M3-компонент, не локальная копия.
@@ -637,7 +641,9 @@ SidePanel {
                                     id: optionChipLabel
 
                                     anchors.centerIn: parent
-                                    text: String(optionChip.modelData)
+                                    text: WidgetRegistry.displaySettingOption(
+                                              root.widget, settingRow.modelData.key,
+                                              optionChip.modelData)
                                     color: optionChip.selected
                                            ? Theme.scheme.onSecondaryContainer
                                            : Theme.scheme.onSurfaceVariant
@@ -740,7 +746,7 @@ SidePanel {
                     id: resetActionLabel
 
                     anchors.centerIn: parent
-                    text: "Сбросить"
+                    text: I18n.tr("common.reset")
                     color: Theme.primary
                     font: Theme.typeLabelLarge
                 }
@@ -774,7 +780,7 @@ SidePanel {
                     id: deleteActionLabel
 
                     anchors.centerIn: parent
-                    text: "Удалить"
+                    text: I18n.tr("common.delete")
                     color: Theme.error
                     font: Theme.typeLabelLarge
                 }
@@ -815,7 +821,7 @@ SidePanel {
                 id: closeActionLabel
 
                 anchors.centerIn: parent
-                text: "Закрыть"
+                text: I18n.tr("common.close")
                 color: Theme.scheme.onPrimary
                 font: Theme.typeLabelLarge
             }

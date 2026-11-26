@@ -57,7 +57,8 @@ Item {
         anchors.topMargin: Theme.space.sm
         width: Theme.space.xxxl
         horizontalAlignment: Text.AlignRight
-        text: root.muted ? "Muted" : Math.round(root.value * 100) + "%"
+        text: root.muted ? I18n.tr("quick.audio.muted")
+                         : Math.round(root.value * 100) + "%"
         color: Theme.scheme.onSurfaceVariant
         font: Theme.typeBodyMedium
     }

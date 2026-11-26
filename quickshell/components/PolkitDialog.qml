@@ -65,7 +65,7 @@ PanelWindow {
                                          && root.waitingForModule
 
     readonly property string title: root.flow !== null && root.flow.message !== ""
-                                    ? root.flow.message : "Требуется аутентификация"
+                                    ? root.flow.message : I18n.tr("dialogs.polkit.title")
     // Имя пользователя из Polkit. `displayName` при отсутствии полного имени
     // равен логину, поэтому отдельный fallback не нужен.
     readonly property string identityName: {
@@ -397,7 +397,7 @@ PanelWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.leftMargin: Theme.space.md
                         anchors.rightMargin: Theme.space.md
-                        text: "Не удалось войти, попробуйте ещё раз"
+                        text: I18n.tr("dialogs.polkit.failed")
                         color: Theme.scheme.onErrorContainer
                         wrapMode: Text.WordWrap
                         font: Theme.typeBodyMedium
@@ -474,7 +474,7 @@ PanelWindow {
                         Text {
                             height: Theme.iconSize.md
                             verticalAlignment: Text.AlignVCenter
-                            text: "Ожидание ответа от модуля безопасности…"
+                            text: I18n.tr("dialogs.polkit.waiting")
                             color: Theme.scheme.onSurfaceVariant
                             font: Theme.typeBodyMedium
                         }
@@ -521,7 +521,8 @@ PanelWindow {
                         anchors.leftMargin: Theme.space.lg
                         anchors.verticalCenter: parent.verticalCenter
                         visible: passwordInput.text === "" && root.textMode && !root.isSubmitting
-                        text: root.inputPrompt !== "" ? root.inputPrompt : "Пароль"
+                        text: root.inputPrompt !== "" ? root.inputPrompt
+                                                      : I18n.tr("dialogs.polkit.password")
                         color: Theme.scheme.onSurfaceVariant
                         font: Theme.typeBodySmall
                     }
@@ -534,7 +535,7 @@ PanelWindow {
                     spacing: Theme.space.sm
 
                     DialogButton {
-                        text: "Подтвердить"
+                        text: I18n.tr("common.confirm")
                         primary: true
                         busy: root.isSubmitting
                         enabled: root.textMode && passwordInput.text.length > 0 && !root.isSubmitting
@@ -542,7 +543,7 @@ PanelWindow {
                     }
 
                     DialogButton {
-                        text: "Отмена"
+                        text: I18n.tr("common.cancel")
                         onTriggered: root.cancel()
                     }
                 }

@@ -19,5 +19,16 @@
       "label": "Включено",
       "default": false
     }
-  ]
+  ],
+  "i18n": {
+    "en": {
+      "name": "Switch",
+      "description": "Minimal widget with a bool setting",
+      "settings": {
+        "enabled": {
+          "label": "Enabled"
+        }
+      }
+    }
+  }
 }
