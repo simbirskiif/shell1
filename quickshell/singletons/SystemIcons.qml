@@ -4,8 +4,8 @@ import QtQuick
 import Quickshell
 
 // Значки системных состояний для бара и быстрых настроек: звук, яркость,
-// Bluetooth. Одна точка правды, чтобы кнопка, плитка и составная иконка
-// показывали одно и то же.
+// Bluetooth и конфиденциальность. Одна точка правды, чтобы кнопка, плитка
+// и составная иконка показывали одно и то же.
 Singleton {
     id: root
 
@@ -65,4 +65,27 @@ Singleton {
             return Theme.disabledContent;
         return 0.55 + 0.45 * Math.max(0, Math.min(1, value));
     }
+
+    // --- конфиденциальность ------------------------------------------------
+    // У каждого устройства свой цвет: микрофон — primary, камера — error,
+    // геолокация — tertiary. База — насыщенный акцент для орбов в баре,
+    // container — тональная пара для карточек панели.
+    readonly property string microphoneGlyph: "\uf130"
+    readonly property string cameraGlyph: "\uf030"
+    readonly property string locationGlyph: "\uf041"
+
+    readonly property color microphoneColor: Theme.primary
+    readonly property color microphoneOnColor: Theme.scheme.onPrimary
+    readonly property color microphoneContainer: Theme.primaryContainer
+    readonly property color microphoneOnContainer: Theme.scheme.onPrimaryContainer
+
+    readonly property color cameraColor: Theme.error
+    readonly property color cameraOnColor: Theme.scheme.onError
+    readonly property color cameraContainer: Theme.errorContainer
+    readonly property color cameraOnContainer: Theme.scheme.onErrorContainer
+
+    readonly property color locationColor: Theme.tertiary
+    readonly property color locationOnColor: Theme.scheme.onTertiary
+    readonly property color locationContainer: Theme.tertiaryContainer
+    readonly property color locationOnContainer: Theme.scheme.onTertiaryContainer
 }

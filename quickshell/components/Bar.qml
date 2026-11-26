@@ -62,7 +62,8 @@ PanelWindow {
 
                 // Батареи нет (десктоп) — индикатор не показываем совсем:
                 // Positioner пропускает невидимый элемент вместе с отступом.
-                visible: itemKey !== "battery" || PowerService.present
+                visible: (itemKey !== "battery" || PowerService.present)
+                         && (itemKey !== "privacy" || PrivacyService.anyActive)
                 anchors.verticalCenter: parent.verticalCenter
                 sourceComponent: itemKey === "battery" ? batteryItem
                                : itemKey === "notifications" ? notificationsItem
@@ -206,7 +207,7 @@ PanelWindow {
     Component {
         id: privacyItem
 
-        PrivacyButton {
+        PrivacyIndicator {
             iconOverride: MockState.iconFor("privacy")
             onClicked: {
                 const screenName = root.screen ? root.screen.name : "";

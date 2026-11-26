@@ -2,9 +2,10 @@ import QtQuick
 import ".."
 import "../../singletons"
 
-// Панель «Конфиденциальность»: микрофон, камера и геолокация — кто их
-// сейчас использует. Состояние приходит из PrivacyService (PipeWire и
-// helper камеры/GeoClue), здесь только показ.
+// Панель «Конфиденциальность»: микрофон, камера и геолокация. Активные
+// устройства — цветные expressive-карточки, неактивные — спокойные. Панель
+// открывается кнопкой в баре, поэтому без активных устройств её с мыши не
+// вызвать; клавиатурные и IPC-пути остаются.
 Item {
     id: root
 
@@ -28,55 +29,70 @@ Item {
             onBackRequested: root.backRequested()
         }
 
-        Rectangle {
+        Item {
             width: parent.width
-            height: 1
-            color: Theme.outlineVariant
+            height: Theme.space.xs
         }
 
-        PrivacyRow {
-            icon: "\uf130"
-            title: "Microphone"
-            subtitle: PrivacyService.microphoneStatus
-            active: PrivacyService.microphoneActive
-            available: PrivacyService.microphoneAvailable
-        }
-
-        Rectangle {
+        // Карточки идут с отступами по краям, но без разделителей:
+        // состояние читается цветом, формой и весом шрифта.
+        Item {
             width: parent.width
-            height: 1
-            color: Theme.outlineVariant
+            implicitHeight: cards.implicitHeight
+            height: implicitHeight
+
+            Column {
+                id: cards
+
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.leftMargin: Theme.space.md
+                anchors.rightMargin: Theme.space.md
+                spacing: Theme.space.sm
+
+                PrivacyCard {
+                    width: parent.width
+                    icon: SystemIcons.microphoneGlyph
+                    title: "Microphone"
+                    subtitle: PrivacyService.microphoneStatus
+                    active: PrivacyService.microphoneActive
+                    available: PrivacyService.microphoneAvailable
+                    accent: SystemIcons.microphoneColor
+                    onAccent: SystemIcons.microphoneOnColor
+                    container: SystemIcons.microphoneContainer
+                    onContainer: SystemIcons.microphoneOnContainer
+                }
+
+                PrivacyCard {
+                    width: parent.width
+                    icon: SystemIcons.cameraGlyph
+                    title: "Camera"
+                    subtitle: PrivacyService.cameraStatus
+                    active: PrivacyService.cameraActive
+                    available: PrivacyService.cameraAvailable
+                    accent: SystemIcons.cameraColor
+                    onAccent: SystemIcons.cameraOnColor
+                    container: SystemIcons.cameraContainer
+                    onContainer: SystemIcons.cameraOnContainer
+                }
+
+                PrivacyCard {
+                    width: parent.width
+                    icon: SystemIcons.locationGlyph
+                    title: "Location"
+                    subtitle: PrivacyService.locationStatus
+                    active: PrivacyService.locationActive
+                    available: PrivacyService.locationAvailable
+                    accent: SystemIcons.locationColor
+                    onAccent: SystemIcons.locationOnColor
+                    container: SystemIcons.locationContainer
+                    onContainer: SystemIcons.locationOnContainer
+                }
+            }
         }
 
-        PrivacyRow {
-            icon: "\uf030"
-            title: "Camera"
-            subtitle: PrivacyService.cameraStatus
-            active: PrivacyService.cameraActive
-            available: PrivacyService.cameraAvailable
-        }
-
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.outlineVariant
-        }
-
-        PrivacyRow {
-            icon: "\uf041"
-            title: "Location"
-            subtitle: PrivacyService.locationStatus
-            active: PrivacyService.locationActive
-            available: PrivacyService.locationAvailable
-        }
-
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Theme.outlineVariant
-        }
-
-        // Пояснение к значкам в баре: тусклый — доступен, акцентный — в работе.
+        // Подпись объясняет, почему в баре нет постоянных значков.
         Item {
             width: parent.width
             implicitHeight: hint.implicitHeight + Theme.space.lg * 2
@@ -91,7 +107,7 @@ Item {
                 anchors.leftMargin: Theme.space.lg
                 anchors.rightMargin: Theme.space.lg
                 anchors.topMargin: Theme.space.lg
-                text: "In the bar, dimmed icons are available and highlighted icons are in use."
+                text: "Only devices that are in use appear in the bar."
                 color: Theme.scheme.onSurfaceVariant
                 font: Theme.typeBodySmall
                 wrapMode: Text.WordWrap

@@ -273,7 +273,8 @@ Item {
     Component {
         id: privacyPreview
 
-        PrivacyButton {
+        PrivacyIndicator {
+            previewMode: true
             iconOverride: MockState.iconFor("privacy")
         }
     }
