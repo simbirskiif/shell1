@@ -25,8 +25,6 @@ Singleton {
             UiState.close();
         if (DockState.expanded)
             DockState.collapse();
-        if (SettingsWindowState.opened)
-            SettingsWindowState.close();
         if (NotificationService.centerOpen)
             NotificationService.closeCenter();
         root.screenName = root.screenOrFirst(screen);

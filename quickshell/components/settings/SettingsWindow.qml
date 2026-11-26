@@ -378,6 +378,7 @@ PanelWindow {
         SettingsWindowState.section === "dock" ? dockPage :
         SettingsWindowState.section === "notifications" ? notificationsPage :
         SettingsWindowState.section === "caffeine" ? caffeinePage :
+        SettingsWindowState.section === "player" ? playerPage :
         SettingsWindowState.section === "widgets" ? widgetsPage :
         SettingsWindowState.section === "appearance" ? appearancePage :
         barPage
@@ -387,6 +388,7 @@ PanelWindow {
     Component { id: dockPage; SettingsDockPage {} }
     Component { id: notificationsPage; SettingsNotificationsPage {} }
     Component { id: caffeinePage; SettingsCaffeinePage {} }
+    Component { id: playerPage; SettingsPlayerPage {} }
     Component { id: widgetsPage; SettingsWidgetsPage {} }
     Component { id: appearancePage; SettingsAppearancePage {} }
 }

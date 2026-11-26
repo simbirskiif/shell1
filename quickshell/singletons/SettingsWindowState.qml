@@ -21,6 +21,7 @@ Singleton {
         { key: "dock", title: "Док", icon: "\uf108" },
         { key: "notifications", title: "Уведомления", icon: "\uf0f3" },
         { key: "caffeine", title: "Кофеин", icon: "\uf0f4" },
+        { key: "player", title: "Плеер", icon: "\uf001" },
         { key: "widgets", title: "Виджеты", icon: "\uf1b2" },
         { key: "appearance", title: "Оформление", icon: "\uf1fc" }
     ]
@@ -66,6 +67,8 @@ Singleton {
             UiState.close();
         if (DockState.expanded)
             DockState.collapse();
+        if (PlayerWindowState.opened)
+            PlayerWindowState.close();
         root.opened = true;
     }
 

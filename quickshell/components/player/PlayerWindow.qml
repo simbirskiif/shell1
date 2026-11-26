@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import "../quick"
-import "../settings"
 import "../../singletons"
 
 // Панель плеера: правая карточка под баром, как центр уведомлений.
@@ -17,11 +16,19 @@ PanelWindow {
                                       && PlayerWindowState.screenName === root.screenName
     readonly property var player: SpectrumService.player
     readonly property bool hasPlayer: root.player !== null
-    readonly property real progress: root.player && root.player.length > 0
-                                     ? Math.max(0, Math.min(1, root.player.position / root.player.length))
-                                     : 0
     readonly property bool canSeek: root.player !== null && root.player.canSeek
                                     && root.player.positionSupported
+    readonly property real progress: root.player && root.player.length > 0
+                                     ? Math.max(0, Math.min(1,
+                                           root.displayPosition / root.player.length))
+                                     : 0
+
+    // Позиция MPRIS приходит редко (иногда раз в несколько секунд), поэтому
+    // между событиями дорисовываем её локально по часам, а при каждом
+    // positionChanged снова привязываемся к реальной позиции плеера.
+    property real displayPosition: 0
+    property real anchorPosition: 0
+    property double anchorWall: 0
     readonly property real maxHeight: root.playerScreen
                                       ? root.playerScreen.height - Theme.barHeight - Theme.space.lg
                                       : 700
@@ -50,6 +57,52 @@ PanelWindow {
         onActivated: PlayerWindowState.close()
     }
 
+    onPlayerChanged: root.syncPosition()
+    onVisibleChanged: if (root.visible) root.syncPosition()
+
+    Connections {
+        target: root.player
+
+        function onPositionChanged() {
+            root.syncPosition();
+        }
+
+        function onTrackChanged() {
+            root.syncPosition();
+        }
+
+        function onPlaybackStateChanged() {
+            root.syncPosition();
+        }
+    }
+
+    Timer {
+        interval: 250
+        repeat: true
+        running: root.visible && root.player !== null && root.player.isPlaying
+        onTriggered: {
+            if (!root.player)
+                return;
+            let position = root.anchorPosition + (Date.now() - root.anchorWall) / 1000;
+            if (root.player.length > 0)
+                position = Math.min(root.player.length, position);
+            root.displayPosition = Math.max(0, position);
+        }
+    }
+
+    function syncPosition() {
+        if (!root.player) {
+            root.displayPosition = 0;
+            root.anchorPosition = 0;
+            root.anchorWall = 0;
+            return;
+        }
+        const position = Number(root.player.position) || 0;
+        root.anchorPosition = position;
+        root.anchorWall = Date.now();
+        root.displayPosition = position;
+    }
+
     function formatTime(value) {
         const total = Math.max(0, Math.floor(Number(value) || 0));
         const minutes = Math.floor(total / 60);
@@ -70,9 +123,9 @@ PanelWindow {
         anchors.topMargin: Theme.barHeight + Theme.space.xs
         anchors.right: parent.right
         anchors.rightMargin: Theme.barPadding
-        width: Math.min(380, parent.width - Theme.space.xl * 2)
+        width: Math.min(Theme.notificationCenterWidth, parent.width - Theme.space.xl * 2)
         height: Math.min(root.maxHeight,
-                         Math.max(320, header.height + 1 + Theme.space.lg * 2
+                         Math.max(320, header.height + 1 + Theme.notificationPadding * 2
                                   + contentColumn.implicitHeight))
         radius: Theme.shape.xl
         color: Theme.panelSurface
@@ -158,7 +211,7 @@ PanelWindow {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            anchors.margins: Theme.space.lg
+            anchors.margins: Theme.notificationPadding
             contentWidth: width
             contentHeight: contentColumn.implicitHeight
             clip: true
@@ -250,8 +303,13 @@ PanelWindow {
                         value: root.progress
                         enabled: root.canSeek
                         onMoved: value => {
-                            if (root.canSeek && root.player.length > 0)
-                                root.player.position = value * root.player.length;
+                            if (root.canSeek && root.player.length > 0) {
+                                const target = value * root.player.length;
+                                root.player.position = target;
+                                root.anchorPosition = target;
+                                root.anchorWall = Date.now();
+                                root.displayPosition = target;
+                            }
                         }
                     }
 
@@ -261,7 +319,7 @@ PanelWindow {
 
                         Text {
                             anchors.left: parent.left
-                            text: root.player ? root.formatTime(root.player.position) : "0:00"
+                            text: root.player ? root.formatTime(root.displayPosition) : "0:00"
                             color: Theme.scheme.onSurfaceVariant
                             font: Theme.typeBodySmall
                         }
@@ -300,28 +358,34 @@ PanelWindow {
                     }
                 }
 
-                Column {
-                    width: parent.width
-                    spacing: Theme.space.xs
-
-                    SettingsSwitchRow {
-                        title: "Спектр"
-                        description: "Реальный анализ аудиопотока (parec + БПФ)"
-                        checked: SpectrumService.enabled
-                        onToggled: SpectrumService.enabled = !SpectrumService.enabled
-                    }
-
-                    SpectrumBars {
-                        width: parent.width
-                        height: 64
-                        bands: SpectrumService.bands
-                        bars: 20
-                        gap: 3
-                        minBarHeight: 2
-                        barColor: Theme.primary
-                        visible: SpectrumService.enabled
-                    }
-                }
+                /*
+                 * Спектр в панели отключён: он живёт в иконке бара и
+                 * настраивается в разделе «Плеер» окна настроек.
+                 * Код оставлен, чтобы можно было вернуть большие полосы.
+                 *
+                 *                 Column {
+                 *                     width: parent.width
+                 *                     spacing: Theme.space.xs
+                 *
+                 *                     SettingsSwitchRow {
+                 *                         title: "Спектр"
+                 *                         description: "Реальный анализ аудиопотока (parec + БПФ)"
+                 *                         checked: SpectrumService.enabled
+                 *                         onToggled: SpectrumService.enabled = !SpectrumService.enabled
+                 *                     }
+                 *
+                 *                     SpectrumBars {
+                 *                         width: parent.width
+                 *                         height: 64
+                 *                         bands: SpectrumService.bands
+                 *                         bars: 20
+                 *                         gap: 3
+                 *                         minBarHeight: 2
+                 *                         barColor: Theme.primary
+                 *                         visible: SpectrumService.enabled
+                 *                     }
+                 *                 }
+                 */
             }
         }
     }

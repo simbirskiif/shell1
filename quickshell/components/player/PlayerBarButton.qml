@@ -11,7 +11,6 @@ Rectangle {
     signal clicked()
 
     readonly property bool showSpectrum: SpectrumService.enabled
-                                        && SpectrumService.playing
     readonly property color contentColor: SpectrumService.playing
                                           ? Theme.primary
                                           : (SpectrumService.hasPlayer
@@ -31,12 +30,13 @@ Rectangle {
         visible: root.showSpectrum
         width: 22
         height: 16
-        bands: SpectrumService.bands
+        bands: SpectrumService.displayBands
         bars: 4
         gap: 2
         centered: true
         minBarHeight: 3
-        barColor: Theme.primary
+        barColor: SpectrumService.playing ? Theme.primary
+                                          : Theme.scheme.onSurfaceVariant
     }
 
     Text {

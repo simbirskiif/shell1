@@ -32,6 +32,20 @@ Singleton {
     readonly property int bandCount: 16
     // Уровни 0..1, по одной записи на полосу. Пока данных нет — нули.
     property var bands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    // Пришла ли хотя бы одна строка от анализатора в текущем сеансе.
+    property bool received: false
+
+    // Пока ничего не играет, полосы стоят в статичном положении, как
+    // «спящий» эквалайзер виджета музыки. Это не анимация и не нули.
+    readonly property var idleBands: [
+        0.10, 0.18, 0.30, 0.22,
+        0.42, 0.62, 0.46, 0.30,
+        0.22, 0.36, 0.54, 0.40,
+        0.26, 0.18, 0.12, 0.08
+    ]
+
+    readonly property var displayBands: root.playing && root.received
+                                        ? root.bands : root.idleBands
 
     // Спектр можно отключить: тогда процесс не запускается, а иконка
     // показывает обычный значок плеера.
@@ -47,8 +61,12 @@ Singleton {
     }
 
     onActiveChanged: {
-        if (!root.active)
+        if (root.active) {
+            root.received = false;
+        } else {
             root.bands = root.zeroBands();
+            root.received = false;
+        }
     }
 
     function zeroBands() {
@@ -69,6 +87,7 @@ Singleton {
                 normalized.push(Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0);
             }
             root.bands = normalized;
+            root.received = true;
         } catch (error) {
             // Одна битая строка не должна ломать весь поток.
             console.warn("[spectrum] не удалось разобрать строку:", line);
