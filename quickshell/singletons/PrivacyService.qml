@@ -173,6 +173,19 @@ Singleton {
 
     readonly property bool anyActive: root.microphoneActive || root.cameraActive
         || root.locationActive
+
+    // Подпись для строки-индикатора в быстрых настройках.
+    readonly property var activeDeviceNames: {
+        const names = [];
+        if (root.microphoneActive)
+            names.push("Microphone");
+        if (root.cameraActive)
+            names.push("Camera");
+        if (root.locationActive)
+            names.push("Location");
+        return names;
+    }
+    readonly property string activeSummary: root.activeDeviceNames.join(", ")
     readonly property bool anyAvailable: root.microphoneAvailable
         || root.cameraAvailable || root.locationAvailable
 

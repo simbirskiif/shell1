@@ -11,6 +11,9 @@ Row {
     // Настройки показывают элемент даже без активных устройств: иначе
     // его нельзя было бы выбрать и перетащить.
     property bool previewMode: false
+    // В баре орбы сами ловят клик; в строке быстрых настроек кликается
+    // вся строка, поэтому интерактивность выключается.
+    property bool interactive: true
     // Пользовательская иконка заменяет группу одним орбом.
     property string iconOverride: ""
 
@@ -30,7 +33,7 @@ Row {
         // В покое — нейтральный орб, при использовании — акцентный.
         active: PrivacyService.anyActive
         animated: false
-        interactive: !root.previewMode
+        interactive: root.interactive && !root.previewMode
         onClicked: root.clicked()
     }
 
@@ -40,7 +43,7 @@ Row {
         accent: SystemIcons.microphoneColor
         onAccent: SystemIcons.microphoneOnColor
         active: PrivacyService.microphoneActive
-        interactive: !root.previewMode
+        interactive: root.interactive && !root.previewMode
         onClicked: root.clicked()
     }
 
@@ -50,7 +53,7 @@ Row {
         accent: SystemIcons.cameraColor
         onAccent: SystemIcons.cameraOnColor
         active: PrivacyService.cameraActive
-        interactive: !root.previewMode
+        interactive: root.interactive && !root.previewMode
         onClicked: root.clicked()
     }
 
@@ -60,7 +63,7 @@ Row {
         accent: SystemIcons.locationColor
         onAccent: SystemIcons.locationOnColor
         active: PrivacyService.locationActive
-        interactive: !root.previewMode
+        interactive: root.interactive && !root.previewMode
         onClicked: root.clicked()
     }
 

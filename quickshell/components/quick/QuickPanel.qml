@@ -312,6 +312,14 @@ Item {
                 }
             }
 
+            // Активная конфиденциальность видна и здесь, не только в баре.
+            // В редакторе плиток строку прячем, чтобы не мешала раскладке.
+            PrivacyBanner {
+                width: parent.width
+                shown: PrivacyService.anyActive && !root.editing
+                onOpened: UiState.openDetail("privacy")
+            }
+
             // Сетка плиток: позиции считаем сами, поэтому перестановка
             // анимируется Behavior'ами, а не пересозданием элементов.
             Item {
