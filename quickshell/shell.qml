@@ -679,7 +679,32 @@ ShellRoot {
                 + " cameraAvailable=" + (PrivacyService.cameraAvailable ? "yes" : "no")
                 + " location=" + (PrivacyService.locationActive ? "on" : "off")
                 + " locationAvailable=" + (PrivacyService.locationAvailable ? "yes" : "no")
+                + " history=" + PrivacyService.history.length
                 + " helper=" + (PrivacyService.helperOnline ? "online" : "offline");
+        }
+
+        // Остановка захвата: device = microphone | camera. Локацию отозвать
+        // нельзя, поэтому метод для неё ничего не делает.
+        function privacyStop(device: string): string {
+            PrivacyService.stopDevice(device);
+            return privacyState();
+        }
+
+        function privacyClearHistory(): string {
+            PrivacyService.clearHistory();
+            return privacyState();
+        }
+
+        // Последние сессии истории одной строкой — для проверки без мыши.
+        function privacyHistory(): string {
+            const parts = [];
+            const list = PrivacyService.recentHistory;
+            for (let i = 0; i < list.length; ++i) {
+                const entry = list[i];
+                const seconds = Math.round((entry.end - entry.start) / 1000);
+                parts.push(entry.device + ":" + (entry.apps.join("+") || "-") + ":" + seconds + "s");
+            }
+            return parts.join(" ");
         }
 
         // Яркость основного экрана: погасить и вернуть прежнюю.

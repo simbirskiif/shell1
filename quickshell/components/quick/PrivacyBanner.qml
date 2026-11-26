@@ -3,10 +3,10 @@ import ".."
 import "../expressive"
 import "../../singletons"
 
-// Строка конфиденциальности в быстрых настройках. Появляется только когда
-// чем-то пользуются, показывает те же цветные орбы, что и бар, и открывает
-// подробную панель. Высота едет на пружине, поэтому сетка плиток сдвигается
-// плавно, а не прыжком.
+// Строка конфиденциальности в быстрых настройках: те же цветные орбы, что
+// и в баре, плюс постоянный вход в историю. Когда ничего не используется,
+// показывает нейтральный щит. Высота едет на пружине, поэтому сетка плиток
+// сдвигается плавно, а не прыжком.
 Item {
     id: root
 
@@ -40,6 +40,8 @@ Item {
         anchors.left: parent.left
         anchors.leftMargin: Theme.space.md
         anchors.verticalCenter: parent.verticalCenter
+        // В покое — нейтральный щит, при использовании — цветные орбы.
+        previewMode: !PrivacyService.anyActive
         // Кликается вся строка целиком.
         interactive: false
     }
@@ -62,7 +64,8 @@ Item {
 
         Text {
             width: parent.width
-            text: PrivacyService.activeSummary
+            text: PrivacyService.anyActive
+                  ? PrivacyService.activeSummary : "No active devices"
             color: Theme.scheme.onSurfaceVariant
             font: Theme.typeLabelMedium
             elide: Text.ElideRight

@@ -215,5 +215,204 @@ Singleton {
             return "GeoClue is not available";
         return root.locationActive ? "In use" : "Not in use";
     }
+
+    // ───────────── остановка захвата ─────────────
+
+    readonly property bool microphoneStoppable: root.microphoneStreams.length > 0
+    // Камера, открытая приложением напрямую через V4L2, сюда не попадает:
+    // её поток не наш, и отозвать доступ из оболочки нельзя.
+    readonly property bool cameraStoppable: root.cameraStreams.length > 0
+    // Клиента GeoClue мы не создавали, поэтому не можем его удалить.
+    readonly property bool locationStoppable: false
+
+    // Уничтожение потоков выполняет PrivacyHelperHost: Process не живёт
+    // в синглтоне.
+    signal stopStreamsRequested(var streamIds)
+
+    function stopDevice(device) {
+        let ids = [];
+        if (device === "microphone")
+            ids = root.microphoneStreams.map(node => node.id);
+        else if (device === "camera")
+            ids = root.cameraStreams.map(node => node.id);
+        if (ids.length === 0)
+            return;
+        root.stopStreamsRequested(ids);
+    }
+
+    // ───────────── история использования ─────────────
+    // Одна запись — сессия приложения с устройством. Сессии одного
+    // устройства с одинаковыми приложениями, между которыми прошло меньше
+    // historyMergeGap, склеиваются в один «пакет» (короткие паузы не дробят
+    // историю на десятки строк).
+
+    readonly property int historyLimit: 60
+    readonly property int historyMergeGap: 30000
+    readonly property int historyMinDuration: 2000
+
+    property var history: []
+    // Открытые сессии: device -> { start }.
+    property var openSessions: ({})
+    property bool historyRestoring: false
+
+    // Последние сессии для панели, новые сверху.
+    readonly property var recentHistory: root.history.slice(-8).reverse()
+
+    function sameApps(first, second) {
+        const a = (first || []).map(name => String(name).toLowerCase()).sort();
+        const b = (second || []).map(name => String(name).toLowerCase()).sort();
+        if (a.length !== b.length)
+            return false;
+        for (let i = 0; i < a.length; ++i) {
+            if (a[i] !== b[i])
+                return false;
+        }
+        return true;
+    }
+
+    function appsFor(device) {
+        if (device === "microphone")
+            return root.microphoneApps;
+        if (device === "camera")
+            return root.cameraApps;
+        return [];
+    }
+
+    // Приложения запоминаем в открытой сессии: когда поток исчезает,
+    // microphoneApps/cameraApps уже пусты, и в историю попало бы «-».
+    function updateOpenApps(device, apps) {
+        const session = root.openSessions[device];
+        if (session === undefined || session === null)
+            return;
+        // При исчезновении потока приложения приходят пустыми — не затираем
+        // последнее известное имя на этапе завершения сессии.
+        const lastApps = session.apps !== undefined ? session.apps : [];
+        const sessions = {};
+        for (const key in root.openSessions)
+            sessions[key] = root.openSessions[key];
+        sessions[device] = { start: session.start,
+                             apps: apps.length > 0 ? apps : lastApps };
+        root.openSessions = sessions;
+    }
+
+    function updateSession(device, active) {
+        if (active) {
+            const sessions = {};
+            for (const key in root.openSessions)
+                sessions[key] = root.openSessions[key];
+            sessions[device] = { start: Date.now(), apps: root.appsFor(device) };
+            root.openSessions = sessions;
+            return;
+        }
+
+        const session = root.openSessions[device];
+        if (session === undefined || session === null)
+            return;
+        const sessions = {};
+        for (const key in root.openSessions) {
+            if (key !== device)
+                sessions[key] = root.openSessions[key];
+        }
+        root.openSessions = sessions;
+
+        const now = Date.now();
+        const start = Number(session.start);
+        if (!Number.isFinite(start) || now - start < root.historyMinDuration)
+            return;
+
+        const apps = session.apps !== undefined ? session.apps : root.appsFor(device);
+        const next = root.history.slice();
+        // Склеиваем только с последней сессией того же устройства: это и есть
+        // «пакет», а не слияние всей истории.
+        let mergeIndex = -1;
+        for (let i = next.length - 1; i >= 0; --i) {
+            if (next[i].device !== device)
+                continue;
+            if (start - Number(next[i].end) <= root.historyMergeGap
+                    && root.sameApps(next[i].apps, apps))
+                mergeIndex = i;
+            break;
+        }
+
+        if (mergeIndex >= 0) {
+            const merged = {
+                device: device,
+                apps: apps,
+                start: next[mergeIndex].start,
+                end: now
+            };
+            // Пакет снова стал самым свежим: переносим его в конец, чтобы
+            // порядок истории совпадал с порядком окончания сессий.
+            next.splice(mergeIndex, 1);
+            next.push(merged);
+        } else {
+            next.push({ device: device, apps: apps, start: start, end: now });
+            if (next.length > root.historyLimit)
+                next.splice(0, next.length - root.historyLimit);
+        }
+        root.history = next;
+        root.storeHistory();
+    }
+
+    onMicrophoneActiveChanged: root.updateSession("microphone", root.microphoneActive)
+    onCameraActiveChanged: root.updateSession("camera", root.cameraActive)
+    onLocationActiveChanged: root.updateSession("location", root.locationActive)
+
+    onMicrophoneAppsChanged: root.updateOpenApps("microphone", root.microphoneApps)
+    onCameraAppsChanged: root.updateOpenApps("camera", root.cameraApps)
+
+    function clearHistory() {
+        root.history = [];
+        if (Settings.loaded)
+            Settings.setValue("privacy.history", []);
+    }
+
+    function storeHistory() {
+        if (root.historyRestoring || !Settings.loaded)
+            return;
+        Settings.setValue("privacy.history", root.history);
+    }
+
+    function restoreHistory() {
+        root.historyRestoring = true;
+        const saved = Settings.value("privacy.history", []);
+        const cleaned = [];
+        if (Array.isArray(saved)) {
+            for (let i = 0; i < saved.length; ++i) {
+                const item = saved[i];
+                if (item === null || typeof item !== "object")
+                    continue;
+                const device = String(item.device || "");
+                if (device !== "microphone" && device !== "camera" && device !== "location")
+                    continue;
+                const start = Number(item.start);
+                const end = Number(item.end);
+                if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start)
+                    continue;
+                const apps = Array.isArray(item.apps)
+                    ? item.apps.map(name => String(name)) : [];
+                cleaned.push({ device: device, apps: apps, start: start, end: end });
+            }
+        }
+        cleaned.sort((first, second) => first.end - second.end);
+        if (cleaned.length > root.historyLimit)
+            cleaned.splice(0, cleaned.length - root.historyLimit);
+        root.history = cleaned;
+        root.historyRestoring = false;
+    }
+
+    Connections {
+        target: Settings
+
+        function onLoadedChanged() {
+            if (Settings.loaded)
+                root.restoreHistory();
+        }
+    }
+
+    Component.onCompleted: {
+        if (Settings.loaded)
+            root.restoreHistory();
+    }
 }
 

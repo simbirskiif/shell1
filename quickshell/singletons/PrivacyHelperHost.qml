@@ -22,6 +22,51 @@ Item {
 
     readonly property string scriptPath: Quickshell.shellDir + "/scripts/qs-privacy-helper.py"
 
+    // Очередь потоков на уничтожение: pw-cli destroy принимает один id за
+    // запуск, а у приложения может быть несколько потоков.
+    property var stopQueue: []
+
+    Connections {
+        target: PrivacyService
+
+        function onStopStreamsRequested(streamIds) {
+            root.destroyStreams(streamIds);
+        }
+    }
+
+    function destroyStreams(ids) {
+        if (!Array.isArray(ids) || ids.length === 0)
+            return;
+        root.stopQueue = root.stopQueue.concat(ids);
+        root.runNextStop();
+    }
+
+    function runNextStop() {
+        if (stopProcess.running || root.stopQueue.length === 0)
+            return;
+        const queue = root.stopQueue.slice();
+        const id = queue.shift();
+        root.stopQueue = queue;
+        stopProcess.command = ["pw-cli", "destroy", String(id)];
+        stopProcess.running = true;
+    }
+
+    Process {
+        id: stopProcess
+
+        running: false
+
+        stderr: SplitParser {
+            onRead: line => console.warn("[privacy-stop] " + line)
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode !== 0)
+                console.warn("[privacy-stop] pw-cli destroy завершился с кодом " + exitCode);
+            root.runNextStop();
+        }
+    }
+
     Process {
         id: helperProcess
 

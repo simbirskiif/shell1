@@ -17,6 +17,9 @@ Item {
     required property color onContainer
     property bool active: false
     property bool available: true
+    property bool stoppable: false
+
+    signal stopRequested()
 
     implicitWidth: parent ? parent.width : 0
     implicitHeight: 88
@@ -44,11 +47,47 @@ Item {
         hitSize: 48
     }
 
+    // Действие справа. У активного устройства оно либо останавливает
+    // поток, либо честно говорит, что отсюда это невозможно (V4L2/GeoClue).
+    Item {
+        id: action
+
+        anchors.right: parent.right
+        anchors.rightMargin: Theme.space.lg
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.active
+        width: root.active ? (root.stoppable ? 64 : 92) : 0
+        height: 36
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Theme.shape.full
+            color: root.stoppable ? Theme.withAlpha(root.onContainer, 0.16) : "transparent"
+            Behavior on color { ColorAnimation { duration: 140 } }
+
+            Text {
+                anchors.centerIn: parent
+                text: root.stoppable ? "Stop" : "Can't stop"
+                color: root.onContainer
+                opacity: root.stoppable ? 1 : 0.65
+                font: root.stoppable ? Theme.typeLabelLarge : Theme.typeLabelSmall
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                enabled: root.stoppable
+                hoverEnabled: root.stoppable
+                cursorShape: root.stoppable ? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: root.stopRequested()
+            }
+        }
+    }
+
     Column {
         anchors.left: orb.right
         anchors.leftMargin: Theme.space.md
-        anchors.right: parent.right
-        anchors.rightMargin: Theme.space.lg
+        anchors.right: action.left
+        anchors.rightMargin: root.active ? Theme.space.sm : 0
         anchors.verticalCenter: parent.verticalCenter
         spacing: 2
 
