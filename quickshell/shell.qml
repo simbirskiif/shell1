@@ -12,6 +12,7 @@ import "singletons"
 import "widgets/desktop"
 import "widgets/core"
 import "components/settings"
+import "components/player"
 import "components/lock"
 
 ShellRoot {
@@ -146,6 +147,16 @@ ShellRoot {
         delegate: SettingsWindow {
             required property var modelData
             settingsScreen: modelData
+        }
+    }
+
+    // Окно плеера — отдельный оверлей, как у настроек.
+    Variants {
+        model: Quickshell.screens
+
+        delegate: PlayerWindow {
+            required property var modelData
+            playerScreen: modelData
         }
     }
 
@@ -370,6 +381,42 @@ ShellRoot {
 
         function state(): string {
             return SettingsWindowState.summary();
+        }
+    }
+
+    // Окно плеера снаружи:
+    //   qs ipc call player open
+    //   qs ipc call player spectrum false
+    IpcHandler {
+        target: "player"
+
+        function open(): string {
+            PlayerWindowState.open("");
+            return state();
+        }
+
+        function close(): string {
+            PlayerWindowState.close();
+            return state();
+        }
+
+        function toggle(): string {
+            PlayerWindowState.toggle("");
+            return state();
+        }
+
+        function spectrum(enabled: bool): string {
+            SpectrumService.enabled = enabled;
+            return state();
+        }
+
+        function state(): string {
+            return PlayerWindowState.summary()
+                + " bands=" + (SpectrumService.bands.length > 0
+                                ? SpectrumService.bands.map(v => Math.round(v * 100)).join(",")
+                                : "-")
+                + " track=" + (SpectrumService.player
+                                ? (SpectrumService.player.trackTitle || "-") : "-");
         }
     }
 

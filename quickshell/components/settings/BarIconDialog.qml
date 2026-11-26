@@ -76,6 +76,15 @@ Item {
                 { glyph: "\uf130", label: "Микрофон" }
             ];
         }
+        if (key === "player") {
+            return [
+                { glyph: "", label: "Авто" },
+                { glyph: "\uf001", label: "Нота" },
+                { glyph: "\uf025", label: "Наушники" },
+                { glyph: "\uf008", label: "Плейлист" },
+                { glyph: "\uf03e", label: "Обложка" }
+            ];
+        }
         return [{ glyph: "", label: "Авто" }];
     }
 

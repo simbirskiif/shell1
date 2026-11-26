@@ -1,6 +1,7 @@
 import QtQuick
 import ".."
 import "../quick"
+import "../player"
 import "../../singletons"
 
 // Живое превью правой части бара: те же кнопки, что в настоящем баре,
@@ -127,7 +128,8 @@ Item {
                                            : chip.itemKey === "wifi" ? wifiPreview
                                            : chip.itemKey === "bluetooth" ? bluetoothPreview
                                            : chip.itemKey === "brightness" ? brightnessPreview
-                                           : soundPreview
+                                           : chip.itemKey === "sound" ? soundPreview
+                                           : playerPreview
                         }
                     }
 
@@ -264,6 +266,14 @@ Item {
         BarActionButton {
             kind: "sound"
             iconOverride: MockState.iconFor("sound")
+        }
+    }
+
+    Component {
+        id: playerPreview
+
+        PlayerBarButton {
+            iconOverride: MockState.iconFor("player")
         }
     }
 }

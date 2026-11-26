@@ -41,7 +41,8 @@ Singleton {
         "wifi": "Wi-Fi",
         "bluetooth": "Bluetooth",
         "brightness": "Яркость",
-        "sound": "Звук"
+        "sound": "Звук",
+        "player": "Плеер"
     })
 
     readonly property var barItemIcons: ({
@@ -51,7 +52,8 @@ Singleton {
         "wifi": "\uf1eb",
         "bluetooth": "\uf293",
         "brightness": "\uf185",
-        "sound": "\uf028"
+        "sound": "\uf028",
+        "player": "\uf001"
     })
 
     // Порядок на первом запуске и при сбросе.
@@ -70,7 +72,8 @@ Singleton {
         "wifi": "",
         "bluetooth": "",
         "brightness": "",
-        "sound": ""
+        "sound": "",
+        "player": ""
     })
     property var barIcons: ({})
 

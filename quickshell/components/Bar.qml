@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import "quick"
+import "player"
 import "../singletons"
 
 // Верхний бар: слева рабочие столы, по центру дата и время,
@@ -70,6 +71,7 @@ PanelWindow {
                                : itemKey === "bluetooth" ? bluetoothItem
                                : itemKey === "brightness" ? brightnessItem
                                : itemKey === "sound" ? soundItem
+                               : itemKey === "player" ? playerItem
                                : null
             }
         }
@@ -194,6 +196,15 @@ PanelWindow {
             kind: "sound"
             iconOverride: MockState.iconFor("sound")
             onClicked: UiState.open(root.screen ? root.screen.name : "", "sound")
+        }
+    }
+
+    Component {
+        id: playerItem
+
+        PlayerBarButton {
+            iconOverride: MockState.iconFor("player")
+            onClicked: PlayerWindowState.toggle(root.screen ? root.screen.name : "")
         }
     }
 }
