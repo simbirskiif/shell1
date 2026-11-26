@@ -677,6 +677,9 @@ ShellRoot {
                 + " camera=" + (PrivacyService.cameraActive ? "on" : "off")
                 + " cameraApps=" + (PrivacyService.cameraApps.join(",") || "-")
                 + " cameraAvailable=" + (PrivacyService.cameraAvailable ? "yes" : "no")
+                + " screen=" + (PrivacyService.screenActive ? "on" : "off")
+                + " screenApps=" + (PrivacyService.screenApps.join(",") || "-")
+                + " screenStoppable=" + (PrivacyService.screenStoppable ? "yes" : "no")
                 + " location=" + (PrivacyService.locationActive ? "on" : "off")
                 + " locationAvailable=" + (PrivacyService.locationAvailable ? "yes" : "no")
                 + " history=" + PrivacyService.history.length

@@ -4,8 +4,9 @@ import QtQuick
 import Quickshell
 
 // Значки системных состояний для бара и быстрых настроек: звук, яркость,
-// Bluetooth и конфиденциальность. Одна точка правды, чтобы кнопка, плитка
-// и составная иконка показывали одно и то же.
+// Bluetooth и конфиденциальность (микрофон, камера, демонстрация экрана,
+// геолокация). Одна точка правды, чтобы кнопка, плитка и составная иконка
+// показывали одно и то же.
 Singleton {
     id: root
 
@@ -72,6 +73,7 @@ Singleton {
     // container — тональная пара для карточек панели.
     readonly property string microphoneGlyph: "\uf130"
     readonly property string cameraGlyph: "\uf030"
+    readonly property string screenGlyph: "\uf108"
     readonly property string locationGlyph: "\uf041"
 
     readonly property color microphoneColor: Theme.primary
@@ -79,13 +81,20 @@ Singleton {
     readonly property color microphoneContainer: Theme.primaryContainer
     readonly property color microphoneOnContainer: Theme.scheme.onPrimaryContainer
 
+    readonly property color screenColor: Theme.tertiary
+    readonly property color screenOnColor: Theme.scheme.onTertiary
+    readonly property color screenContainer: Theme.tertiaryContainer
+    readonly property color screenOnContainer: Theme.scheme.onTertiaryContainer
+
     readonly property color cameraColor: Theme.error
     readonly property color cameraOnColor: Theme.scheme.onError
     readonly property color cameraContainer: Theme.errorContainer
     readonly property color cameraOnContainer: Theme.scheme.onErrorContainer
 
-    readonly property color locationColor: Theme.tertiary
-    readonly property color locationOnColor: Theme.scheme.onTertiary
-    readonly property color locationContainer: Theme.tertiaryContainer
-    readonly property color locationOnContainer: Theme.scheme.onTertiaryContainer
+    // Геолокация реже всех в баре, поэтому ей достаётся четвёртая,
+    // самая спокойная пара; у демонстрации экрана — заметная лаванда.
+    readonly property color locationColor: Theme.secondary
+    readonly property color locationOnColor: Theme.scheme.onSecondary
+    readonly property color locationContainer: Theme.secondaryContainer
+    readonly property color locationOnContainer: Theme.scheme.onSecondaryContainer
 }

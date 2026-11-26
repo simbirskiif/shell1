@@ -82,6 +82,21 @@ Item {
 
                 PrivacyCard {
                     width: parent.width
+                    icon: SystemIcons.screenGlyph
+                    title: "Screen"
+                    subtitle: PrivacyService.screenStatus
+                    active: PrivacyService.screenActive
+                    available: PrivacyService.screenAvailable
+                    stoppable: PrivacyService.screenStoppable
+                    accent: SystemIcons.screenColor
+                    onAccent: SystemIcons.screenOnColor
+                    container: SystemIcons.screenContainer
+                    onContainer: SystemIcons.screenOnContainer
+                    onStopRequested: PrivacyService.stopDevice("screen")
+                }
+
+                PrivacyCard {
+                    width: parent.width
                     icon: SystemIcons.locationGlyph
                     title: "Location"
                     subtitle: PrivacyService.locationStatus

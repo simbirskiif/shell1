@@ -58,6 +58,16 @@ Row {
     }
 
     PrivacyOrb {
+        visible: !root.custom && PrivacyService.screenActive
+        icon: SystemIcons.screenGlyph
+        accent: SystemIcons.screenColor
+        onAccent: SystemIcons.screenOnColor
+        active: PrivacyService.screenActive
+        interactive: root.interactive && !root.previewMode
+        onClicked: root.clicked()
+    }
+
+    PrivacyOrb {
         visible: !root.custom && PrivacyService.locationActive
         icon: SystemIcons.locationGlyph
         accent: SystemIcons.locationColor

@@ -82,6 +82,7 @@ Item {
                 { glyph: "\uf132", label: "Щит" },
                 { glyph: "\uf130", label: "Микрофон" },
                 { glyph: "\uf030", label: "Камера" },
+                { glyph: "\uf108", label: "Экран" },
                 { glyph: "\uf041", label: "Геометка" },
                 { glyph: "\uf06e", label: "Глаз" },
                 { glyph: "\uf070", label: "Без глаза" }

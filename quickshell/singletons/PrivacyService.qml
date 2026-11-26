@@ -26,7 +26,12 @@ Singleton {
         objects: Pipewire.nodes.values
     }
 
-    readonly property var nodes: Pipewire.nodes.values
+    // Во время перезапуска PipeWire модель может быть ещё undefined:
+    // пустой список лучше, чем поток предупреждений из каждого биндинга.
+    readonly property var nodes: {
+        const values = Pipewire.nodes ? Pipewire.nodes.values : null;
+        return values === undefined || values === null ? [] : values;
+    }
 
     function nodeProperties(node) {
         return node !== null && node !== undefined && node.properties
@@ -55,9 +60,73 @@ Singleton {
 
     // У видеоузлов Quickshell не выставляет isStream (флаг считается только
     // для аудио), поэтому поток камеры отличаем по media.class.
+    // Видеопоток приложения связан либо с камерой (v4l2 / media.role
+    // Camera), либо с источником экрана от xdg-desktop-portal. Источник
+    // ищем по ссылке PipeWire: у потока камеры роль Camera, у screencast-
+    // источника её нет.
+    function streamSource(node) {
+        if (node === null || node === undefined)
+            return null;
+        const links = Pipewire.links ? Pipewire.links.values : null;
+        if (links === undefined || links === null)
+            return null;
+        for (let i = 0; i < links.length; ++i) {
+            const link = links[i];
+            if (link.target && link.source && link.target.id === node.id)
+                return link.source;
+        }
+        return null;
+    }
+
+    function sourceIsCamera(source) {
+        if (source === null || source === undefined)
+            return false;
+        const properties = root.nodeProperties(source);
+        if (String(properties["media.role"] || "").toLowerCase() === "camera")
+            return true;
+        if (String(properties["object.path"] || "").startsWith("v4l2:"))
+            return true;
+        return String(properties["node.name"] || "").startsWith("v4l2_input");
+    }
+
+    function isScreenStream(node) {
+        if (node === null || node === undefined)
+            return false;
+        if (root.nodeClass(node) !== "Stream/Input/Video")
+            return false;
+        const properties = root.nodeProperties(node);
+        const role = String(properties["media.role"] || "").toLowerCase();
+        if (role === "screen")
+            return true;
+        if (role === "camera")
+            return false;
+        const streamName = String(properties["node.name"] || "").toLowerCase();
+        if (streamName.indexOf("screen") >= 0 || streamName.indexOf("screencast") >= 0
+                || streamName.indexOf("monitor") >= 0 || streamName.indexOf("portal") >= 0)
+            return true;
+        const source = root.streamSource(node);
+        if (source !== null && source !== undefined) {
+            if (root.sourceIsCamera(source))
+                return false;
+            if (root.nodeClass(source) === "Video/Source")
+                return true;
+            const sourceProperties = root.nodeProperties(source);
+            const name = String(sourceProperties["node.name"] || "").toLowerCase();
+            if (name.indexOf("screen") >= 0 || name.indexOf("portal") >= 0)
+                return true;
+        }
+        // Поток без ссылки, но с признаком портала и без роли камеры —
+        // считаем захватом экрана: камера через портал помечается Camera.
+        if (String(properties["media.role"] || "").toLowerCase() === ""
+                && String(properties["pipewire.access.portal.app_id"] || "") !== "")
+            return true;
+        return false;
+    }
+
     function isCameraStream(node) {
         return node !== null && node !== undefined
-            && root.nodeClass(node) === "Stream/Input/Video";
+            && root.nodeClass(node) === "Stream/Input/Video"
+            && !root.isScreenStream(node);
     }
 
     // Камера присутствует на шине, даже если её никто не открыл.
@@ -70,6 +139,8 @@ Singleton {
         node => root.isMicrophoneStream(node))
     readonly property var cameraStreams: root.nodes.filter(
         node => root.isCameraStream(node))
+    readonly property var screenStreams: root.nodes.filter(
+        node => root.isScreenStream(node))
     readonly property var cameraDevices: root.nodes.filter(
         node => root.isCameraDevice(node))
 
@@ -157,6 +228,9 @@ Singleton {
         root.cameraStreams.map(node => root.applicationName(node))
             .concat(root.helperCameraApps))
 
+    readonly property var screenApps: root.uniqueNames(
+        root.screenStreams.map(node => root.applicationName(node)))
+
     // ───────────── итоговые флаги ─────────────
 
     readonly property bool microphoneAvailable: AudioService.inputDevices.length > 0
@@ -168,11 +242,14 @@ Singleton {
     readonly property bool cameraActive: root.cameraStreams.length > 0
         || root.helperCameraActive
 
+    readonly property bool screenAvailable: Pipewire.ready
+    readonly property bool screenActive: root.screenStreams.length > 0
+
     readonly property bool locationAvailable: root.helperLocationAvailable
     readonly property bool locationActive: root.helperLocationActive
 
     readonly property bool anyActive: root.microphoneActive || root.cameraActive
-        || root.locationActive
+        || root.screenActive || root.locationActive
 
     // Подпись для строки-индикатора в быстрых настройках.
     readonly property var activeDeviceNames: {
@@ -181,13 +258,15 @@ Singleton {
             names.push("Microphone");
         if (root.cameraActive)
             names.push("Camera");
+        if (root.screenActive)
+            names.push("Screen");
         if (root.locationActive)
             names.push("Location");
         return names;
     }
     readonly property string activeSummary: root.activeDeviceNames.join(", ")
     readonly property bool anyAvailable: root.microphoneAvailable
-        || root.cameraAvailable || root.locationAvailable
+        || root.cameraAvailable || root.screenAvailable || root.locationAvailable
 
     // Короткий статус для панели: «In use — Firefox», «In use», …
     function statusText(apps) {
@@ -210,6 +289,14 @@ Singleton {
             : "Not in use";
     }
 
+    readonly property string screenStatus: {
+        if (!root.screenAvailable)
+            return "Screen sharing is unavailable";
+        return root.screenActive
+            ? root.statusText(root.screenApps)
+            : "Not in use";
+    }
+
     readonly property string locationStatus: {
         if (!root.locationAvailable)
             return "GeoClue is not available";
@@ -222,6 +309,7 @@ Singleton {
     // Камера, открытая приложением напрямую через V4L2, сюда не попадает:
     // её поток не наш, и отозвать доступ из оболочки нельзя.
     readonly property bool cameraStoppable: root.cameraStreams.length > 0
+    readonly property bool screenStoppable: root.screenStreams.length > 0
     // Клиента GeoClue мы не создавали, поэтому не можем его удалить.
     readonly property bool locationStoppable: false
 
@@ -235,6 +323,8 @@ Singleton {
             ids = root.microphoneStreams.map(node => node.id);
         else if (device === "camera")
             ids = root.cameraStreams.map(node => node.id);
+        else if (device === "screen")
+            ids = root.screenStreams.map(node => node.id);
         if (ids.length === 0)
             return;
         root.stopStreamsRequested(ids);
@@ -275,6 +365,8 @@ Singleton {
             return root.microphoneApps;
         if (device === "camera")
             return root.cameraApps;
+        if (device === "screen")
+            return root.screenApps;
         return [];
     }
 
@@ -356,10 +448,12 @@ Singleton {
 
     onMicrophoneActiveChanged: root.updateSession("microphone", root.microphoneActive)
     onCameraActiveChanged: root.updateSession("camera", root.cameraActive)
+    onScreenActiveChanged: root.updateSession("screen", root.screenActive)
     onLocationActiveChanged: root.updateSession("location", root.locationActive)
 
     onMicrophoneAppsChanged: root.updateOpenApps("microphone", root.microphoneApps)
     onCameraAppsChanged: root.updateOpenApps("camera", root.cameraApps)
+    onScreenAppsChanged: root.updateOpenApps("screen", root.screenApps)
 
     function clearHistory() {
         root.history = [];
@@ -383,7 +477,8 @@ Singleton {
                 if (item === null || typeof item !== "object")
                     continue;
                 const device = String(item.device || "");
-                if (device !== "microphone" && device !== "camera" && device !== "location")
+                if (device !== "microphone" && device !== "camera"
+                        && device !== "screen" && device !== "location")
                     continue;
                 const start = Number(item.start);
                 const end = Number(item.end);

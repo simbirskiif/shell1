@@ -18,21 +18,25 @@ Item {
 
     readonly property bool microphone: root.device === "microphone"
     readonly property bool camera: root.device === "camera"
+    readonly property bool screen: root.device === "screen"
 
     readonly property string deviceTitle: root.microphone ? "Microphone"
-        : root.camera ? "Camera" : "Location"
+        : root.camera ? "Camera" : root.screen ? "Screen" : "Location"
 
     readonly property string title: root.apps.length > 0
         ? root.apps.join(", ") : root.deviceTitle
 
     readonly property string glyph: root.microphone ? SystemIcons.microphoneGlyph
-        : root.camera ? SystemIcons.cameraGlyph : SystemIcons.locationGlyph
+        : root.camera ? SystemIcons.cameraGlyph
+        : root.screen ? SystemIcons.screenGlyph : SystemIcons.locationGlyph
 
     readonly property color accent: root.microphone ? SystemIcons.microphoneColor
-        : root.camera ? SystemIcons.cameraColor : SystemIcons.locationColor
+        : root.camera ? SystemIcons.cameraColor
+        : root.screen ? SystemIcons.screenColor : SystemIcons.locationColor
 
     readonly property color onAccent: root.microphone ? SystemIcons.microphoneOnColor
-        : root.camera ? SystemIcons.cameraOnColor : SystemIcons.locationOnColor
+        : root.camera ? SystemIcons.cameraOnColor
+        : root.screen ? SystemIcons.screenOnColor : SystemIcons.locationOnColor
 
     function twoDigits(value) {
         return value < 10 ? "0" + value : String(value);
