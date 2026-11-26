@@ -26,7 +26,8 @@ Item {
         anchors.left: parent.left
         anchors.leftMargin: Theme.space.lg
         anchors.verticalCenter: title.verticalCenter
-        text: "\uf185"
+        text: SystemIcons.brightnessGlyphFor(root.value, root.controllable)
+        opacity: SystemIcons.brightnessOpacityFor(root.value, root.controllable)
         color: root.controllable ? Theme.scheme.onSurface
                                  : Theme.scheme.onSurfaceVariant
         font.family: Theme.iconFontFamily

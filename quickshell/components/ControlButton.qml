@@ -53,8 +53,8 @@ Rectangle {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             visible: !root.allSlotsHidden && root.bluetoothIcon === "auto"
-            text: "\uf293"
-            color: root.bluetoothEnabled ? root.activeColor : root.dimColor
+            text: SystemIcons.bluetoothGlyph
+            color: root.opened ? root.activeColor : SystemIcons.bluetoothColor
             font.family: Theme.iconFontFamily
             font.pixelSize: Theme.iconSize.sm
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
@@ -65,7 +65,7 @@ Rectangle {
             visible: !root.allSlotsHidden && root.bluetoothIcon !== ""
                      && root.bluetoothIcon !== "auto"
             text: root.bluetoothIcon
-            color: root.bluetoothEnabled ? root.activeColor : root.dimColor
+            color: root.opened ? root.activeColor : SystemIcons.bluetoothColor
             font.family: Theme.iconFontFamily
             font.pixelSize: Theme.iconSize.sm
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
@@ -98,8 +98,8 @@ Rectangle {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             visible: !root.allSlotsHidden && root.soundIcon === "auto"
-            text: root.soundEnabled ? "\uf028" : "\uf026"
-            color: root.soundEnabled ? root.activeColor : root.dimColor
+            text: SystemIcons.soundGlyph
+            color: root.opened ? root.activeColor : SystemIcons.soundColor
             font.family: Theme.iconFontFamily
             font.pixelSize: Theme.iconSize.sm
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
@@ -110,7 +110,7 @@ Rectangle {
             visible: !root.allSlotsHidden && root.soundIcon !== ""
                      && root.soundIcon !== "auto"
             text: root.soundIcon
-            color: root.soundEnabled ? root.activeColor : root.dimColor
+            color: root.opened ? root.activeColor : SystemIcons.soundColor
             font.family: Theme.iconFontFamily
             font.pixelSize: Theme.iconSize.sm
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }

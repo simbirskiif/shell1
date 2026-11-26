@@ -69,6 +69,7 @@ PanelWindow {
                                : itemKey === "wifi" ? wifiItem
                                : itemKey === "bluetooth" ? bluetoothItem
                                : itemKey === "brightness" ? brightnessItem
+                               : itemKey === "sound" ? soundItem
                                : null
             }
         }
@@ -183,6 +184,16 @@ PanelWindow {
             kind: "brightness"
             iconOverride: MockState.iconFor("brightness")
             onClicked: UiState.open(root.screen ? root.screen.name : "", "brightness")
+        }
+    }
+
+    Component {
+        id: soundItem
+
+        BarActionButton {
+            kind: "sound"
+            iconOverride: MockState.iconFor("sound")
+            onClicked: UiState.open(root.screen ? root.screen.name : "", "sound")
         }
     }
 }

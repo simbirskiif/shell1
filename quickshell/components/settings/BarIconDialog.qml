@@ -67,6 +67,15 @@ Item {
                 { glyph: "\uf042", label: "Контраст" }
             ];
         }
+        if (key === "sound") {
+            return [
+                { glyph: "", label: "Авто" },
+                { glyph: "\uf028", label: "Звук" },
+                { glyph: "\uf027", label: "Тише" },
+                { glyph: "\uf026", label: "Выключен" },
+                { glyph: "\uf130", label: "Микрофон" }
+            ];
+        }
         return [{ glyph: "", label: "Авто" }];
     }
 

@@ -91,6 +91,15 @@ Singleton {
     readonly property bool blocked: adapterProps.PowerState === "off-blocked"
     readonly property bool available: hasAdapter && !blocked
     readonly property bool discoverable: adapterProps.Discoverable === true
+
+    // Есть ли хотя бы одно подключённое устройство: для значка в баре.
+    readonly property bool anyConnected: {
+        for (const path in devices) {
+            if (devices[path] && devices[path].Connected === true)
+                return true;
+        }
+        return false;
+    }
     // Идёт поиск: состояние BlueZ плюс наш запрос до подтверждения.
     readonly property bool scanning: adapterProps.Discovering === true || scanRequested
 

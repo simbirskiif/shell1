@@ -40,7 +40,8 @@ Singleton {
         "status": "Пункт управления",
         "wifi": "Wi-Fi",
         "bluetooth": "Bluetooth",
-        "brightness": "Яркость"
+        "brightness": "Яркость",
+        "sound": "Звук"
     })
 
     readonly property var barItemIcons: ({
@@ -49,7 +50,8 @@ Singleton {
         "status": "\uf013",
         "wifi": "\uf1eb",
         "bluetooth": "\uf293",
-        "brightness": "\uf185"
+        "brightness": "\uf185",
+        "sound": "\uf028"
     })
 
     // Порядок на первом запуске и при сбросе.
@@ -67,7 +69,8 @@ Singleton {
         "notifications": "\uf0f3",
         "wifi": "",
         "bluetooth": "",
-        "brightness": ""
+        "brightness": "",
+        "sound": ""
     })
     property var barIcons: ({})
 

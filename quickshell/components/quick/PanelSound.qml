@@ -43,7 +43,7 @@ Item {
             readonly property bool shown: !AudioService.available
             visible: shown
             height: shown ? implicitHeight : 0
-            icon: "\uf028"
+            icon: SystemIcons.soundGlyph
             title: "Audio unavailable"
             description: "PipeWire is not running"
             actionText: ""
@@ -84,7 +84,7 @@ Item {
 
                 AudioLevelRow {
                     width: parent.width
-                    icon: "\uf028"
+                    icon: SystemIcons.soundGlyph
                     muted: AudioService.outputMuted
                     value: AudioService.outputVolume
                     onMoved: v => AudioService.setOutputVolume(v)

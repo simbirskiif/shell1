@@ -923,6 +923,10 @@ ShellRoot {
                 + " available=" + MockState.availableTiles.join(",")
                 + " bar=" + bar.join(",")
                 + " barPercent=" + (MockState.showBatteryPercent ? "on" : "off")
+                + " btEnabled=" + (BluetoothBackend.enabled ? "on" : "off")
+                + " btConnected=" + (BluetoothBackend.anyConnected ? "yes" : "no")
+                + " brightness=" + BrightnessService.summary
+                + " sound=" + SystemIcons.soundGlyph
                 + " barIcons=" + MockState.barIconsSummary()
                 + " dnd=" + (NotificationService.doNotDisturb ? "on" : "off")
                 + " sens=" + NotificationService.swipeSensitivity.toFixed(2)
@@ -1143,6 +1147,10 @@ ShellRoot {
                 + " netTile=" + (NetworkService.internetViaEthernet ? "Internet" : "Wi-Fi")
                 + " order=" + order.join(",")
                 + " barPercent=" + (MockState.showBatteryPercent ? "on" : "off")
+                + " btEnabled=" + (BluetoothBackend.enabled ? "on" : "off")
+                + " btConnected=" + (BluetoothBackend.anyConnected ? "yes" : "no")
+                + " brightness=" + BrightnessService.summary
+                + " sound=" + SystemIcons.soundGlyph
                 + " barIcons=" + MockState.barIconsSummary()
                 + " battery=" + PowerService.level + "%" + (PowerService.charging ? "+" : "")
                 + " out=" + Math.round(AudioService.outputVolume * 100) + "%"

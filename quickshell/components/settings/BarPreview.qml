@@ -126,7 +126,8 @@ Item {
                                            : chip.itemKey === "status" ? statusPreview
                                            : chip.itemKey === "wifi" ? wifiPreview
                                            : chip.itemKey === "bluetooth" ? bluetoothPreview
-                                           : brightnessPreview
+                                           : chip.itemKey === "brightness" ? brightnessPreview
+                                           : soundPreview
                         }
                     }
 
@@ -254,6 +255,15 @@ Item {
         BarActionButton {
             kind: "brightness"
             iconOverride: MockState.iconFor("brightness")
+        }
+    }
+
+    Component {
+        id: soundPreview
+
+        BarActionButton {
+            kind: "sound"
+            iconOverride: MockState.iconFor("sound")
         }
     }
 }

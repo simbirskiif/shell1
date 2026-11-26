@@ -604,7 +604,7 @@ Item {
         readonly property bool inGrid: true
         readonly property string key: "bluetooth"
         readonly property string title: "Bluetooth"
-        readonly property string icon: "\uf293"
+        readonly property string icon: SystemIcons.bluetoothGlyph
         readonly property bool active: BluetoothBackend.enabled
         readonly property string subtitle: BluetoothBackend.connectedSummary
         readonly property Component view: Component { PanelBluetooth {} }
@@ -649,8 +649,8 @@ Item {
         readonly property bool inGrid: true
         readonly property string key: "sound"
         readonly property string title: "Sound"
-        readonly property string icon: AudioService.outputMuted ? "\uf026" : "\uf028"
-        readonly property bool active: AudioService.available && !AudioService.outputMuted
+        readonly property string icon: SystemIcons.soundGlyph
+        readonly property bool active: SystemIcons.soundAudible
         readonly property string subtitle: AudioService.outputSummary
         readonly property Component view: Component { PanelSound {} }
 
@@ -761,7 +761,7 @@ Item {
         readonly property bool inGrid: true
         readonly property string key: "brightness"
         readonly property string title: "Brightness"
-        readonly property string icon: "\uf185"
+        readonly property string icon: SystemIcons.brightnessGlyph
         readonly property bool active: BrightnessService.available
         readonly property string subtitle: BrightnessService.summary
         readonly property Component view: Component { PanelBrightness {} }

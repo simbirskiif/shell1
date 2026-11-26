@@ -39,7 +39,7 @@ Item {
             readonly property bool shown: BrightnessService.targets.length === 0
             visible: shown
             height: shown ? implicitHeight : 0
-            icon: "\uf185"
+            icon: SystemIcons.brightnessGlyph
             title: "No displays"
             description: "The compositor reported no screens"
             actionText: ""

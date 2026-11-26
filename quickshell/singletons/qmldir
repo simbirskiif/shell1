@@ -2,6 +2,7 @@ singleton Theme 1.0 Theme.qml
 singleton Wal 1.0 Wal.qml
 singleton UiState 1.0 UiState.qml
 singleton SettingsWindowState 1.0 SettingsWindowState.qml
+singleton SystemIcons 1.0 SystemIcons.qml
 singleton DockState 1.0 DockState.qml
 singleton DockApps 1.0 DockApps.qml
 singleton DockSettings 1.0 DockSettings.qml

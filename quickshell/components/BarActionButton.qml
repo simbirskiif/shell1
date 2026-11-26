@@ -2,19 +2,20 @@ import QtQuick
 import "quick"
 import "../singletons"
 
-// Кнопка одного быстрого действия в баре: Wi-Fi, Bluetooth или яркость.
-// Внешний вид повторяет соседние кнопки бара; нажатие обрабатывает Bar.qml,
-// потому что у действий разная семантика (тумблер радио или открытие панели).
+// Кнопка одного действия в баре: Wi-Fi, Bluetooth, яркость или звук.
+// Внешний вид повторяет соседние кнопки; состояние берётся из сервисов
+// (SystemIcons), а нажатие обрабатывает Bar.qml — у действий разная
+// семантика: открыть панель или переключить radio.
 Rectangle {
     id: root
 
-    required property string kind // wifi | bluetooth | brightness
+    required property string kind // wifi | bluetooth | brightness | sound
 
     property bool wifiEnabled: true
     property bool wifiConnected: false
     property int wifiSignal: 0
     property bool bluetoothEnabled: true
-    // Пользовательская иконка; пусто — штатный вид действия.
+    // Пользовательская иконка; пусто — штатный значок состояния.
     property string iconOverride: ""
 
     signal clicked()
@@ -36,7 +37,7 @@ Rectangle {
         anchors.verticalCenterOffset: 1
         spacing: 8
 
-        // Wi-Fi: живой значок сигнала либо выбранный глиф.
+        // --- Wi-Fi: живой значок сигнала либо выбранный глиф ---------------
         WifiStatusIcon {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.kind === "wifi" && !root.custom
@@ -59,12 +60,12 @@ Rectangle {
             font.pixelSize: Theme.iconSize.sm
         }
 
-        // Bluetooth: значок есть у Font Awesome; цвет показывает radio.
+        // --- Bluetooth: цвет показывает radio и подключение ----------------
         Text {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.kind === "bluetooth" && !root.custom
-            text: "\uf293"
-            color: root.bluetoothEnabled ? Theme.scheme.onSurface : Theme.quickTextDim
+            text: SystemIcons.bluetoothGlyph
+            color: SystemIcons.bluetoothColor
             font.family: Theme.iconFontFamily
             font.pixelSize: Theme.iconSize.sm
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
@@ -74,18 +75,19 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.kind === "bluetooth" && root.custom
             text: root.iconOverride
-            color: root.bluetoothEnabled ? Theme.scheme.onSurface : Theme.quickTextDim
+            color: SystemIcons.bluetoothColor
             font.family: Theme.iconFontFamily
             font.pixelSize: Theme.iconSize.sm
             Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
         }
 
-        // Яркость: солнце; действие открывает панель яркости.
+        // --- Яркость: солнце, насыщенность зависит от уровня ---------------
         Text {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.kind === "brightness" && !root.custom
-            text: "\uf185"
-            color: Theme.scheme.onSurface
+            text: SystemIcons.brightnessGlyph
+            color: SystemIcons.brightnessColor
+            opacity: SystemIcons.brightnessOpacity
             font.family: Theme.iconFontFamily
             font.pixelSize: Theme.iconSize.sm
         }
@@ -94,10 +96,48 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.kind === "brightness" && root.custom
             text: root.iconOverride
-            color: Theme.scheme.onSurface
+            color: SystemIcons.brightnessColor
+            opacity: SystemIcons.brightnessOpacity
             font.family: Theme.iconFontFamily
             font.pixelSize: Theme.iconSize.sm
         }
+
+        // --- Звук: динамик/тихий/выключенный -------------------------------
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.kind === "sound" && !root.custom
+            text: SystemIcons.soundGlyph
+            color: SystemIcons.soundColor
+            font.family: Theme.iconFontFamily
+            font.pixelSize: Theme.iconSize.sm
+            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: root.kind === "sound" && root.custom
+            text: root.iconOverride
+            color: SystemIcons.soundColor
+            font.family: Theme.iconFontFamily
+            font.pixelSize: Theme.iconSize.sm
+            Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
+        }
+    }
+
+    // Точка подключённого Bluetooth-устройства: цвет значка мало заметен
+    // на 16-пиксельном глифе.
+    Rectangle {
+        visible: root.kind === "bluetooth" && SystemIcons.bluetoothConnected
+        anchors.right: parent.right
+        anchors.rightMargin: 5
+        anchors.top: parent.top
+        anchors.topMargin: 5
+        width: 6
+        height: 6
+        radius: width / 2
+        color: Theme.primary
+        border.width: 1
+        border.color: Theme.barBackground
     }
 
     MouseArea {
