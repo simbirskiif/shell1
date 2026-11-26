@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import ".."
 import "../quick"
 import "../../singletons"
 
@@ -26,6 +27,11 @@ PanelWindow {
                                       ? root.playerScreen.height - Theme.barHeight - Theme.space.lg
                                       : 700
 
+    // Появление/закрытие как у остальных панелей: карточка проявляется
+    // и слегка масштабируется из правого верхнего угла.
+    property bool shown: false
+    property bool closing: false
+
     // Позиция MPRIS приходит редко; между событиями дорисовываем её по часам,
     // а на positionChanged снова привязываемся к реальной позиции.
     property real displayPosition: 0
@@ -33,7 +39,7 @@ PanelWindow {
     property double anchorWall: 0
 
     screen: playerScreen
-    visible: root.requested
+    visible: root.shown || root.closing
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
 
@@ -49,6 +55,51 @@ PanelWindow {
     WlrLayershell.keyboardFocus: root.visible ? WlrKeyboardFocus.Exclusive
                                               : WlrKeyboardFocus.None
     WlrLayershell.focusable: root.visible
+
+    function appear() {
+        closeTimer.stop();
+        root.closing = false;
+        root.shown = true;
+    }
+
+    function disappear() {
+        if (!root.shown && !root.closing)
+            return;
+        root.shown = false;
+        root.closing = true;
+        closeTimer.restart();
+    }
+
+    function syncVisibility() {
+        if (root.requested)
+            root.appear();
+        else
+            root.disappear();
+    }
+
+    Component.onCompleted: root.syncVisibility()
+
+    Connections {
+        target: PlayerWindowState
+
+        function onOpenedChanged() {
+            root.syncVisibility();
+        }
+
+        function onScreenNameChanged() {
+            root.syncVisibility();
+        }
+    }
+
+    Timer {
+        id: closeTimer
+        interval: Theme.motionMedium1
+        repeat: false
+        onTriggered: {
+            root.closing = false;
+            root.shown = false;
+        }
+    }
 
     Shortcut {
         sequence: "Escape"
@@ -111,6 +162,7 @@ PanelWindow {
 
     MouseArea {
         anchors.fill: parent
+        enabled: root.shown && !root.closing
         onClicked: PlayerWindowState.close()
     }
 
@@ -130,6 +182,28 @@ PanelWindow {
         border.width: 1
         border.color: Theme.outlineVariant
         clip: true
+        opacity: root.shown && !root.closing ? 1 : 0
+        scale: root.shown && !root.closing ? 1 : Theme.motionFadeThroughScale
+        transformOrigin: Item.TopRight
+
+        Behavior on opacity {
+            MotionNumber {
+                duration: Theme.motionMedium1
+                curve: Theme.curveEmphasizedDecelerate
+            }
+        }
+        Behavior on scale {
+            MotionNumber {
+                duration: Theme.motionMedium1
+                curve: Theme.curveEmphasizedDecelerate
+            }
+        }
+        Behavior on height {
+            MotionNumber {
+                duration: Theme.motionMedium2
+                curve: Theme.curveEmphasized
+            }
+        }
 
         MouseArea {
             anchors.fill: parent
@@ -145,7 +219,7 @@ PanelWindow {
 
             Text {
                 anchors.left: parent.left
-                anchors.leftMargin: Theme.space.lg
+                anchors.leftMargin: Theme.space.xl
                 anchors.right: closeButton.left
                 anchors.rightMargin: Theme.space.sm
                 anchors.verticalCenter: parent.verticalCenter
@@ -159,7 +233,7 @@ PanelWindow {
                 id: closeButton
 
                 anchors.right: parent.right
-                anchors.rightMargin: Theme.space.sm
+                anchors.rightMargin: Theme.space.lg
                 anchors.verticalCenter: parent.verticalCenter
                 width: Theme.iconButtonSize
                 height: Theme.iconButtonSize
