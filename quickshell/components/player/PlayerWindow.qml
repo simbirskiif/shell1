@@ -4,8 +4,8 @@ import Quickshell.Wayland
 import "../quick"
 import "../../singletons"
 
-// Панель плеера: правая карточка под баром, как центр уведомлений.
-// Открывается иконкой плеера; отдельного модального окна с затемнением нет.
+// Панель плеера в стиле остальных панелей оболочки: правая карточка под
+// баром, M3-строки, левое выравнивание текста, стандартные отступы и кнопки.
 PanelWindow {
     id: root
 
@@ -22,16 +22,15 @@ PanelWindow {
                                      ? Math.max(0, Math.min(1,
                                            root.displayPosition / root.player.length))
                                      : 0
-
-    // Позиция MPRIS приходит редко (иногда раз в несколько секунд), поэтому
-    // между событиями дорисовываем её локально по часам, а при каждом
-    // positionChanged снова привязываемся к реальной позиции плеера.
-    property real displayPosition: 0
-    property real anchorPosition: 0
-    property double anchorWall: 0
     readonly property real maxHeight: root.playerScreen
                                       ? root.playerScreen.height - Theme.barHeight - Theme.space.lg
                                       : 700
+
+    // Позиция MPRIS приходит редко; между событиями дорисовываем её по часам,
+    // а на positionChanged снова привязываемся к реальной позиции.
+    property real displayPosition: 0
+    property real anchorPosition: 0
+    property double anchorWall: 0
 
     screen: playerScreen
     visible: root.requested
@@ -55,6 +54,26 @@ PanelWindow {
         sequence: "Escape"
         enabled: root.visible
         onActivated: PlayerWindowState.close()
+    }
+
+    function syncPosition() {
+        if (!root.player) {
+            root.displayPosition = 0;
+            root.anchorPosition = 0;
+            root.anchorWall = 0;
+            return;
+        }
+        const position = Number(root.player.position) || 0;
+        root.anchorPosition = position;
+        root.anchorWall = Date.now();
+        root.displayPosition = position;
+    }
+
+    function formatTime(value) {
+        const total = Math.max(0, Math.floor(Number(value) || 0));
+        const minutes = Math.floor(total / 60);
+        const seconds = total % 60;
+        return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
     }
 
     onPlayerChanged: root.syncPosition()
@@ -90,27 +109,6 @@ PanelWindow {
         }
     }
 
-    function syncPosition() {
-        if (!root.player) {
-            root.displayPosition = 0;
-            root.anchorPosition = 0;
-            root.anchorWall = 0;
-            return;
-        }
-        const position = Number(root.player.position) || 0;
-        root.anchorPosition = position;
-        root.anchorWall = Date.now();
-        root.displayPosition = position;
-    }
-
-    function formatTime(value) {
-        const total = Math.max(0, Math.floor(Number(value) || 0));
-        const minutes = Math.floor(total / 60);
-        const seconds = total % 60;
-        return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
-    }
-
-    // Клик мимо панели закрывает её; сама панель события проглатывает.
     MouseArea {
         anchors.fill: parent
         onClicked: PlayerWindowState.close()
@@ -125,7 +123,7 @@ PanelWindow {
         anchors.rightMargin: Theme.barPadding
         width: Math.min(Theme.notificationCenterWidth, parent.width - Theme.space.xl * 2)
         height: Math.min(root.maxHeight,
-                         Math.max(320, header.height + 1 + Theme.notificationPadding * 2
+                         Math.max(220, header.height + 1 + Theme.notificationPadding * 2
                                   + contentColumn.implicitHeight))
         radius: Theme.shape.xl
         color: Theme.panelSurface
@@ -222,74 +220,85 @@ PanelWindow {
                 id: contentColumn
 
                 width: scroller.width
-                spacing: Theme.space.lg
+                spacing: Theme.notificationSpacing
 
-                // Обложка; без арта — тональная заглушка с ноткой.
-                Rectangle {
-                    width: Math.min(180, contentColumn.width)
-                    height: width
-                    x: (contentColumn.width - width) / 2
-                    radius: Theme.shape.lg
-                    color: Theme.surfaceContainerHighest
-                    clip: true
-
-                    Image {
-                        id: cover
-
-                        anchors.fill: parent
-                        source: root.player ? (root.player.trackArtUrl || "") : ""
-                        visible: source !== "" && status === Image.Ready
-                        fillMode: Image.PreserveAspectCrop
-                        asynchronous: true
-                        sourceSize.width: 360
-                        sourceSize.height: 360
-                    }
-
-                    Text {
-                        anchors.centerIn: parent
-                        visible: !root.player || !root.player.trackArtUrl
-                                 || cover.status !== Image.Ready
-                        text: "\uf001"
-                        color: Theme.scheme.onSurfaceVariant
-                        font.family: Theme.iconFontFamily
-                        font.pixelSize: 38
-                    }
-                }
-
-                Column {
+                // Строка «сейчас играет»: обложка слева, текст слева, как
+                // строки остальных панелей. Без большого центрированного арта.
+                Item {
                     width: parent.width
-                    spacing: Theme.space.xs
+                    height: Math.max(88, info.implicitHeight)
 
-                    Text {
-                        width: parent.width
-                        text: root.player ? (root.player.trackTitle || "Без названия")
-                                          : "Ничего не играет"
-                        color: Theme.scheme.onSurface
-                        font: Theme.typeTitleMedium
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.WordWrap
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
+                    Rectangle {
+                        id: coverBox
+
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 88
+                        height: 88
+                        radius: Theme.shape.md
+                        color: Theme.surfaceContainerHighest
+                        clip: true
+
+                        Image {
+                            id: cover
+
+                            anchors.fill: parent
+                            source: root.player ? (root.player.trackArtUrl || "") : ""
+                            visible: source !== "" && status === Image.Ready
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            sourceSize.width: 176
+                            sourceSize.height: 176
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            visible: !root.player || !root.player.trackArtUrl
+                                     || cover.status !== Image.Ready
+                            text: "\uf001"
+                            color: Theme.scheme.onSurfaceVariant
+                            font.family: Theme.iconFontFamily
+                            font.pixelSize: 30
+                        }
                     }
 
-                    Text {
-                        width: parent.width
-                        text: root.player ? (root.player.trackArtist || "Неизвестный исполнитель")
-                                          : "Запустите плеер с MPRIS"
-                        color: Theme.scheme.onSurfaceVariant
-                        font: Theme.typeBodyMedium
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideRight
-                    }
+                    Column {
+                        id: info
 
-                    Text {
-                        width: parent.width
-                        visible: root.player && (root.player.trackAlbum || "") !== ""
-                        text: root.player ? root.player.trackAlbum : ""
-                        color: Theme.scheme.onSurfaceVariant
-                        font: Theme.typeBodySmall
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideRight
+                        anchors.left: coverBox.right
+                        anchors.leftMargin: Theme.space.md
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: Theme.space.xs
+
+                        Text {
+                            width: parent.width
+                            text: root.player ? (root.player.trackTitle || "Без названия")
+                                              : "Ничего не играет"
+                            color: Theme.scheme.onSurface
+                            font: Theme.typeTitleMedium
+                            wrapMode: Text.WordWrap
+                            maximumLineCount: 2
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            width: parent.width
+                            text: root.player ? (root.player.trackArtist || "Неизвестный исполнитель")
+                                              : "Запустите плеер с MPRIS"
+                            color: Theme.scheme.onSurfaceVariant
+                            font: Theme.typeBodyMedium
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            width: parent.width
+                            visible: root.player && (root.player.trackAlbum || "") !== ""
+                            text: root.player ? root.player.trackAlbum : ""
+                            color: Theme.scheme.onSurfaceVariant
+                            font: Theme.typeBodySmall
+                            elide: Text.ElideRight
+                        }
                     }
                 }
 
@@ -359,38 +368,26 @@ PanelWindow {
                 }
 
                 /*
-                 * Спектр в панели отключён: он живёт в иконке бара и
-                 * настраивается в разделе «Плеер» окна настроек.
+                 * Спектр в самой панели отключён: он живёт в иконке бара
+                 * и настраивается в разделе «Плеер» окна настроек.
                  * Код оставлен, чтобы можно было вернуть большие полосы.
                  *
-                 *                 Column {
-                 *                     width: parent.width
-                 *                     spacing: Theme.space.xs
-                 *
-                 *                     SettingsSwitchRow {
-                 *                         title: "Спектр"
-                 *                         description: "Реальный анализ аудиопотока (parec + БПФ)"
-                 *                         checked: SpectrumService.enabled
-                 *                         onToggled: SpectrumService.enabled = !SpectrumService.enabled
-                 *                     }
-                 *
-                 *                     SpectrumBars {
-                 *                         width: parent.width
-                 *                         height: 64
-                 *                         bands: SpectrumService.bands
-                 *                         bars: 20
-                 *                         gap: 3
-                 *                         minBarHeight: 2
-                 *                         barColor: Theme.primary
-                 *                         visible: SpectrumService.enabled
-                 *                     }
-                 *                 }
+                 * SpectrumBars {
+                 *     width: parent.width
+                 *     height: 64
+                 *     bands: SpectrumService.bands
+                 *     bars: 20
+                 *     gap: 3
+                 *     minBarHeight: 2
+                 *     barColor: Theme.primary
+                 * }
                  */
             }
         }
     }
 
-    // Кнопка управления плеером в стиле M3.
+    // Кнопка управления плеером в стиле системных icon button: круг 40,
+    // у play — primary-заливка. Без обводок, которых нет у других кнопок.
     component PlayerControl: Item {
         id: control
 
@@ -400,7 +397,7 @@ PanelWindow {
 
         signal clicked()
 
-        width: control.primary ? 52 : 40
+        width: control.primary ? 52 : Theme.iconButtonSize
         height: width
         opacity: control.enabled ? 1 : Theme.disabledContent
 
@@ -408,8 +405,6 @@ PanelWindow {
             anchors.fill: parent
             radius: Theme.shape.full
             color: control.primary ? Theme.primary : "transparent"
-            border.width: control.primary ? 0 : 1
-            border.color: Theme.outlineVariant
             Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
         }
 
@@ -428,7 +423,7 @@ PanelWindow {
             text: control.icon
             color: control.primary ? Theme.scheme.onPrimary : Theme.scheme.onSurface
             font.family: Theme.iconFontFamily
-            font.pixelSize: control.primary ? Theme.iconSize.md : Theme.iconSize.sm
+            font.pixelSize: control.primary ? Theme.iconSize.lg : Theme.iconSize.md
         }
 
         MouseArea {
