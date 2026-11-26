@@ -29,12 +29,13 @@ Rectangle {
     SpectrumBars {
         anchors.centerIn: parent
         visible: root.showSpectrum
-        width: 20
+        width: 22
         height: 16
         bands: SpectrumService.bands
-        bars: 5
-        gap: 1.2
-        minBarHeight: 2
+        bars: 4
+        gap: 2
+        centered: true
+        minBarHeight: 3
         barColor: Theme.primary
     }
 

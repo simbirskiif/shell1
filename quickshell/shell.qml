@@ -150,7 +150,7 @@ ShellRoot {
         }
     }
 
-    // Окно плеера — отдельный оверлей, как у настроек.
+    // Панель плеера — правый оверлей под баром, как центр уведомлений.
     Variants {
         model: Quickshell.screens
 
@@ -384,7 +384,7 @@ ShellRoot {
         }
     }
 
-    // Окно плеера снаружи:
+    // Панель плеера снаружи:
     //   qs ipc call player open
     //   qs ipc call player spectrum false
     IpcHandler {

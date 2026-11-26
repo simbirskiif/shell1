@@ -10,6 +10,9 @@ Item {
     property int bars: 5
     property real gap: 1.5
     property real minBarHeight: 2
+    // У иконки бара полосы растут из центра, как в эквалайзере виджета
+    // музыки; в большой панели — от нижнего края.
+    property bool centered: false
     property color barColor: Theme.primary
 
     function valueAt(index) {
@@ -35,7 +38,7 @@ Item {
             width: root.barWidth
             height: Math.max(root.minBarHeight, root.height * root.valueAt(index))
             x: index * (root.barWidth + root.gap)
-            y: root.height - height
+            y: root.centered ? (root.height - height) / 2 : root.height - height
             radius: width / 2
             color: root.barColor
             antialiasing: true

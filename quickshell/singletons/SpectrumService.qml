@@ -109,5 +109,14 @@ Singleton {
             // ругаться при перезапуске аудиосервера.
             onRead: line => console.warn("[spectrum]", line)
         }
+
+        // Последняя строка могла прийти уже после смены состояния: когда
+        // процесс остановлен, спектр должен быть нулевым.
+        onRunningChanged: {
+            if (!running)
+                root.bands = root.zeroBands();
+        }
+
+        onExited: root.bands = root.zeroBands()
     }
 }

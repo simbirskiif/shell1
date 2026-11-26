@@ -5,8 +5,8 @@ import "../quick"
 import "../settings"
 import "../../singletons"
 
-// Окно плеера: обложка, трек, управление, перемотка и живой спектр.
-// Открывается иконкой плеера в баре; состояние — PlayerWindowState.
+// Панель плеера: правая карточка под баром, как центр уведомлений.
+// Открывается иконкой плеера; отдельного модального окна с затемнением нет.
 PanelWindow {
     id: root
 
@@ -22,6 +22,9 @@ PanelWindow {
                                      : 0
     readonly property bool canSeek: root.player !== null && root.player.canSeek
                                     && root.player.positionSupported
+    readonly property real maxHeight: root.playerScreen
+                                      ? root.playerScreen.height - Theme.barHeight - Theme.space.lg
+                                      : 700
 
     screen: playerScreen
     visible: root.requested
@@ -54,24 +57,25 @@ PanelWindow {
         return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
     }
 
-    Rectangle {
+    // Клик мимо панели закрывает её; сама панель события проглатывает.
+    MouseArea {
         anchors.fill: parent
-        color: Theme.scrimOverlay
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: PlayerWindowState.close()
-        }
+        onClicked: PlayerWindowState.close()
     }
 
     Rectangle {
         id: card
 
-        anchors.centerIn: parent
-        width: Math.max(360, Math.min(480, parent.width - Theme.space.xxxl * 2))
-        height: Math.max(360, Math.min(760, parent.height - Theme.space.xxxl * 2))
+        anchors.top: parent.top
+        anchors.topMargin: Theme.barHeight + Theme.space.xs
+        anchors.right: parent.right
+        anchors.rightMargin: Theme.barPadding
+        width: Math.min(380, parent.width - Theme.space.xl * 2)
+        height: Math.min(root.maxHeight,
+                         Math.max(320, header.height + 1 + Theme.space.lg * 2
+                                  + contentColumn.implicitHeight))
         radius: Theme.shape.xl
-        color: Theme.surfaceContainerLow
+        color: Theme.panelSurface
         border.width: 1
         border.color: Theme.outlineVariant
         clip: true
@@ -86,15 +90,18 @@ PanelWindow {
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
-            height: 64
+            height: Theme.appBarHeight
 
             Text {
                 anchors.left: parent.left
-                anchors.leftMargin: Theme.space.xl
+                anchors.leftMargin: Theme.space.lg
+                anchors.right: closeButton.left
+                anchors.rightMargin: Theme.space.sm
                 anchors.verticalCenter: parent.verticalCenter
                 text: "Плеер"
                 color: Theme.scheme.onSurface
                 font: Theme.typeTitleLarge
+                elide: Text.ElideRight
             }
 
             Item {
@@ -112,6 +119,7 @@ PanelWindow {
                     color: closeHover.containsMouse
                            ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
                            : "transparent"
+                    Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
                 }
 
                 Text {
@@ -144,13 +152,13 @@ PanelWindow {
         }
 
         Flickable {
-            id: content
+            id: scroller
 
             anchors.top: headerDivider.bottom
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            anchors.margins: Theme.space.xl
+            anchors.margins: Theme.space.lg
             contentWidth: width
             contentHeight: contentColumn.implicitHeight
             clip: true
@@ -160,13 +168,12 @@ PanelWindow {
             Column {
                 id: contentColumn
 
-                width: content.width
+                width: scroller.width
                 spacing: Theme.space.lg
 
-                // Обложка: скруглённый квадрат, при отсутствии арта —
-                // тональная заглушка с ноткой.
+                // Обложка; без арта — тональная заглушка с ноткой.
                 Rectangle {
-                    width: Math.min(200, contentColumn.width)
+                    width: Math.min(180, contentColumn.width)
                     height: width
                     x: (contentColumn.width - width) / 2
                     radius: Theme.shape.lg
@@ -181,8 +188,8 @@ PanelWindow {
                         visible: source !== "" && status === Image.Ready
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
-                        sourceSize.width: 440
-                        sourceSize.height: 440
+                        sourceSize.width: 360
+                        sourceSize.height: 360
                     }
 
                     Text {
@@ -192,7 +199,7 @@ PanelWindow {
                         text: "\uf001"
                         color: Theme.scheme.onSurfaceVariant
                         font.family: Theme.iconFontFamily
-                        font.pixelSize: 44
+                        font.pixelSize: 38
                     }
                 }
 
@@ -205,7 +212,7 @@ PanelWindow {
                         text: root.player ? (root.player.trackTitle || "Без названия")
                                           : "Ничего не играет"
                         color: Theme.scheme.onSurface
-                        font: Theme.typeTitleLarge
+                        font: Theme.typeTitleMedium
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.WordWrap
                         maximumLineCount: 2
@@ -295,7 +302,7 @@ PanelWindow {
 
                 Column {
                     width: parent.width
-                    spacing: Theme.space.sm
+                    spacing: Theme.space.xs
 
                     SettingsSwitchRow {
                         title: "Спектр"
@@ -306,9 +313,9 @@ PanelWindow {
 
                     SpectrumBars {
                         width: parent.width
-                        height: 76
+                        height: 64
                         bands: SpectrumService.bands
-                        bars: 24
+                        bars: 20
                         gap: 3
                         minBarHeight: 2
                         barColor: Theme.primary
@@ -329,7 +336,7 @@ PanelWindow {
 
         signal clicked()
 
-        width: control.primary ? 56 : 44
+        width: control.primary ? 52 : 40
         height: width
         opacity: control.enabled ? 1 : Theme.disabledContent
 
@@ -357,7 +364,7 @@ PanelWindow {
             text: control.icon
             color: control.primary ? Theme.scheme.onPrimary : Theme.scheme.onSurface
             font.family: Theme.iconFontFamily
-            font.pixelSize: control.primary ? Theme.iconSize.lg : Theme.iconSize.md
+            font.pixelSize: control.primary ? Theme.iconSize.md : Theme.iconSize.sm
         }
 
         MouseArea {
