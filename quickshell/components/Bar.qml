@@ -52,7 +52,7 @@ PanelWindow {
         anchors.right: parent.right
         anchors.rightMargin: Theme.barPadding
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 6
+        spacing: Theme.barIconGap
 
         Repeater {
             model: MockState.barItems

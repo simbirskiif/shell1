@@ -185,6 +185,11 @@ Singleton {
     // Бар
     readonly property int barHeight: 48
     readonly property int barPadding: 12
+    // Иконка бара живёт в квадрате 40×40, соседние слоты разделяет 4:
+    // центры всех значков идут с шагом 44 — промежутки ровные независимо
+    // от того, одна это кнопка или группа из трёх.
+    readonly property int barIconSlot: root.iconButtonSize
+    readonly property int barIconGap: root.space.xs
     readonly property color barBackground: root.barSurface
     readonly property color barForeground: root.scheme.onSurface
 

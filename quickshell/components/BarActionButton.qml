@@ -22,8 +22,8 @@ Rectangle {
 
     readonly property bool custom: root.iconOverride !== ""
 
-    implicitWidth: content.implicitWidth + 24
-    implicitHeight: Theme.iconButtonSize
+    implicitWidth: Theme.barIconSlot
+    implicitHeight: Theme.barIconSlot
     radius: Theme.controlRadius
     color: hover.containsMouse
            ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)

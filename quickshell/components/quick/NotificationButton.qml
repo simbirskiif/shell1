@@ -12,8 +12,8 @@ Rectangle {
 
     signal clicked()
 
-    implicitWidth: Theme.iconButtonSize
-    implicitHeight: Theme.iconButtonSize
+    implicitWidth: Theme.barIconSlot
+    implicitHeight: Theme.barIconSlot
     radius: Theme.controlRadius
     color: root.opened ? Theme.secondaryContainer
                        : (hover.containsMouse ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)

@@ -23,7 +23,8 @@ Row {
     readonly property bool showCustom: root.custom
         && (root.previewMode || PrivacyService.anyActive)
 
-    spacing: 2
+    // Орбы идут по той же сетке, что кнопки бара: слот 40 и зазор 4.
+    spacing: Theme.barIconGap
 
     PrivacyOrb {
         visible: root.showCustom

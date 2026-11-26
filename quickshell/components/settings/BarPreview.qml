@@ -76,7 +76,7 @@ Item {
             anchors.right: parent.right
             anchors.rightMargin: Theme.barPadding
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 6
+            spacing: Theme.barIconGap
 
             Repeater {
                 id: previewRepeater
@@ -92,7 +92,7 @@ Item {
                     readonly property bool selected: root.selectedKey === itemKey
 
                     width: previewLoader.implicitWidth + Theme.space.md
-                    height: Theme.iconButtonSize + Theme.space.sm
+                    height: Theme.barIconSlot + Theme.space.sm
                     z: root.draggingKey === itemKey ? 50 : 0
 
                     // Выделение выбранного. Дроп-цель показывает отдельный

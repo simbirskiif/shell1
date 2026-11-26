@@ -17,8 +17,8 @@ Rectangle {
                                              ? Theme.scheme.onSurface
                                              : Theme.scheme.onSurfaceVariant)
 
-    implicitWidth: Theme.iconButtonSize
-    implicitHeight: Theme.iconButtonSize
+    implicitWidth: Theme.barIconSlot
+    implicitHeight: Theme.barIconSlot
     radius: Theme.controlRadius
     color: hover.containsMouse
            ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)

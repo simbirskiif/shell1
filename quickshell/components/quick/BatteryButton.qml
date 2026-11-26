@@ -17,42 +17,58 @@ Item {
 
     signal clicked()
 
-    // M3: кнопка-пилюля, как соседние действия в баре.
-    implicitWidth: content.implicitWidth + 20
-    implicitHeight: Theme.iconButtonSize
+    // M3: кнопка-пилюля, как соседние действия в баре. Индикатор и процент
+    // занимают по слоту общей сетки: при включённом проценте кнопка
+    // расширяется влево ровно на слот с зазором, поэтому батарейка не
+    // съезжает с шага между иконками.
+    implicitWidth: iconSlot.width
+                   + (percentSlot.visible ? Theme.barIconGap + percentSlot.width : 0)
+    implicitHeight: Theme.barIconSlot
 
     Row {
         id: content
-        anchors.centerIn: parent
-        spacing: 8
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: Theme.barIconGap
 
-        BatteryIndicator {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.iconOverride === ""
-            level: root.level
-            charging: root.charging
+        Item {
+            id: iconSlot
+            width: Theme.barIconSlot
+            height: Theme.barIconSlot
+
+            BatteryIndicator {
+                anchors.centerIn: parent
+                visible: root.iconOverride === ""
+                level: root.level
+                charging: root.charging
+            }
+
+            Text {
+                anchors.centerIn: parent
+                anchors.verticalCenterOffset: 1
+                visible: root.iconOverride !== ""
+                text: root.iconOverride
+                color: Theme.quickText
+                font.family: Theme.iconFontFamily
+                font.pixelSize: Theme.iconSize.sm
+            }
         }
 
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.verticalCenterOffset: 1
-            visible: root.iconOverride !== ""
-            text: root.iconOverride
-            color: Theme.quickText
-            font.family: Theme.iconFontFamily
-            font.pixelSize: Theme.iconSize.sm
-        }
-
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            // оптическое выравнивание: строка шрифта выше центра иконки
-            anchors.verticalCenterOffset: 1
+        Item {
+            id: percentSlot
+            width: Theme.barIconSlot
+            height: Theme.barIconSlot
             visible: root.showPercent
-            text: root.level + "%"
-            color: Theme.quickText
-            font: Theme.typeLabelLarge
-        }
 
+            Text {
+                anchors.centerIn: parent
+                // оптическое выравнивание: строка шрифта выше центра иконки
+                anchors.verticalCenterOffset: 1
+                text: root.level + "%"
+                color: Theme.quickText
+                font: Theme.typeLabelLarge
+            }
+        }
     }
 
     Rectangle {
