@@ -44,6 +44,11 @@ PanelWindow {
     exclusiveZone: 0
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-osd"
+
+    BackgroundEffect.blurRegion: Region {
+        item: card
+        radius: Theme.shape.xl
+    }
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.focusable: false
 
@@ -99,7 +104,7 @@ PanelWindow {
         // остальных всплывашек, форма — xl.
         radius: Theme.shape.xl
         contentInsideBorder: false
-        color: Theme.sheetSurface
+        color: Theme.sheetBlurSurface
         border.width: 1
         border.color: Theme.outlineVariant
 

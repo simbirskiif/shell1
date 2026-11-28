@@ -33,6 +33,11 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-hypr-profile"
+
+    BackgroundEffect.blurRegion: Region {
+        item: card
+        radius: Theme.shape.xl
+    }
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
     function syncCursor() {
@@ -82,7 +87,7 @@ PanelWindow {
         width: 340
         height: column.implicitHeight + Theme.notificationPadding * 2
         radius: Theme.shape.xl
-        color: Theme.surfaceContainer
+        color: Theme.sheetBlurSurface
         border.width: 1
         border.color: Theme.outlineVariant
 

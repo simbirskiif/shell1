@@ -40,6 +40,11 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-window-switcher"
+
+    BackgroundEffect.blurRegion: Region {
+        item: panel
+        radius: Theme.shape.xl
+    }
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
     function iconFor(appClass, title) {
@@ -65,7 +70,7 @@ PanelWindow {
         width: root.rowWidth + Theme.space.xxl
         height: column.implicitHeight + Theme.space.xxl
         radius: Theme.shape.xl
-        color: Theme.panelSurface
+        color: Theme.panelBlurSurface
         border.width: 1
         border.color: Theme.outlineVariant
 

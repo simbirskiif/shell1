@@ -84,6 +84,13 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-notification-center"
+
+    // Блюр фона запрашивается у композитора через ext-background-effect-v1.
+    // Область — сама карточка с её скруглением; без Hyprland-правил.
+    BackgroundEffect.blurRegion: Region {
+        item: panel
+        radius: Theme.shape.xl
+    }
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
     Connections {
@@ -148,7 +155,7 @@ PanelWindow {
         width: Theme.notificationCenterWidth
         height: Math.min(layout.implicitHeight + Theme.notificationPadding * 2, root.maxHeight)
         radius: Theme.shape.xl
-        color: Theme.panelSurface
+        color: Theme.panelBlurSurface
         border.width: 1
         border.color: Theme.outlineVariant
         clip: true

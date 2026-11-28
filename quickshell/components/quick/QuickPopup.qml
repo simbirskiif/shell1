@@ -1,25 +1,37 @@
 import QtQuick
 import ".."
 import Quickshell
+import Quickshell.Hyprland
+import Quickshell.Wayland
 import "../../singletons"
 
 // Выпадающая панель быстрых настроек под кнопкой статуса в баре.
 // Ширина ограничена темой, высота следует за содержимым с анимацией —
 // вместе с кроссфейдом видов это даёт плавное «раскрытие» внутрь.
-PopupWindow {
+//
+// Это отдельная layer-поверхность, а не PopupWindow: только так можно
+// запросить у композитора blur фона через ext-background-effect-v1
+// (PopupWindow — xdg-popup, и Hyprland не применяет к нему background
+// effect). Геометрия та же: правый верхний угол под баром.
+PanelWindow {
     id: root
 
     required property PanelWindow anchorWindow
 
     readonly property string screenName: anchorWindow.screen ? anchorWindow.screen.name : ""
 
-    // Источник правды — UiState. visible выставляем руками, а не биндингом:
-    // окно может погасить и сам композитор (grabFocus при клике мимо),
-    // тогда мы просто синхронизируем состояние обратно.
+    // Источник правды — UiState. visible выставляем руками, чтобы окно
+    // успело проявиться/исчезнуть по анимации карточки.
     visible: false
-    grabFocus: true
+
+    // Время последнего снятия focus-grab. Клик по кнопке статуса уже
+    // закрыл панель через onCleared; этот же клик не должен открыть её
+    // заново.
+    property double grabClearedAt: 0
 
     function toggle() {
+        if (Date.now() - root.grabClearedAt < 150)
+            return;
         UiState.toggle(root.screenName);
     }
 
@@ -62,14 +74,42 @@ PopupWindow {
         }
     }
 
-    // Правый верхний угол попапа — под кнопкой в баре, растёт вниз-влево.
-    anchor.window: anchorWindow
-    anchor.rect.x: anchorWindow.width - Theme.barPadding
-    anchor.rect.y: anchorWindow.height + 4
-    anchor.edges: Edges.Top | Edges.Right
-    anchor.gravity: Edges.Bottom | Edges.Left
+    // Правый верхний угол панели — под кнопкой в баре, растёт вниз-влево.
+    screen: anchorWindow.screen
+    anchors {
+        top: true
+        right: true
+    }
+    margins {
+        top: anchorWindow.height + 4
+        right: Theme.barPadding
+    }
 
     color: "transparent"
+    exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.namespace: "quickshell-quick"
+    WlrLayershell.keyboardFocus: root.visible ? WlrKeyboardFocus.Exclusive
+                                              : WlrKeyboardFocus.None
+    WlrLayershell.focusable: root.visible
+
+    // Фон под карточкой размывает композитор; регион — сама карточка,
+    // чтобы прозрачная полоса под ней не размывала экран.
+    BackgroundEffect.blurRegion: Region {
+        item: card
+        radius: Theme.quickRadius
+    }
+
+    // Клик мимо панели закрывает её. Раньше это делал grabFocus попапа;
+    // у layer-поверхности для этого есть focus-grab Hyprland.
+    HyprlandFocusGrab {
+        windows: [root]
+        active: root.visible && !UiState.swipeActive
+        onCleared: {
+            root.grabClearedAt = Date.now();
+            root.close();
+        }
+    }
 
     // Панель не должна вылезать за экран: высоту ограничиваем,
     // а содержимое уходит в прокрутку.
