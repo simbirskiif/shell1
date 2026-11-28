@@ -109,16 +109,6 @@ PanelWindow {
                                               : WlrKeyboardFocus.None
     WlrLayershell.focusable: root.visible
 
-    // Композиторный blur нужен только в пустом состоянии: когда есть арт,
-    // его место занимает собственный Kawase-слой внутри карточки.
-    BackgroundEffect.blurRegion: (root.shown && !root.closing)
-                                 ? playerBlurRegion : null
-    AnimatedBlurRegion {
-        id: playerBlurRegion
-        target: card
-        cornerRadius: Math.max(0, card.radius - card.border.width)
-    }
-
     // Как у основного окна центра управления: клик вне слоя снимает
     // focus-grab и закрывает панель, не полагаясь только на MouseArea.
     HyprlandFocusGrab {
@@ -382,7 +372,7 @@ PanelWindow {
         radius: root.panelRadius
         color: root.hasArt
                ? Theme.withAlpha(root.artSurface, 0.96)
-               : Theme.panelBlurSurface
+               : Theme.surfaceContainerLow
         border.width: 1
         border.color: Theme.withAlpha(root.artOnSurfaceVariant, 0.24)
         contentInsideBorder: false
@@ -417,26 +407,13 @@ PanelWindow {
                 visible: true
                 Behavior on opacity { SpringEffects {} }
 
-                Image {
-                    id: artSource
-
-                    anchors.fill: parent
-                    source: root.artUrl
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    cache: true
-                    sourceSize.width: Math.max(1, Math.round(width / 2))
-                    sourceSize.height: Math.max(1, Math.round(height / 2))
-                    visible: false
-                }
-
                 ShaderEffectSource {
                     id: artTexture
 
-                    sourceItem: artSource
-                    width: Math.max(1, artSource.width)
-                    height: Math.max(1, artSource.height)
-                    hideSource: true
+                    sourceItem: coverImage
+                    width: Math.max(1, coverImage.width)
+                    height: Math.max(1, coverImage.height)
+                    hideSource: false
                     live: root.visible
                     visible: false
                 }
@@ -561,7 +538,7 @@ PanelWindow {
                             anchors.fill: parent
                             opacity: root.artFade
                             scale: 0.88 + 0.12 * root.artFade
-                            visible: opacity > 0.01
+                            visible: true
                             radius: Theme.shape.xl
                             color: root.artPrimaryContainer
                             Behavior on opacity { SpringEffects {} }
