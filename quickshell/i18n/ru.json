@@ -274,6 +274,8 @@
   "settings.appearance.blur.strength.description": "Радиус обоев блокировки и обложки плеера. На панели не влияет: их blur задаёт композитор.",
   "settings.appearance.blur.strength.title": "Сила размытия",
   "settings.appearance.blur.title": "Блюр и карточки",
+  "settings.appearance.blur.preview.title": "Пример",
+  "settings.appearance.blur.preview.values": "размытие {blur}% · карточка {contrast}%",
   "settings.appearance.loaded": "Загружено: {state} · ключей: {count}",
   "settings.appearance.palette.fallback": "pywal не найден — используется запасная схема",
   "settings.appearance.palette.loaded": "Загружена из pywal",

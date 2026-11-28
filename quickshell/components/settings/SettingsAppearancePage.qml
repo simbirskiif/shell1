@@ -65,7 +65,10 @@ SettingsPage {
             description: I18n.tr("settings.appearance.blur.strength.description")
             value: Theme.blurStrength
             valueText: Math.round(Theme.blurStrength * 100) + "%"
-            onMoved: v => Settings.setValue("blur.strength", v)
+            onMoved: v => {
+                Settings.setValue("blur.strength", v);
+                SettingsWindowState.showBlurPreview();
+            }
         }
 
         SettingsSliderRow {
@@ -73,7 +76,10 @@ SettingsPage {
             description: I18n.tr("settings.appearance.blur.contrast.description")
             value: Theme.cardContrast
             valueText: Math.round(Theme.cardContrast * 100) + "%"
-            onMoved: v => Settings.setValue("blur.cardContrast", v)
+            onMoved: v => {
+                Settings.setValue("blur.cardContrast", v);
+                SettingsWindowState.showBlurPreview();
+            }
         }
     }
 

@@ -399,6 +399,8 @@ ShellRoot {
         function blur(strength: real, contrast: real): string {
             Settings.setValue("blur.strength", Math.max(0, Math.min(1, strength)));
             Settings.setValue("blur.cardContrast", Math.max(0, Math.min(1, contrast)));
+            if (SettingsWindowState.opened)
+                SettingsWindowState.showBlurPreview();
             return state();
         }
 

@@ -366,6 +366,49 @@ PanelWindow {
         }
     }
 
+    // Живой пример блюра: всплывает в правом нижнем углу, пока двигают
+    // ползунки «Сила размытия» / «Контраст карточек». Показывается только
+    // на разделе «Оформление».
+    BlurPreview {
+        id: blurPreview
+
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.margins: Theme.space.lg
+        width: 340
+        height: 230
+        z: 200
+
+        readonly property bool wanted: SettingsWindowState.blurPreviewVisible
+                                       && SettingsWindowState.section === "appearance"
+                                       && root.shown && !root.closing
+
+        visible: wanted
+        opacity: wanted ? 1 : 0
+        scale: wanted ? 1 : 0.96
+
+        Behavior on opacity {
+            MotionNumber {
+                duration: Theme.motionShort4
+                curve: Theme.curveStandard
+            }
+        }
+
+        Behavior on scale {
+            MotionNumber {
+                duration: Theme.motionShort4
+                curve: Theme.curveEmphasized
+            }
+        }
+
+        // Пример не интерактивен, но и не должен закрывать настройки
+        // кликом «мимо карточки».
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: false
+        }
+    }
+
     // Окно выбора иконки поверх карточки настроек.
     BarIconDialog {
         z: 300

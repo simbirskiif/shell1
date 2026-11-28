@@ -267,6 +267,8 @@
   "settings.appearance.blur.strength.description": "Radius for the lock wallpaper and player artwork. Panel blur is compositor-side and is not affected.",
   "settings.appearance.blur.strength.title": "Blur strength",
   "settings.appearance.blur.title": "Blur and cards",
+  "settings.appearance.blur.preview.title": "Preview",
+  "settings.appearance.blur.preview.values": "blur {blur}% · card {contrast}%",
   "settings.appearance.loaded": "Loaded: {state} · keys: {count}",
   "settings.appearance.palette.fallback": "pywal not found — using the fallback scheme",
   "settings.appearance.palette.loaded": "Loaded from pywal",

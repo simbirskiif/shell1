@@ -37,6 +37,23 @@ Singleton {
     // Открытый диалог выбора иконки элемента бара. Пусто — диалог закрыт.
     property string iconEditorKey: ""
 
+    // Живой пример блюра в окне настроек. Показывается при движении
+    // ползунков «Сила размытия» / «Контраст карточек» и сам гаснет.
+    property bool blurPreviewVisible: false
+
+    function showBlurPreview() {
+        root.blurPreviewVisible = true;
+        blurPreviewTimer.restart();
+    }
+
+    Timer {
+        id: blurPreviewTimer
+
+        interval: 1600
+        repeat: false
+        onTriggered: root.blurPreviewVisible = false
+    }
+
     function hasSection(key) {
         for (let i = 0; i < root.sections.length; ++i) {
             if (root.sections[i].key === key)
@@ -77,6 +94,8 @@ Singleton {
 
     function close() {
         root.iconEditorKey = "";
+        root.blurPreviewVisible = false;
+        blurPreviewTimer.stop();
         root.opened = false;
     }
 
