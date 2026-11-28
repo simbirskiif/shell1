@@ -137,37 +137,54 @@ Item {
                     }
                 }
 
-                Row {
-                    spacing: Theme.space.sm
+                // Плитка внутри карточки — пример того, что контраст
+                // действует и на элементы выше blur.
+                Rectangle {
+                    width: parent.width
+                    height: rows.implicitHeight + Theme.space.sm * 2
+                    radius: Theme.shape.sm
+                    color: Theme.blurInnerCard(Theme.surfaceContainerHigh)
 
-                    Text {
-                        text: "\uf1eb"
-                        color: Theme.primary
-                        font.family: Theme.iconFontFamily
-                        font.pixelSize: Theme.iconSize.md
-                    }
+                    Column {
+                        id: rows
 
-                    Text {
-                        text: I18n.tr("quick.tile.wifi")
-                        color: Theme.scheme.onSurface
-                        font: Theme.typeBodyMedium
-                    }
-                }
+                        anchors.fill: parent
+                        anchors.margins: Theme.space.sm
+                        spacing: Theme.space.xs
 
-                Row {
-                    spacing: Theme.space.sm
+                        Row {
+                            spacing: Theme.space.sm
 
-                    Text {
-                        text: "\uf028"
-                        color: Theme.primary
-                        font.family: Theme.iconFontFamily
-                        font.pixelSize: Theme.iconSize.md
-                    }
+                            Text {
+                                text: "\uf1eb"
+                                color: Theme.primary
+                                font.family: Theme.iconFontFamily
+                                font.pixelSize: Theme.iconSize.md
+                            }
 
-                    Text {
-                        text: I18n.tr("quick.tile.sound")
-                        color: Theme.scheme.onSurface
-                        font: Theme.typeBodyMedium
+                            Text {
+                                text: I18n.tr("quick.tile.wifi")
+                                color: Theme.scheme.onSurface
+                                font: Theme.typeBodyMedium
+                            }
+                        }
+
+                        Row {
+                            spacing: Theme.space.sm
+
+                            Text {
+                                text: "\uf028"
+                                color: Theme.primary
+                                font.family: Theme.iconFontFamily
+                                font.pixelSize: Theme.iconSize.md
+                            }
+
+                            Text {
+                                text: I18n.tr("quick.tile.sound")
+                                color: Theme.scheme.onSurface
+                                font: Theme.typeBodyMedium
+                            }
+                        }
                     }
                 }
             }

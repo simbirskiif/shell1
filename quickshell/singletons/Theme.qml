@@ -93,6 +93,15 @@ Singleton {
     readonly property real sheetAlpha: 0.73 + 0.26 * root.cardContrast
     readonly property real artTintOpacity: 0.59 + 0.30 * root.cardContrast
 
+    // Плитки и карточки внутри панелей стоят уже над blur. Их плотность
+    // следует за тем же контрастом, но мягче подложки: при 0.5 — 0.91,
+    // при 1 — непрозрачно, при 0 — сильнее видно размытый фон.
+    readonly property real innerCardAlpha: 0.82 + 0.18 * root.cardContrast
+
+    function blurInnerCard(color) {
+        return root.withAlpha(color, root.innerCardAlpha);
+    }
+
     // Панели поверх окон: фон под ними размывает композитор по запросу
     // BackgroundEffect (ext-background-effect-v1), поэтому плотность ниже,
     // чем у чисто тональной поверхности.

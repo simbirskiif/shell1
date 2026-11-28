@@ -113,8 +113,8 @@ PanelWindow {
                     // Карточки M3: тональный surfaceContainerHigh, выбранная —
                     // secondaryContainer с текстом onSecondaryContainer.
                     radius: Theme.shape.lg
-                    color: tile.selected ? Theme.secondaryContainer
-                                         : Theme.surfaceContainerHigh
+                    color: tile.selected ? Theme.blurInnerCard(Theme.secondaryContainer)
+                                         : Theme.blurInnerCard(Theme.surfaceContainerHigh)
 
                     HoverHandler {
                         id: hover

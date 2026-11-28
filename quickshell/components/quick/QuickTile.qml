@@ -35,7 +35,8 @@ Rectangle {
     implicitWidth: Theme.quickWidth / 2
     implicitHeight: Theme.quickTileHeight
     radius: Theme.quickTileRadius
-    color: root.active ? Theme.secondaryContainer : Theme.surfaceContainerHigh
+    color: root.active ? Theme.blurInnerCard(Theme.secondaryContainer)
+                       : Theme.blurInnerCard(Theme.surfaceContainerHigh)
     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
 
     // В редакторе плитка выглядит меньше, но место занимает то же.

@@ -386,7 +386,9 @@ Item {
         radius: Theme.shape.xl
         // M3 filled card: тональная поверхность, без обводки и тени.
         // Требование важности несёт левая полоска, а не рамка.
-        color: Theme.surfaceContainerHigh
+        color: root.context === "center"
+               ? Theme.blurInnerCard(Theme.surfaceContainerHigh)
+               : Theme.surfaceContainerHigh
         // Плавно тает, пока едет за край.
         opacity: Math.max(0, 1.0 - Math.abs(root.swipeOffset) / (width * 0.85))
 
