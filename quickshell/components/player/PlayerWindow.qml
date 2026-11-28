@@ -49,6 +49,17 @@ PanelWindow {
     // artLoaded сбрасывается на смене трека/URL и поднимается только когда
     // Image.Ready уже относится к текущему artUrl.
     property bool artLoaded: false
+    property int artRetry: 0
+    readonly property string artImageSource: {
+        if (root.artUrl === "")
+            return "";
+        if (root.artRetry <= 0
+                || (root.artUrl.indexOf("http://") !== 0
+                    && root.artUrl.indexOf("https://") !== 0))
+            return root.artUrl;
+        const separator = root.artUrl.indexOf("?") >= 0 ? "&" : "?";
+        return root.artUrl + separator + "retry=" + root.artRetry;
+    }
     readonly property bool hasArt: root.artUrl !== "" && root.artLoaded
     property color artSeed: Theme.primary
     readonly property color artPrimary: root.hasArt
@@ -119,7 +130,7 @@ PanelWindow {
         height: 24
         opacity: 0.01
 
-        property string src: root.artUrl
+        property string src: root.hasArt ? root.artImageSource : ""
         property string loaded: ""
 
         function refresh() {
@@ -247,6 +258,13 @@ PanelWindow {
         onTriggered: root.refreshArtLoaded()
     }
 
+    Timer {
+        id: artRetryTimer
+        interval: 500
+        repeat: false
+        onTriggered: root.artRetry += 1
+    }
+
     Shortcut {
         sequence: "Escape"
         enabled: root.visible
@@ -275,9 +293,14 @@ PanelWindow {
 
     function refreshArtLoaded() {
         root.artLoaded = root.artUrl !== "" && artSource.status === Image.Ready;
+        if (artSource.status === Image.Error && root.artUrl !== "" && root.artRetry < 6)
+            artRetryTimer.restart();
+        else if (artSource.status === Image.Ready)
+            artRetryTimer.stop();
     }
 
     onArtUrlChanged: {
+        root.artRetry = 0;
         root.artLoaded = false;
         Qt.callLater(root.refreshArtLoaded);
     }
@@ -400,13 +423,15 @@ PanelWindow {
                 anchors.centerIn: parent
                 width: parent.width * 1.5
                 height: parent.height * 1.5
-                visible: root.hasArt
+                opacity: root.hasArt ? 1 : 0
+                visible: true
+                Behavior on opacity { SpringEffects {} }
 
                 Image {
                     id: artSource
 
                     anchors.fill: parent
-                    source: root.artUrl
+                    source: root.artImageSource
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     cache: true
@@ -563,7 +588,7 @@ PanelWindow {
 
                             Image {
                                 anchors.fill: parent
-                                source: root.artUrl
+                                source: root.hasArt ? root.artImageSource : ""
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                                 cache: true
