@@ -104,8 +104,7 @@ Item {
         property vector2d texel: Qt.vector2d(1.0 / Math.max(1, root.sourceWidth),
                                              1.0 / Math.max(1, root.sourceHeight))
 
-        fragmentShader: root.ready
-                        ? Qt.resolvedUrl("kawase-down-quarter.frag.qsb") : ""
+        fragmentShader: Qt.resolvedUrl("kawase-down-quarter.frag.qsb")
         blending: false
     }
 
@@ -127,8 +126,7 @@ Item {
         property variant source: level0
         property vector2d texel: Qt.vector2d(1.0 / root.w0, 1.0 / root.h0)
 
-        fragmentShader: root.ready
-                        ? Qt.resolvedUrl("kawase-down-half.frag.qsb") : ""
+        fragmentShader: Qt.resolvedUrl("kawase-down-half.frag.qsb")
         blending: false
     }
 
@@ -150,8 +148,7 @@ Item {
         property variant source: level1
         property vector2d texel: Qt.vector2d(1.0 / root.w1, 1.0 / root.h1)
 
-        fragmentShader: root.ready
-                        ? Qt.resolvedUrl("kawase-down-half.frag.qsb") : ""
+        fragmentShader: Qt.resolvedUrl("kawase-down-half.frag.qsb")
         blending: false
     }
 
@@ -173,8 +170,7 @@ Item {
         property variant source: level2
         property vector2d texel: Qt.vector2d(1.0 / root.w2, 1.0 / root.h2)
 
-        fragmentShader: root.ready && root.levelCount >= 4
-                        ? Qt.resolvedUrl("kawase-down-half.frag.qsb") : ""
+        fragmentShader: Qt.resolvedUrl("kawase-down-half.frag.qsb")
         blending: false
     }
 
@@ -201,8 +197,7 @@ Item {
         property real blurOffset: root.step
         property real crossFade: root.crossFade(2)
 
-        fragmentShader: root.ready && root.levelCount >= 4
-                        ? Qt.resolvedUrl("kawase-up.frag.qsb") : ""
+        fragmentShader: Qt.resolvedUrl("kawase-up.frag.qsb")
         blending: false
     }
 
@@ -227,8 +222,7 @@ Item {
         property real blurOffset: root.step
         property real crossFade: root.crossFade(1)
 
-        fragmentShader: root.ready
-                        ? Qt.resolvedUrl("kawase-up.frag.qsb") : ""
+        fragmentShader: Qt.resolvedUrl("kawase-up.frag.qsb")
         blending: false
     }
 
@@ -253,8 +247,7 @@ Item {
         property real blurOffset: root.step
         property real crossFade: root.crossFade(0)
 
-        fragmentShader: root.ready
-                        ? Qt.resolvedUrl("kawase-up.frag.qsb") : ""
+        fragmentShader: Qt.resolvedUrl("kawase-up.frag.qsb")
         blending: false
     }
 
