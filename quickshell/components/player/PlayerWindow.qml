@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Widgets
 import ".."
@@ -45,50 +46,63 @@ PanelWindow {
 
     // Динамическая палитра из обложки.
     readonly property string artUrl: root.player ? (root.player.trackArtUrl || "") : ""
-    // Пока сервис не отдал новую обложку, показываем обычное состояние:
-    // artLoaded сбрасывается на смене трека/URL и поднимается только когда
-    // Image.Ready уже относится к текущему artUrl.
     property bool artLoaded: false
-    property int artRetry: 0
-    readonly property string artImageSource: {
-        if (root.artUrl === "")
-            return "";
-        if (root.artRetry <= 0
-                || (root.artUrl.indexOf("http://") !== 0
-                    && root.artUrl.indexOf("https://") !== 0))
-            return root.artUrl;
-        const separator = root.artUrl.indexOf("?") >= 0 ? "&" : "?";
-        return root.artUrl + separator + "retry=" + root.artRetry;
+    property real artFade: 0
+    property string coverSource: ""
+    property string coverPendingSource: ""
+    property string coverJobUrl: ""
+    property string coverCachePath: ""
+    property bool coverPending: false
+    property int coverToken: 0
+    readonly property bool hasArt: root.artLoaded && root.coverSource !== ""
+    readonly property string cacheRoot: {
+        let dir = Quickshell.shellDir;
+        if (dir.endsWith("/"))
+            dir = dir.slice(0, -1);
+        const slash = dir.lastIndexOf("/");
+        return (slash > 0 ? dir.substring(0, slash) : dir) + "/.probe/player-covers";
     }
-    readonly property bool hasArt: root.artUrl !== "" && root.artLoaded
+
+    Behavior on artFade { SpringEffects {} }
+
     property color artSeed: Theme.primary
-    readonly property color artPrimary: root.hasArt
-                                        ? Theme.toneColor(root.artSeed, 80, 0.62)
-                                        : Theme.primary
-    readonly property color artOnPrimary: root.hasArt
-                                          ? Theme.toneColor(root.artSeed, 20, 0.62)
-                                          : Theme.scheme.onPrimary
-    readonly property color artPrimaryContainer: root.hasArt
-                                                 ? Theme.toneColor(root.artSeed, 30, 0.62)
-                                                 : Theme.primaryContainer
-    readonly property color artOnPrimaryContainer: root.hasArt
-                                                   ? Theme.toneColor(root.artSeed, 90, 0.62)
-                                                   : Theme.scheme.onPrimaryContainer
-    readonly property color artSecondaryContainer: root.hasArt
-                                                   ? Theme.toneColor(root.artSeed, 30, 0.30)
-                                                   : Theme.secondaryContainer
-    readonly property color artOnSecondaryContainer: root.hasArt
-                                                     ? Theme.toneColor(root.artSeed, 90, 0.30)
-                                                     : Theme.scheme.onSecondaryContainer
-    readonly property color artSurface: root.hasArt
-                                        ? Theme.toneColor(root.artSeed, 8, 0.10)
-                                        : Theme.surfaceContainerLow
-    readonly property color artOnSurface: root.hasArt
-                                          ? Theme.toneColor(root.artSeed, 92, 0.10)
-                                          : Theme.scheme.onSurface
-    readonly property color artOnSurfaceVariant: root.hasArt
-                                                 ? Theme.toneColor(root.artSeed, 78, 0.16)
-                                                 : Theme.scheme.onSurfaceVariant
+    property color artPrimary: root.hasArt
+                               ? Theme.toneColor(root.artSeed, 80, 0.62)
+                               : Theme.primary
+    property color artOnPrimary: root.hasArt
+                                 ? Theme.toneColor(root.artSeed, 20, 0.62)
+                                 : Theme.scheme.onPrimary
+    property color artPrimaryContainer: root.hasArt
+                                        ? Theme.toneColor(root.artSeed, 30, 0.62)
+                                        : Theme.primaryContainer
+    property color artOnPrimaryContainer: root.hasArt
+                                          ? Theme.toneColor(root.artSeed, 90, 0.62)
+                                          : Theme.scheme.onPrimaryContainer
+    property color artSecondaryContainer: root.hasArt
+                                          ? Theme.toneColor(root.artSeed, 30, 0.30)
+                                          : Theme.secondaryContainer
+    property color artOnSecondaryContainer: root.hasArt
+                                            ? Theme.toneColor(root.artSeed, 90, 0.30)
+                                            : Theme.scheme.onSecondaryContainer
+    property color artSurface: root.hasArt
+                               ? Theme.toneColor(root.artSeed, 8, 0.10)
+                               : Theme.surfaceContainerLow
+    property color artOnSurface: root.hasArt
+                                 ? Theme.toneColor(root.artSeed, 92, 0.10)
+                                 : Theme.scheme.onSurface
+    property color artOnSurfaceVariant: root.hasArt
+                                        ? Theme.toneColor(root.artSeed, 78, 0.16)
+                                        : Theme.scheme.onSurfaceVariant
+
+    Behavior on artPrimary { ColorAnimation { duration: Theme.motionMedium1 } }
+    Behavior on artOnPrimary { ColorAnimation { duration: Theme.motionMedium1 } }
+    Behavior on artPrimaryContainer { ColorAnimation { duration: Theme.motionMedium1 } }
+    Behavior on artOnPrimaryContainer { ColorAnimation { duration: Theme.motionMedium1 } }
+    Behavior on artSecondaryContainer { ColorAnimation { duration: Theme.motionMedium1 } }
+    Behavior on artOnSecondaryContainer { ColorAnimation { duration: Theme.motionMedium1 } }
+    Behavior on artSurface { ColorAnimation { duration: Theme.motionMedium1 } }
+    Behavior on artOnSurface { ColorAnimation { duration: Theme.motionMedium1 } }
+    Behavior on artOnSurfaceVariant { ColorAnimation { duration: Theme.motionMedium1 } }
 
     screen: playerScreen
     visible: root.shown || root.closing
@@ -130,7 +144,7 @@ PanelWindow {
         height: 24
         opacity: 0.01
 
-        property string src: root.hasArt ? root.artImageSource : ""
+        property string src: root.coverSource
         property string loaded: ""
 
         function refresh() {
@@ -226,7 +240,7 @@ PanelWindow {
 
     Component.onCompleted: {
         root.syncVisibility();
-        Qt.callLater(root.refreshArtLoaded);
+        root.resolveCover(root.artUrl);
     }
 
     Connections {
@@ -252,17 +266,33 @@ PanelWindow {
     }
 
     Timer {
-        id: artWait
-        interval: 600
+        id: coverSwitchTimer
+        interval: 180
         repeat: false
-        onTriggered: root.refreshArtLoaded()
+        onTriggered: {
+            root.coverSource = root.coverPendingSource;
+            root.artLoaded = false;
+            if (root.coverSource === "")
+                root.artFade = 0;
+            Qt.callLater(root.refreshCoverStatus);
+        }
     }
 
-    Timer {
-        id: artRetryTimer
-        interval: 500
-        repeat: false
-        onTriggered: root.artRetry += 1
+    Process {
+        id: coverFetcher
+
+        property int jobToken: -1
+
+        onExited: (exitCode, exitStatus) => {
+            if (coverFetcher.jobToken !== root.coverToken
+                    || root.coverJobUrl !== root.artUrl)
+                return;
+            root.coverPending = false;
+            if (exitCode === 0) {
+                root.coverPendingSource = "file://" + root.coverCachePath;
+                coverSwitchTimer.restart();
+            }
+        }
     }
 
     Shortcut {
@@ -291,18 +321,66 @@ PanelWindow {
         return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
     }
 
-    function refreshArtLoaded() {
-        root.artLoaded = root.artUrl !== "" && artSource.status === Image.Ready;
-        if (artSource.status === Image.Error && root.artUrl !== "" && root.artRetry < 6)
-            artRetryTimer.restart();
-        else if (artSource.status === Image.Ready)
-            artRetryTimer.stop();
+    function coverHash(value) {
+        let result = 2166136261;
+        for (let i = 0; i < value.length; ++i) {
+            result ^= value.charCodeAt(i);
+            result = Math.imul(result, 16777619);
+        }
+        return (result >>> 0).toString(16);
     }
 
-    onArtUrlChanged: {
-        root.artRetry = 0;
+    function resolveCover(url) {
         root.artLoaded = false;
-        Qt.callLater(root.refreshArtLoaded);
+        root.artFade = 0;
+        coverSwitchTimer.stop();
+        coverFetcher.running = false;
+        root.coverToken += 1;
+        root.coverPending = false;
+        root.coverJobUrl = "";
+        root.coverPendingSource = "";
+
+        if (url === "") {
+            coverSwitchTimer.restart();
+            return;
+        }
+        if (url.indexOf("http://") !== 0 && url.indexOf("https://") !== 0) {
+            root.coverPendingSource = url;
+            coverSwitchTimer.restart();
+            return;
+        }
+
+        root.coverCachePath = root.cacheRoot + "/" + root.coverHash(url)
+                              + "-" + Date.now() + ".jpg";
+        root.coverJobUrl = url;
+        root.coverPending = true;
+        coverFetcher.jobToken = root.coverToken;
+        coverFetcher.command = ["curl", "-L", "--fail", "--silent", "--show-error",
+                                "--retry", "2", "--retry-delay", "0",
+                                "--create-dirs", "-o", root.coverCachePath, url];
+        coverFetcher.running = true;
+    }
+
+    onArtUrlChanged: root.resolveCover(root.artUrl)
+
+    function refreshCoverStatus() {
+        if (root.coverSource === "") {
+            root.artLoaded = false;
+            root.artFade = 0;
+            return;
+        }
+        if (artSource.status === Image.Ready) {
+            root.artLoaded = true;
+            root.artFade = 1;
+        } else if (artSource.status === Image.Error) {
+            root.artLoaded = false;
+            root.artFade = 0;
+        }
+    }
+
+    onArtLoadedChanged: {
+        if (!root.artLoaded)
+            root.artFade = 0;
     }
 
     onPlayerChanged: root.syncPosition()
@@ -316,12 +394,11 @@ PanelWindow {
         }
 
         function onTrackChanged() {
-            root.artLoaded = false;
             root.syncPosition();
             root.flashTrack();
-            // Даём сервису время отдать новую обложку. Пока её нет,
-            // показываем обычное состояние, а не старый арт.
-            artWait.restart();
+            // Пока сервис не отдал новую обложку, показываем fallback;
+            // старый арт не оставляем.
+            root.resolveCover(root.artUrl);
         }
 
         function onPlaybackStateChanged() {
@@ -423,7 +500,7 @@ PanelWindow {
                 anchors.centerIn: parent
                 width: parent.width * 1.5
                 height: parent.height * 1.5
-                opacity: root.hasArt ? 1 : 0
+                opacity: root.artFade
                 visible: true
                 Behavior on opacity { SpringEffects {} }
 
@@ -431,7 +508,7 @@ PanelWindow {
                     id: artSource
 
                     anchors.fill: parent
-                    source: root.artImageSource
+                    source: root.coverSource
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     cache: true
@@ -460,6 +537,7 @@ PanelWindow {
                     tintOpacity: Math.min(0.84, Theme.artTintOpacity + 0.04)
                     saturation: 1.2
                     cornerRadius: 0
+                    Behavior on tint { ColorAnimation { duration: Theme.motionMedium1 } }
                 }
             }
         }
@@ -468,7 +546,7 @@ PanelWindow {
         Rectangle {
             anchors.fill: parent
             color: root.artSurface
-            opacity: root.hasArt ? 0.10 : 0
+            opacity: root.artFade * 0.10
             visible: opacity > 0.001
             Behavior on opacity { SpringEffects {} }
         }
@@ -578,8 +656,8 @@ PanelWindow {
 
                         ClippingRectangle {
                             anchors.fill: parent
-                            opacity: root.hasArt ? 1 : 0
-                            scale: root.hasArt ? 1 : 0.88
+                            opacity: root.artFade
+                            scale: 0.88 + 0.12 * root.artFade
                             visible: opacity > 0.01
                             radius: Theme.shape.xl
                             color: root.artPrimaryContainer
@@ -588,7 +666,7 @@ PanelWindow {
 
                             Image {
                                 anchors.fill: parent
-                                source: root.hasArt ? root.artImageSource : ""
+                                source: root.coverSource
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                                 cache: true
@@ -599,8 +677,8 @@ PanelWindow {
 
                         MorphShape {
                             anchors.fill: parent
-                            opacity: root.hasArt ? 0 : 1
-                            scale: root.hasArt ? 0.88 : 1
+                            opacity: 1 - root.artFade
+                            scale: 1 - 0.12 * root.artFade
                             visible: opacity > 0.01
                             shape: "cookie"
                             modulation: 0.55
@@ -611,7 +689,7 @@ PanelWindow {
 
                         Text {
                             anchors.centerIn: parent
-                            opacity: root.hasArt ? 0 : 1
+                            opacity: 1 - root.artFade
                             visible: opacity > 0.01
                             text: "\uf001"
                             color: root.artOnPrimaryContainer
