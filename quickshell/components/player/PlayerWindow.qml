@@ -274,8 +274,7 @@ PanelWindow {
     }
 
     function refreshArtLoaded() {
-        root.artLoaded = root.artUrl !== "" && artSource.status === Image.Ready
-                         && String(artSource.source) === String(root.artUrl);
+        root.artLoaded = root.artUrl !== "" && artSource.status === Image.Ready;
     }
 
     onArtUrlChanged: {
@@ -649,6 +648,7 @@ PanelWindow {
 
                     WavyProgress {
                         width: parent.width
+                        active: root.visible
                         value: root.progress
                         playing: root.player !== null && root.player.isPlaying
                         enabled: root.canSeek

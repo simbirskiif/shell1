@@ -17,6 +17,7 @@ Item {
 
     implicitHeight: 44
 
+    property bool active: true
     property bool dragging: false
     property real shownValue: root.value
     property real amplitude: root.playing ? 2.4 : 0.55
@@ -34,6 +35,14 @@ Item {
     onShownValueChanged: wave.requestPaint()
     onAmplitudeChanged: wave.requestPaint()
     onActiveColorChanged: wave.requestPaint()
+    onActiveChanged: if (root.active) repaintTimer.restart()
+
+    Timer {
+        id: repaintTimer
+        interval: 80
+        repeat: false
+        onTriggered: wave.requestPaint()
+    }
 
     // Неактивная часть: ровная линия.
     Rectangle {
@@ -52,6 +61,9 @@ Item {
         width: Math.max(0, Math.min(root.width, root.width * root.shownValue))
         height: root.height
         visible: width > 1
+
+        Component.onCompleted: Qt.callLater(requestPaint)
+        onVisibleChanged: if (visible) Qt.callLater(requestPaint)
 
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
