@@ -46,6 +46,7 @@
 
 - Dual Kawase из AOSP RenderEngine живёт в `quickshell/components/effects/KawaseBlur.qml` (+ `.frag.qsb`). Полные формулы, схема цепочки и ограничения — `quickshell/BLUR.md`; перед правками блюра читать его.
 - Backdrop панелей — только `BackgroundEffect.blurRegion` (ext-background-effect-v1) на самом `PanelWindow`. **Никаких `layerrule` в `~/.config/hypr` для `quickshell-*`** — это было явное требование; не добавлять их «для надёжности».
+- Регион blur у анимированных карточек — `components/effects/AnimatedBlurRegion.qml`, а не `Region { item }`: обычный `Region` не замечает `scale`/`transform`, и пятно отстаёт. OSD двигать через `anchors.bottomMargin`, а на закрытии снимать регион (`... ? region : null`) — у протокола нет альфы региона.
 - `PopupWindow` (xdg-popup) не получает background effect в Hyprland. Поэтому панель быстрых настроек — отдельный `PanelWindow` с namespace `quickshell-quick`, а клик мимо закрывает её через `HyprlandFocusGrab`.
 - Своим шейдером размывается только внутренний контент: обои на экране блокировки и обложка в панели плеера. Чужие окна шейдер не видит — только композитор.
 - Не блюрить: бар, тосты, настройки, модалки, компактный док, отдельные иконки/чипы; не делать blur поверх blur. Тонировка (`Theme.panelBlurSurface` / `sheetBlurSurface`) обязательна для контраста текста.

@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
+import "effects"
 import "../singletons"
 
 // Центр уведомлений — такая же панель, как быстрые настройки: та же
@@ -87,9 +88,14 @@ PanelWindow {
 
     // Блюр фона запрашивается у композитора через ext-background-effect-v1.
     // Область — сама карточка с её скруглением; без Hyprland-правил.
-    BackgroundEffect.blurRegion: Region {
-        item: panel
-        radius: Theme.shape.xl
+    // Во время появления карточка масштабируется; регион следует за ней.
+    // При закрытии blur снимаем сразу: у протокола нет альфы региона,
+    // иначе пятно blur оставалось бы висеть, пока карточка тает.
+    BackgroundEffect.blurRegion: root.shown && !root.closing ? centerBlurRegion : null
+    AnimatedBlurRegion {
+        id: centerBlurRegion
+        target: panel
+        cornerRadius: Theme.shape.xl
     }
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 

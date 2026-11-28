@@ -3,6 +3,7 @@ import ".."
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
+import "../effects"
 import "../../singletons"
 
 // Выпадающая панель быстрых настроек под кнопкой статуса в баре.
@@ -95,9 +96,11 @@ PanelWindow {
 
     // Фон под карточкой размывает композитор; регион — сама карточка,
     // чтобы прозрачная полоса под ней не размывала экран.
-    BackgroundEffect.blurRegion: Region {
-        item: card
-        radius: Theme.quickRadius
+    BackgroundEffect.blurRegion: root.visible ? quickBlurRegion : null
+    AnimatedBlurRegion {
+        id: quickBlurRegion
+        target: card
+        cornerRadius: Theme.quickRadius
     }
 
     // Клик мимо панели закрывает её. Раньше это делал grabFocus попапа;

@@ -56,11 +56,13 @@ PanelWindow {
 
     // Обложка (см. artBackdrop) сама закрывает карточку непрозрачным
     // размытием, поэтому второй blur композитора под ней не нужен.
-    BackgroundEffect.blurRegion: artBackdrop.visible ? null : cardBlurRegion
-    Region {
-        id: cardBlurRegion
-        item: card
-        radius: Theme.shape.xl
+    // Регион следует за scale карточки при появлении/закрытии.
+    BackgroundEffect.blurRegion: (root.shown && !root.closing && !artBackdrop.visible)
+                                 ? playerBlurRegion : null
+    AnimatedBlurRegion {
+        id: playerBlurRegion
+        target: card
+        cornerRadius: Theme.shape.xl
     }
     WlrLayershell.keyboardFocus: root.visible ? WlrKeyboardFocus.Exclusive
                                               : WlrKeyboardFocus.None

@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Widgets
+import "effects"
 import "../singletons"
 
 // Общая оболочка нижних всплывашек: окно-оверлей внизу экрана, выезд снизу,
@@ -45,9 +46,11 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-osd"
 
-    BackgroundEffect.blurRegion: Region {
-        item: card
-        radius: Theme.shape.xl
+    BackgroundEffect.blurRegion: root.shown ? osdBlurRegion : null
+    AnimatedBlurRegion {
+        id: osdBlurRegion
+        target: card
+        cornerRadius: Theme.shape.xl
     }
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     WlrLayershell.focusable: false
@@ -116,13 +119,14 @@ PanelWindow {
             }
         }
 
-        transform: Translate {
-            y: root.shown ? 0 : root.slideDistance
-            Behavior on y {
-                MotionNumber {
-                    duration: Theme.motionMedium1
-                    curve: Theme.curveEmphasized
-                }
+        // Сдвиг выезда — через нижний отступ, а не transform: Region blur
+        // обновляется по y и не замечает transform.
+        property real slide: root.shown ? 0 : root.slideDistance
+        anchors.bottomMargin: root.slide
+        Behavior on slide {
+            MotionNumber {
+                duration: Theme.motionMedium1
+                curve: Theme.curveEmphasized
             }
         }
 

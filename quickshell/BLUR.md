@@ -58,6 +58,23 @@ Hyprland 0.57 умеет `ext-background-effect-v1`; регион приходи
 через `HyprlandFocusGrab`; после снятия grab'а на 150 мс игнорируется
 `toggle()`, чтобы тот же клик по кнопке статуса не открыл панель снова.
 
+### Регион должен следовать за анимацией
+
+`Region { item: card }` обновляется только по `x/y/width/height` и не
+замечает `scale`/`transform`. Из-за этого при появлении панели (scale из
+угла) пятно blur оставалось на конечной геометрии: слева и снизу карточка
+была без blur; на OSD со сдвигом через `Translate` пятно вообще висело на
+месте, а при закрытии оставалось, пока карточка таяла.
+
+Для анимированных карточек используется
+`components/effects/AnimatedBlurRegion.qml`: он считает `mapToItem` и
+явно зависит от `scale`/`x`/`y`, поэтому регион едет и масштабируется
+вместе с карточкой. OSD сдвигается через `anchors.bottomMargin`, а не
+через `Translate`, чтобы у `y` были изменения. На закрытии регион
+снимается сразу (`root.shown ? region : null`): у
+`ext-background-effect-v1` нет альфы региона, иначе blur висел бы, пока
+карточка тает.
+
 Если композитор не поддерживает `ext-background-effect-v1`, панели
 останутся полупрозрачными без блюра. Это осознанный компромисс: оболочка
 рассчитана на Hyprland. Проверка — `qs log`: Quickshell предупреждает, что
@@ -96,6 +113,8 @@ KawaseBlurDualFilterV2.cpp` (copyright 2025, флаг `window_blur_kawase2`).
 - `quickshell/components/effects/kawase-down-half.frag` + `.qsb`
 - `quickshell/components/effects/kawase-up.frag` + `.qsb`
 - `quickshell/components/effects/kawase-composite.frag` + `.qsb`
+- `quickshell/components/effects/AnimatedBlurRegion.qml` — регион blur,
+  следящий за `scale`/`x`/`y` анимированной карточки (см. ниже).
 
 Цепочка: `Image/ShaderEffectSource` → L0 (1/4) → L1 (1/8) → L2 (1/16) →
 L3 (1/32, только при 4 уровнях) → up3 → up2 → up1 → up0 → финальный
