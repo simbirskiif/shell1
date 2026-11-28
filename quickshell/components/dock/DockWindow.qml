@@ -93,6 +93,16 @@ PanelWindow {
         }
     }
 
+    // Размытие фона — только у раскрытой панели (это большой временный
+    // оверлей). Компактная полоса остаётся тональной и непрозрачной:
+    // постоянный мелкий элемент не должен постоянно считаться с blur.
+    BackgroundEffect.blurRegion: root.active && dock.expanded ? dockBlurRegion : null
+    Region {
+        id: dockBlurRegion
+        item: dock.cardItem
+        radius: dock.cardRadius
+    }
+
     mask: Region {
         intersection: Intersection.Combine
 

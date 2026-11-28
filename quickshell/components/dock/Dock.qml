@@ -126,6 +126,8 @@ Item {
     }
 
     property real cardRadius: root.expanded ? Theme.dockPanelRadius : Theme.dockRadius
+    // Карточка нужна снаружи (DockWindow) как регион blur фона.
+    readonly property Item cardItem: card
     Behavior on cardRadius {
         MotionNumber {
             duration: Theme.dockMorphDuration
@@ -146,7 +148,7 @@ Item {
         id: card
         anchors.fill: parent
         radius: root.cardRadius
-        color: root.expanded ? Theme.panelSurface : Theme.sheetSurface
+        color: root.expanded ? Theme.panelBlurSurface : Theme.sheetSurface
         clip: true
         Behavior on color { ColorAnimation { duration: Theme.motionShort4 } }
 

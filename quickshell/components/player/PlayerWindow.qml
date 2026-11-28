@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import ".."
+import "../effects"
 import "../quick"
 import "../../singletons"
 
@@ -52,6 +53,15 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-player"
+
+    // Обложка (см. artBackdrop) сама закрывает карточку непрозрачным
+    // размытием, поэтому второй blur композитора под ней не нужен.
+    BackgroundEffect.blurRegion: artBackdrop.visible ? null : cardBlurRegion
+    Region {
+        id: cardBlurRegion
+        item: card
+        radius: Theme.shape.xl
+    }
     WlrLayershell.keyboardFocus: root.visible ? WlrKeyboardFocus.Exclusive
                                               : WlrKeyboardFocus.None
     WlrLayershell.focusable: root.visible
@@ -178,10 +188,60 @@ PanelWindow {
                          Math.max(220, header.height + 1 + Theme.notificationPadding * 2
                                   + contentColumn.implicitHeight))
         radius: Theme.shape.xl
-        color: Theme.panelSurface
+        color: Theme.panelBlurSurface
         border.width: 1
         border.color: Theme.outlineVariant
         clip: true
+
+        // Фон панели из обложки: размытая обложка под тональной вуалью —
+        // приём медиаплеера Android. Это внутренний контент, поэтому здесь
+        // работает собственный dual Kawase; фон под панелью размывает
+        // композитор только когда обложки нет.
+        Item {
+            id: artBackdrop
+
+            anchors.fill: parent
+            anchors.margins: 1
+            visible: artSource.status === Image.Ready
+
+            Image {
+                id: artSource
+
+                anchors.fill: parent
+                source: root.player ? (root.player.trackArtUrl || "") : ""
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: true
+                sourceSize.width: Math.max(1, Math.round(width / 2))
+                sourceSize.height: Math.max(1, Math.round(height / 2))
+                visible: false
+            }
+
+            // ShaderEffectSource прячет Image и отдаёт его как текстуру:
+            // KawaseBlur требует texture provider, а не голый Item.
+            ShaderEffectSource {
+                id: artTexture
+
+                sourceItem: artSource
+                width: Math.max(1, artSource.width)
+                height: Math.max(1, artSource.height)
+                hideSource: true
+                live: root.visible
+                visible: false
+            }
+
+            KawaseBlur {
+                anchors.fill: parent
+                sourceItem: artTexture
+                live: root.visible
+                blurRadius: 64
+                tint: Theme.surfaceContainerLow
+                tintOpacity: 0.74
+                saturation: 1.18
+                cornerRadius: Theme.shape.xl - 1
+            }
+        }
+
         opacity: root.shown && !root.closing ? 1 : 0
         scale: root.shown && !root.closing ? 1 : Theme.motionFadeThroughScale
         transformOrigin: Item.TopRight

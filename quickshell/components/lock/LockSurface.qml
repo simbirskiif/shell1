@@ -1,7 +1,7 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import ".."
+import "../effects"
 import "../../singletons"
 import "../../widgets/core"
 
@@ -52,20 +52,16 @@ Item {
         layer.enabled: true
     }
 
-    MultiEffect {
+    // Dual Kawase вместо MultiEffect: размытие считается на уровнях 1/4–1/32,
+    // поэтому полный экран 4K не требует десятков проходов в полном
+    // разрешении. Радиус 58 px — эквивалент прежних blur: 0.9 при blurMax: 64.
+    KawaseBlur {
         anchors.fill: parent
-        source: wallpaper
-        // hyprlock размывает всё полотно целиком; blurMax ограничен, чтобы
-        // не жечь GPU на 4K.
-        blurEnabled: true
-        blur: 0.9
-        blurMax: 64
-        saturation: -0.10
+        sourceItem: wallpaper
+        live: true
+        blurRadius: 58
+        saturation: 0.90
         brightness: -0.05
-        // visible всегда true: если эффект создан невидимым (обои ещё не
-        // прочитаны), при появлении изображения он может не пересобрать
-        // текстуру и показать обои без размытия.
-        visible: true
     }
 
     // Затемнение и тональная подложка поверх размытых обоев.
