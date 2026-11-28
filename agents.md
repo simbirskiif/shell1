@@ -42,6 +42,15 @@
 - Пути: `Quickshell.shellPath()`, `Qt.resolvedUrl()`, `Quickshell.iconPath()`. Не хардкодить `/home/user/...`.
 - Конфиг пользователя отделять от кода (JSON через `FileView` + `JsonAdapter`).
 
+## Блюр и фон
+
+- Dual Kawase из AOSP RenderEngine живёт в `quickshell/components/effects/KawaseBlur.qml` (+ `.frag.qsb`). Полные формулы, схема цепочки и ограничения — `quickshell/BLUR.md`; перед правками блюра читать его.
+- Backdrop панелей — только `BackgroundEffect.blurRegion` (ext-background-effect-v1) на самом `PanelWindow`. **Никаких `layerrule` в `~/.config/hypr` для `quickshell-*`** — это было явное требование; не добавлять их «для надёжности».
+- `PopupWindow` (xdg-popup) не получает background effect в Hyprland. Поэтому панель быстрых настроек — отдельный `PanelWindow` с namespace `quickshell-quick`, а клик мимо закрывает её через `HyprlandFocusGrab`.
+- Своим шейдером размывается только внутренний контент: обои на экране блокировки и обложка в панели плеера. Чужие окна шейдер не видит — только композитор.
+- Не блюрить: бар, тосты, настройки, модалки, компактный док, отдельные иконки/чипы; не делать blur поверх blur. Тонировка (`Theme.panelBlurSurface` / `sheetBlurSurface`) обязательна для контраста текста.
+- После правки GLSL пересобрать `.qsb` через `qsb --qt6 -o ...`; `.qsb` коммитятся вместе с `.frag`.
+
 ## Качество кода QML
 
 - Порядок в объекте: `id`, свойства, сигналы, функции, дочерние объекты.
