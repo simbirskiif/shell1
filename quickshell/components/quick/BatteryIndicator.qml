@@ -26,20 +26,19 @@ Item {
     readonly property bool low: root.level <= 15
     readonly property bool medium: !root.low && root.level <= 30
 
-    // Цвет заливки: зарядка > низкий > средний > обычный — роли схемы m3.
+    // Цвет заливки: зарядка > низкий > средний > обычный
     readonly property color fillColor: {
         if (root.charging)
-            return Theme.success;
+            return Theme.chargeColor;
         if (root.low)
-            return Theme.error;
+            return Theme.lowColor;
         if (root.medium)
-            return Theme.warning;
-        return Theme.scheme.onSurface;
+            return Theme.mediumColor;
+        return Theme.quickText;
     }
 
-    // Колодка и носик всегда нейтральные, как в Android 17: контур outline,
-    // заливка состояния рисуется поверх него.
-    readonly property color trackColor: Theme.outline
+    // Колодка и носик всегда нейтральные, как в Android 17
+    readonly property color trackColor: Theme.withAlpha(Theme.quickText, 0.35)
 
     // Не readonly: ширину слота под молнию анимирует Behavior ниже.
     property real boltSlot: root.charging ? root.boltGap + root.boltWidth : 0
@@ -61,9 +60,7 @@ Item {
         width: root.bodyWidth
         height: root.bodyHeight
         radius: root.bodyRadius
-        color: "transparent"
-        border.width: 1
-        border.color: root.trackColor
+        color: root.trackColor
     }
 
     Item {
@@ -118,7 +115,7 @@ Item {
         Behavior on opacity { NumberAnimation { duration: Theme.motionShort4 } }
 
         ShapePath {
-            fillColor: Theme.scheme.onSurface
+            fillColor: Theme.quickText
             strokeColor: "transparent"
             startX: bolt.width * 0.62; startY: 0
             PathLine { x: 0;                    y: bolt.height * 0.58 }
