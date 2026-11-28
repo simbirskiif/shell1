@@ -1,4 +1,5 @@
 import QtQuick
+import "../expressive"
 import "../../singletons"
 
 // Вертикальные полосы спектра. bands — уровни 0..1 от SpectrumService;
@@ -43,12 +44,8 @@ Item {
             color: root.barColor
             antialiasing: true
 
-            Behavior on height {
-                NumberAnimation {
-                    duration: Theme.motionShort2
-                    easing.type: Easing.OutCubic
-                }
-            }
+            Behavior on height { SpringSpatialFast {} }
+            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
         }
     }
 }

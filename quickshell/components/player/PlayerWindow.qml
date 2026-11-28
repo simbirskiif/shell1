@@ -45,7 +45,11 @@ PanelWindow {
 
     // Динамическая палитра из обложки.
     readonly property string artUrl: root.player ? (root.player.trackArtUrl || "") : ""
-    readonly property bool hasArt: root.artUrl !== "" && artSource.status === Image.Ready
+    // Пока сервис не отдал новую обложку, показываем обычное состояние:
+    // artLoaded сбрасывается на смене трека/URL и поднимается только когда
+    // Image.Ready уже относится к текущему artUrl.
+    property bool artLoaded: false
+    readonly property bool hasArt: root.artUrl !== "" && root.artLoaded
     property color artSeed: Theme.primary
     readonly property color artPrimary: root.hasArt
                                         ? Theme.toneColor(root.artSeed, 80, 0.62)
@@ -95,7 +99,7 @@ PanelWindow {
 
     // Композиторный blur нужен только в пустом состоянии: когда есть арт,
     // его место занимает собственный Kawase-слой внутри карточки.
-    BackgroundEffect.blurRegion: (root.shown && !root.closing && !artBackdrop.visible)
+    BackgroundEffect.blurRegion: (root.shown && !root.closing)
                                  ? playerBlurRegion : null
     AnimatedBlurRegion {
         id: playerBlurRegion
@@ -209,7 +213,10 @@ PanelWindow {
             root.disappear();
     }
 
-    Component.onCompleted: root.syncVisibility()
+    Component.onCompleted: {
+        root.syncVisibility();
+        Qt.callLater(root.refreshArtLoaded);
+    }
 
     Connections {
         target: PlayerWindowState
@@ -231,6 +238,13 @@ PanelWindow {
             root.closing = false;
             root.shown = false;
         }
+    }
+
+    Timer {
+        id: artWait
+        interval: 600
+        repeat: false
+        onTriggered: root.refreshArtLoaded()
     }
 
     Shortcut {
@@ -259,6 +273,16 @@ PanelWindow {
         return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
     }
 
+    function refreshArtLoaded() {
+        root.artLoaded = root.artUrl !== "" && artSource.status === Image.Ready
+                         && String(artSource.source) === String(root.artUrl);
+    }
+
+    onArtUrlChanged: {
+        root.artLoaded = false;
+        Qt.callLater(root.refreshArtLoaded);
+    }
+
     onPlayerChanged: root.syncPosition()
     onVisibleChanged: if (root.visible) root.syncPosition()
 
@@ -270,8 +294,12 @@ PanelWindow {
         }
 
         function onTrackChanged() {
+            root.artLoaded = false;
             root.syncPosition();
             root.flashTrack();
+            // Даём сервису время отдать новую обложку. Пока её нет,
+            // показываем обычное состояние, а не старый арт.
+            artWait.restart();
         }
 
         function onPlaybackStateChanged() {
@@ -346,6 +374,7 @@ PanelWindow {
         border.width: 1
         border.color: Theme.withAlpha(root.artOnSurfaceVariant, 0.24)
         contentInsideBorder: false
+        Behavior on color { ColorAnimation { duration: 220 } }
 
         opacity: root.shown && !root.closing ? 1 : 0
         scale: root.shown && !root.closing ? 1 : Theme.motionFadeThroughScale
@@ -416,7 +445,8 @@ PanelWindow {
             anchors.fill: parent
             color: root.artSurface
             opacity: root.hasArt ? 0.10 : 0
-            visible: root.hasArt
+            visible: opacity > 0.001
+            Behavior on opacity { SpringEffects {} }
         }
 
         MouseArea {
@@ -524,9 +554,13 @@ PanelWindow {
 
                         ClippingRectangle {
                             anchors.fill: parent
-                            visible: root.hasArt
+                            opacity: root.hasArt ? 1 : 0
+                            scale: root.hasArt ? 1 : 0.88
+                            visible: opacity > 0.01
                             radius: Theme.shape.xl
                             color: root.artPrimaryContainer
+                            Behavior on opacity { SpringEffects {} }
+                            Behavior on scale { SpringSpatialFast {} }
 
                             Image {
                                 anchors.fill: parent
@@ -541,19 +575,25 @@ PanelWindow {
 
                         MorphShape {
                             anchors.fill: parent
-                            visible: !root.hasArt
+                            opacity: root.hasArt ? 0 : 1
+                            scale: root.hasArt ? 0.88 : 1
+                            visible: opacity > 0.01
                             shape: "cookie"
                             modulation: 0.55
                             color: root.artPrimaryContainer
+                            Behavior on opacity { SpringEffects {} }
+                            Behavior on scale { SpringSpatialFast {} }
                         }
 
                         Text {
                             anchors.centerIn: parent
-                            visible: !root.hasArt
+                            opacity: root.hasArt ? 0 : 1
+                            visible: opacity > 0.01
                             text: "\uf001"
                             color: root.artOnPrimaryContainer
                             font.family: Theme.iconFontFamily
                             font.pixelSize: 38
+                            Behavior on opacity { SpringEffects {} }
                         }
                     }
 
@@ -650,12 +690,18 @@ PanelWindow {
                     spacing: Theme.space.lg
                     visible: root.hasPlayer
 
-                    PlayerSideControl {
-                        icon: "\uf048"
-                        enabled: root.player && root.player.canGoPrevious
-                        baseColor: root.artSecondaryContainer
-                        inkColor: root.artOnSecondaryContainer
-                        onClicked: if (root.player) root.player.previous()
+                    Item {
+                        width: Theme.touchTarget
+                        height: 64
+
+                        PlayerSideControl {
+                            anchors.centerIn: parent
+                            icon: "\uf048"
+                            enabled: root.player && root.player.canGoPrevious
+                            baseColor: root.artSecondaryContainer
+                            inkColor: root.artOnSecondaryContainer
+                            onClicked: if (root.player) root.player.previous()
+                        }
                     }
 
                     PlayerPlayControl {
@@ -666,12 +712,18 @@ PanelWindow {
                         onClicked: if (root.player) root.player.togglePlaying()
                     }
 
-                    PlayerSideControl {
-                        icon: "\uf051"
-                        enabled: root.player && root.player.canGoNext
-                        baseColor: root.artSecondaryContainer
-                        inkColor: root.artOnSecondaryContainer
-                        onClicked: if (root.player) root.player.next()
+                    Item {
+                        width: Theme.touchTarget
+                        height: 64
+
+                        PlayerSideControl {
+                            anchors.centerIn: parent
+                            icon: "\uf051"
+                            enabled: root.player && root.player.canGoNext
+                            baseColor: root.artSecondaryContainer
+                            inkColor: root.artOnSecondaryContainer
+                            onClicked: if (root.player) root.player.next()
+                        }
                     }
                 }
 

@@ -33,6 +33,7 @@ Item {
     }
     onShownValueChanged: wave.requestPaint()
     onAmplitudeChanged: wave.requestPaint()
+    onActiveColorChanged: wave.requestPaint()
 
     // Неактивная часть: ровная линия.
     Rectangle {
