@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import Quickshell.Widgets
 import ".."
@@ -116,6 +117,14 @@ PanelWindow {
         id: playerBlurRegion
         target: card
         cornerRadius: Math.max(0, card.radius - card.border.width)
+    }
+
+    // Как у основного окна центра управления: клик вне слоя снимает
+    // focus-grab и закрывает панель, не полагаясь только на MouseArea.
+    HyprlandFocusGrab {
+        windows: [root]
+        active: root.visible
+        onCleared: PlayerWindowState.close()
     }
 
     // Выбор цвета из обложки. ColorQuantizer не читает удалённые URL
@@ -368,7 +377,7 @@ PanelWindow {
         anchors.rightMargin: Theme.barPadding
         width: Math.min(Theme.notificationCenterWidth, parent.width - Theme.space.xl * 2)
         height: Math.min(root.maxHeight,
-                         Math.max(180, header.height + 1 + Theme.notificationPadding * 2
+                         Math.max(180, header.height + Theme.notificationPadding * 2
                                   + contentColumn.implicitHeight))
         radius: root.panelRadius
         color: root.hasArt
@@ -465,7 +474,7 @@ PanelWindow {
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
-            height: Theme.touchTarget
+            height: Theme.appBarHeight
 
             Text {
                 anchors.left: parent.left
@@ -474,8 +483,8 @@ PanelWindow {
                 anchors.rightMargin: Theme.space.sm
                 anchors.verticalCenter: parent.verticalCenter
                 text: I18n.tr("settings.player.title")
-                color: root.artOnSurfaceVariant
-                font: Theme.typeLabelLarge
+                color: root.artOnSurface
+                font: Theme.typeTitleMedium
                 elide: Text.ElideRight
             }
 
@@ -516,20 +525,10 @@ PanelWindow {
             }
         }
 
-        Rectangle {
-            id: headerDivider
-
-            anchors.top: header.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 1
-            color: Theme.withAlpha(root.artOnSurfaceVariant, 0.18)
-        }
-
         Flickable {
             id: scroller
 
-            anchors.top: headerDivider.bottom
+            anchors.top: header.bottom
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
