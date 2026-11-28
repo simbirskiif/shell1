@@ -1,13 +1,17 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Widgets
 import ".."
 import "../effects"
-import "../quick"
+import "../expressive"
 import "../../singletons"
 
-// Панель плеера в стиле остальных панелей оболочки: правая карточка под
-// баром, M3-строки, левое выравнивание текста, стандартные отступы и кнопки.
+// Панель плеера в стиле Material 3 Expressive.
+//
+// Слой blur обложки — отдельный большой источник (1.5× карточки), который
+// обрезается ClippingRectangle карточки: так на углах нет пустых сэмплов и
+// тёмной кромки. Рамка карточки рисуется поверх blur и контента.
 PanelWindow {
     id: root
 
@@ -27,9 +31,9 @@ PanelWindow {
     readonly property real maxHeight: root.playerScreen
                                       ? root.playerScreen.height - Theme.barHeight - Theme.space.lg
                                       : 700
+    readonly property real panelRadius: Theme.shape.xlIncreased
 
-    // Появление/закрытие как у остальных панелей: карточка проявляется
-    // и слегка масштабируется из правого верхнего угла.
+    // Появление/закрытие — пружинами, без линейных кривых.
     property bool shown: false
     property bool closing: false
 
@@ -38,6 +42,38 @@ PanelWindow {
     property real displayPosition: 0
     property real anchorPosition: 0
     property double anchorWall: 0
+
+    // Динамическая палитра из обложки.
+    readonly property string artUrl: root.player ? (root.player.trackArtUrl || "") : ""
+    readonly property bool hasArt: root.artUrl !== "" && artSource.status === Image.Ready
+    property color artSeed: Theme.primary
+    readonly property color artPrimary: root.hasArt
+                                        ? Theme.toneColor(root.artSeed, 80, 0.62)
+                                        : Theme.primary
+    readonly property color artOnPrimary: root.hasArt
+                                          ? Theme.toneColor(root.artSeed, 20, 0.62)
+                                          : Theme.scheme.onPrimary
+    readonly property color artPrimaryContainer: root.hasArt
+                                                 ? Theme.toneColor(root.artSeed, 30, 0.62)
+                                                 : Theme.primaryContainer
+    readonly property color artOnPrimaryContainer: root.hasArt
+                                                   ? Theme.toneColor(root.artSeed, 90, 0.62)
+                                                   : Theme.scheme.onPrimaryContainer
+    readonly property color artSecondaryContainer: root.hasArt
+                                                   ? Theme.toneColor(root.artSeed, 30, 0.30)
+                                                   : Theme.secondaryContainer
+    readonly property color artOnSecondaryContainer: root.hasArt
+                                                     ? Theme.toneColor(root.artSeed, 90, 0.30)
+                                                     : Theme.scheme.onSecondaryContainer
+    readonly property color artSurface: root.hasArt
+                                        ? Theme.toneColor(root.artSeed, 8, 0.10)
+                                        : Theme.surfaceContainerLow
+    readonly property color artOnSurface: root.hasArt
+                                          ? Theme.toneColor(root.artSeed, 92, 0.10)
+                                          : Theme.scheme.onSurface
+    readonly property color artOnSurfaceVariant: root.hasArt
+                                                 ? Theme.toneColor(root.artSeed, 78, 0.16)
+                                                 : Theme.scheme.onSurfaceVariant
 
     screen: playerScreen
     visible: root.shown || root.closing
@@ -53,20 +89,104 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-player"
+    WlrLayershell.keyboardFocus: root.visible ? WlrKeyboardFocus.Exclusive
+                                              : WlrKeyboardFocus.None
+    WlrLayershell.focusable: root.visible
 
-    // Обложка (см. artBackdrop) сама закрывает карточку непрозрачным
-    // размытием, поэтому второй blur композитора под ней не нужен.
-    // Регион следует за scale карточки при появлении/закрытии.
+    // Композиторный blur нужен только в пустом состоянии: когда есть арт,
+    // его место занимает собственный Kawase-слой внутри карточки.
     BackgroundEffect.blurRegion: (root.shown && !root.closing && !artBackdrop.visible)
                                  ? playerBlurRegion : null
     AnimatedBlurRegion {
         id: playerBlurRegion
         target: card
-        cornerRadius: Theme.shape.xl
+        cornerRadius: Math.max(0, card.radius - card.border.width)
     }
-    WlrLayershell.keyboardFocus: root.visible ? WlrKeyboardFocus.Exclusive
-                                              : WlrKeyboardFocus.None
-    WlrLayershell.focusable: root.visible
+
+    // Выбор цвета из обложки. ColorQuantizer не читает удалённые URL
+    // (обложки MPRIS часто приходят с https), поэтому берём средневзвешенный
+    // цвет через Canvas — тот же приём, что в виджете музыки.
+    Canvas {
+        id: artSampler
+
+        x: -64
+        y: -64
+        width: 24
+        height: 24
+        opacity: 0.01
+
+        property string src: root.artUrl
+        property string loaded: ""
+
+        function refresh() {
+            if (loaded !== "" && loaded !== src)
+                unloadImage(loaded);
+            loaded = "";
+            root.artSeed = Theme.primary;
+            if (src === "")
+                return;
+            if (isImageLoaded(src)) {
+                loaded = src;
+                requestPaint();
+            } else {
+                loadImage(src);
+            }
+        }
+
+        onSrcChanged: refresh()
+        Component.onCompleted: refresh()
+
+        onImageLoaded: {
+            if (src !== "" && isImageLoaded(src)) {
+                loaded = src;
+                requestPaint();
+            }
+        }
+
+        onPaint: {
+            if (loaded === "" || loaded !== src)
+                return;
+            const ctx = getContext("2d");
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(src, 0, 0, width, height);
+            const data = ctx.getImageData(0, 0, width, height).data;
+            let red = 0, green = 0, blue = 0, weight = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i] / 255;
+                const g = data[i + 1] / 255;
+                const b = data[i + 2] / 255;
+                const max = Math.max(r, g, b);
+                const min = Math.min(r, g, b);
+                if (max < 0.10)
+                    continue;
+                const saturation = (max - min) / max;
+                const w = 0.02 + saturation * saturation * max;
+                red += r * w;
+                green += g * w;
+                blue += b * w;
+                weight += w;
+            }
+            if (weight > 0) {
+                const sampled = Qt.rgba(red / weight, green / weight, blue / weight, 1);
+                if (Theme.saturationOf(sampled) > 0.05
+                        || Theme.relativeLuminance(sampled) > 0.05)
+                    root.artSeed = sampled;
+            } else {
+                root.artSeed = Theme.primary;
+            }
+        }
+    }
+
+    // Смена трека: лёгкое проявление обложки и текста на пружине, без
+    // линейных анимаций.
+    function flashTrack() {
+        if (!coverHost || !info)
+            return;
+        coverHost.opacity = 0.45;
+        coverHost.scale = 0.96;
+        info.opacity = 0.45;
+        trackAppear.restart();
+    }
 
     function appear() {
         closeTimer.stop();
@@ -105,7 +225,7 @@ PanelWindow {
 
     Timer {
         id: closeTimer
-        interval: Theme.motionMedium1
+        interval: Theme.motionMedium2
         repeat: false
         onTriggered: {
             root.closing = false;
@@ -151,6 +271,7 @@ PanelWindow {
 
         function onTrackChanged() {
             root.syncPosition();
+            root.flashTrack();
         }
 
         function onPlaybackStateChanged() {
@@ -159,7 +280,7 @@ PanelWindow {
     }
 
     Timer {
-        interval: 250
+        interval: 100
         repeat: true
         running: root.visible && root.player !== null && root.player.isPlaying
         onTriggered: {
@@ -172,13 +293,42 @@ PanelWindow {
         }
     }
 
+    ParallelAnimation {
+        id: trackAppear
+
+        SpringAnimation {
+            target: coverHost
+            property: "opacity"
+            to: 1
+            spring: Theme.springs.effects.spring
+            damping: Theme.springs.effects.damping
+            epsilon: 0.001
+        }
+        SpringAnimation {
+            target: coverHost
+            property: "scale"
+            to: 1
+            spring: Theme.springs.spatialFast.spring
+            damping: Theme.springs.spatialFast.damping
+            epsilon: 0.001
+        }
+        SpringAnimation {
+            target: info
+            property: "opacity"
+            to: 1
+            spring: Theme.springs.effects.spring
+            damping: Theme.springs.effects.damping
+            epsilon: 0.001
+        }
+    }
+
     MouseArea {
         anchors.fill: parent
         enabled: root.shown && !root.closing
         onClicked: PlayerWindowState.close()
     }
 
-    Rectangle {
+    ClippingRectangle {
         id: card
 
         anchors.top: parent.top
@@ -187,84 +337,86 @@ PanelWindow {
         anchors.rightMargin: Theme.barPadding
         width: Math.min(Theme.notificationCenterWidth, parent.width - Theme.space.xl * 2)
         height: Math.min(root.maxHeight,
-                         Math.max(220, header.height + 1 + Theme.notificationPadding * 2
+                         Math.max(180, header.height + 1 + Theme.notificationPadding * 2
                                   + contentColumn.implicitHeight))
-        radius: Theme.shape.xl
-        color: Theme.panelBlurSurface
+        radius: root.panelRadius
+        color: root.hasArt
+               ? Theme.withAlpha(root.artSurface, 0.96)
+               : Theme.panelBlurSurface
         border.width: 1
-        border.color: Theme.outlineVariant
-        clip: true
-
-        // Фон панели из обложки: размытая обложка под тональной вуалью —
-        // приём медиаплеера Android. Это внутренний контент, поэтому здесь
-        // работает собственный dual Kawase; фон под панелью размывает
-        // композитор только когда обложки нет.
-        Item {
-            id: artBackdrop
-
-            anchors.fill: parent
-            anchors.margins: 1
-            visible: artSource.status === Image.Ready
-
-            Image {
-                id: artSource
-
-                anchors.fill: parent
-                source: root.player ? (root.player.trackArtUrl || "") : ""
-                fillMode: Image.PreserveAspectCrop
-                asynchronous: true
-                cache: true
-                sourceSize.width: Math.max(1, Math.round(width / 2))
-                sourceSize.height: Math.max(1, Math.round(height / 2))
-                visible: false
-            }
-
-            // ShaderEffectSource прячет Image и отдаёт его как текстуру:
-            // KawaseBlur требует texture provider, а не голый Item.
-            ShaderEffectSource {
-                id: artTexture
-
-                sourceItem: artSource
-                width: Math.max(1, artSource.width)
-                height: Math.max(1, artSource.height)
-                hideSource: true
-                live: root.visible
-                visible: false
-            }
-
-            KawaseBlur {
-                anchors.fill: parent
-                sourceItem: artTexture
-                live: root.visible
-                blurRadius: Theme.blurRadius(64)
-                tint: Theme.surfaceContainerLow
-                tintOpacity: Theme.artTintOpacity
-                saturation: 1.18
-                cornerRadius: Theme.shape.xl - 1
-            }
-        }
+        border.color: Theme.withAlpha(root.artOnSurfaceVariant, 0.24)
+        contentInsideBorder: false
 
         opacity: root.shown && !root.closing ? 1 : 0
         scale: root.shown && !root.closing ? 1 : Theme.motionFadeThroughScale
         transformOrigin: Item.TopRight
 
-        Behavior on opacity {
-            MotionNumber {
-                duration: Theme.motionMedium1
-                curve: Theme.curveEmphasizedDecelerate
+        Behavior on opacity { SpringEffects {} }
+        Behavior on scale { SpringSpatial {} }
+        Behavior on height { SpringSpatial {} }
+
+        // Внутренний ClippingRectangle обрезает blur на радиус
+        // «внешний − толщина рамки», поэтому артефактов на углах нет.
+        ClippingRectangle {
+            id: artLayer
+
+            anchors.fill: parent
+            anchors.margins: card.border.width
+            radius: Math.max(0, card.radius - card.border.width)
+            color: "transparent"
+            contentInsideBorder: false
+
+            Item {
+                id: artBackdrop
+
+                anchors.centerIn: parent
+                width: parent.width * 1.5
+                height: parent.height * 1.5
+                visible: root.hasArt
+
+                Image {
+                    id: artSource
+
+                    anchors.fill: parent
+                    source: root.artUrl
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    cache: true
+                    sourceSize.width: Math.max(1, Math.round(width / 2))
+                    sourceSize.height: Math.max(1, Math.round(height / 2))
+                    visible: false
+                }
+
+                ShaderEffectSource {
+                    id: artTexture
+
+                    sourceItem: artSource
+                    width: Math.max(1, artSource.width)
+                    height: Math.max(1, artSource.height)
+                    hideSource: true
+                    live: root.visible
+                    visible: false
+                }
+
+                KawaseBlur {
+                    anchors.fill: parent
+                    sourceItem: artTexture
+                    live: root.visible
+                    blurRadius: Theme.blurRadius(64)
+                    tint: root.artSurface
+                    tintOpacity: Math.min(0.84, Theme.artTintOpacity + 0.04)
+                    saturation: 1.2
+                    cornerRadius: 0
+                }
             }
         }
-        Behavior on scale {
-            MotionNumber {
-                duration: Theme.motionMedium1
-                curve: Theme.curveEmphasizedDecelerate
-            }
-        }
-        Behavior on height {
-            MotionNumber {
-                duration: Theme.motionMedium2
-                curve: Theme.curveEmphasized
-            }
+        // Тонкий scrim поверх blur: текст должен оставаться читаемым
+        // на светлых обложках, но blur не должен спорить с контентом.
+        Rectangle {
+            anchors.fill: parent
+            color: root.artSurface
+            opacity: root.hasArt ? 0.10 : 0
+            visible: root.hasArt
         }
 
         MouseArea {
@@ -277,7 +429,7 @@ PanelWindow {
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
-            height: Theme.appBarHeight
+            height: Theme.touchTarget
 
             Text {
                 anchors.left: parent.left
@@ -286,8 +438,8 @@ PanelWindow {
                 anchors.rightMargin: Theme.space.sm
                 anchors.verticalCenter: parent.verticalCenter
                 text: I18n.tr("settings.player.title")
-                color: Theme.scheme.onSurface
-                font: Theme.typeTitleLarge
+                color: root.artOnSurfaceVariant
+                font: Theme.typeLabelLarge
                 elide: Text.ElideRight
             }
 
@@ -304,7 +456,7 @@ PanelWindow {
                     anchors.fill: parent
                     radius: Theme.shape.full
                     color: closeHover.containsMouse
-                           ? Theme.stateLayer(Theme.scheme.onSurface, Theme.stateHover)
+                           ? Theme.stateLayer(root.artOnSurface, Theme.stateHover)
                            : "transparent"
                     Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
                 }
@@ -312,7 +464,7 @@ PanelWindow {
                 Text {
                     anchors.centerIn: parent
                     text: "✕"
-                    color: Theme.scheme.onSurface
+                    color: root.artOnSurfaceVariant
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.iconSize.lg
                 }
@@ -335,7 +487,7 @@ PanelWindow {
             anchors.left: parent.left
             anchors.right: parent.right
             height: 1
-            color: Theme.outlineVariant
+            color: Theme.withAlpha(root.artOnSurfaceVariant, 0.18)
         }
 
         Flickable {
@@ -358,51 +510,58 @@ PanelWindow {
                 width: scroller.width
                 spacing: Theme.notificationSpacing
 
-                // Строка «сейчас играет»: обложка слева, текст слева, как
-                // строки остальных панелей. Без большого центрированного арта.
                 Item {
                     width: parent.width
-                    height: Math.max(88, info.implicitHeight)
+                    height: Math.max(104, info.implicitHeight)
 
-                    Rectangle {
-                        id: coverBox
+                    Item {
+                        id: coverHost
 
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 88
-                        height: 88
-                        radius: Theme.shape.md
-                        color: Theme.surfaceContainerHighest
-                        clip: true
+                        width: 104
+                        height: 104
 
-                        Image {
-                            id: cover
-
+                        ClippingRectangle {
                             anchors.fill: parent
-                            source: root.player ? (root.player.trackArtUrl || "") : ""
-                            visible: source !== "" && status === Image.Ready
-                            fillMode: Image.PreserveAspectCrop
-                            asynchronous: true
-                            sourceSize.width: 176
-                            sourceSize.height: 176
+                            visible: root.hasArt
+                            radius: Theme.shape.xl
+                            color: root.artPrimaryContainer
+
+                            Image {
+                                anchors.fill: parent
+                                source: root.artUrl
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                cache: true
+                                sourceSize.width: 208
+                                sourceSize.height: 208
+                            }
+                        }
+
+                        MorphShape {
+                            anchors.fill: parent
+                            visible: !root.hasArt
+                            shape: "cookie"
+                            modulation: 0.55
+                            color: root.artPrimaryContainer
                         }
 
                         Text {
                             anchors.centerIn: parent
-                            visible: !root.player || !root.player.trackArtUrl
-                                     || cover.status !== Image.Ready
+                            visible: !root.hasArt
                             text: "\uf001"
-                            color: Theme.scheme.onSurfaceVariant
+                            color: root.artOnPrimaryContainer
                             font.family: Theme.iconFontFamily
-                            font.pixelSize: 30
+                            font.pixelSize: 38
                         }
                     }
 
                     Column {
                         id: info
 
-                        anchors.left: coverBox.right
-                        anchors.leftMargin: Theme.space.md
+                        anchors.left: coverHost.right
+                        anchors.leftMargin: Theme.space.lg
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: Theme.space.xs
@@ -412,8 +571,10 @@ PanelWindow {
                             text: root.player
                                   ? (root.player.trackTitle || I18n.tr("player.untitled"))
                                   : I18n.tr("player.nothingPlaying")
-                            color: Theme.scheme.onSurface
-                            font: Theme.typeTitleMedium
+                            color: root.artOnSurface
+                            font: root.hasPlayer
+                                  ? Theme.typeEmphasizedTitleLarge
+                                  : Theme.typeEmphasizedTitleMedium
                             wrapMode: Text.WordWrap
                             maximumLineCount: 2
                             elide: Text.ElideRight
@@ -424,7 +585,7 @@ PanelWindow {
                             text: root.player
                                   ? (root.player.trackArtist || I18n.tr("player.unknownArtist"))
                                   : I18n.tr("player.startMpris")
-                            color: Theme.scheme.onSurfaceVariant
+                            color: root.artOnSurfaceVariant
                             font: Theme.typeBodyMedium
                             elide: Text.ElideRight
                         }
@@ -433,7 +594,8 @@ PanelWindow {
                             width: parent.width
                             visible: root.player && (root.player.trackAlbum || "") !== ""
                             text: root.player ? root.player.trackAlbum : ""
-                            color: Theme.scheme.onSurfaceVariant
+                            color: root.artOnSurfaceVariant
+                            opacity: 0.82
                             font: Theme.typeBodySmall
                             elide: Text.ElideRight
                         }
@@ -445,10 +607,13 @@ PanelWindow {
                     spacing: Theme.space.xs
                     visible: root.hasPlayer
 
-                    PanelSlider {
+                    WavyProgress {
                         width: parent.width
                         value: root.progress
+                        playing: root.player !== null && root.player.isPlaying
                         enabled: root.canSeek
+                        activeColor: root.artPrimary
+                        trackColor: Theme.withAlpha(root.artOnSurfaceVariant, 0.30)
                         onMoved: value => {
                             if (root.canSeek && root.player.length > 0) {
                                 const target = value * root.player.length;
@@ -467,15 +632,15 @@ PanelWindow {
                         Text {
                             anchors.left: parent.left
                             text: root.player ? root.formatTime(root.displayPosition) : "0:00"
-                            color: Theme.scheme.onSurfaceVariant
-                            font: Theme.typeBodySmall
+                            color: root.artOnSurfaceVariant
+                            font: Theme.typeLabelMedium
                         }
 
                         Text {
                             anchors.right: parent.right
                             text: root.player ? root.formatTime(root.player.length) : "0:00"
-                            color: Theme.scheme.onSurfaceVariant
-                            font: Theme.typeBodySmall
+                            color: root.artOnSurfaceVariant
+                            font: Theme.typeLabelMedium
                         }
                     }
                 }
@@ -485,22 +650,27 @@ PanelWindow {
                     spacing: Theme.space.lg
                     visible: root.hasPlayer
 
-                    PlayerControl {
+                    PlayerSideControl {
                         icon: "\uf048"
                         enabled: root.player && root.player.canGoPrevious
+                        baseColor: root.artSecondaryContainer
+                        inkColor: root.artOnSecondaryContainer
                         onClicked: if (root.player) root.player.previous()
                     }
 
-                    PlayerControl {
-                        icon: root.player && root.player.isPlaying ? "\uf04c" : "\uf04b"
-                        primary: true
+                    PlayerPlayControl {
+                        playing: root.player !== null && root.player.isPlaying
                         enabled: root.player && root.player.canTogglePlaying
+                        baseColor: root.artPrimary
+                        inkColor: root.artOnPrimary
                         onClicked: if (root.player) root.player.togglePlaying()
                     }
 
-                    PlayerControl {
+                    PlayerSideControl {
                         icon: "\uf051"
                         enabled: root.player && root.player.canGoNext
+                        baseColor: root.artSecondaryContainer
+                        inkColor: root.artOnSecondaryContainer
                         onClicked: if (root.player) root.player.next()
                     }
                 }
@@ -524,54 +694,4 @@ PanelWindow {
         }
     }
 
-    // Кнопка управления плеером в стиле системных icon button: круг 40,
-    // у play — primary-заливка. Без обводок, которых нет у других кнопок.
-    component PlayerControl: Item {
-        id: control
-
-        property string icon: ""
-        property bool primary: false
-        property bool enabled: true
-
-        signal clicked()
-
-        width: control.primary ? 52 : Theme.iconButtonSize
-        height: width
-        opacity: control.enabled ? 1 : Theme.disabledContent
-
-        Rectangle {
-            anchors.fill: parent
-            radius: Theme.shape.full
-            color: control.primary ? Theme.primary : "transparent"
-            Behavior on color { ColorAnimation { duration: Theme.motionShort3 } }
-        }
-
-        Rectangle {
-            anchors.fill: parent
-            radius: Theme.shape.full
-            color: Theme.stateLayer(control.primary ? Theme.scheme.onPrimary
-                                                    : Theme.scheme.onSurface,
-                                    Theme.stateHover)
-            opacity: hover.containsMouse && control.enabled ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: Theme.motionShort3 } }
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: control.icon
-            color: control.primary ? Theme.scheme.onPrimary : Theme.scheme.onSurface
-            font.family: Theme.iconFontFamily
-            font.pixelSize: control.primary ? Theme.iconSize.lg : Theme.iconSize.md
-        }
-
-        MouseArea {
-            id: hover
-
-            anchors.fill: parent
-            hoverEnabled: true
-            enabled: control.enabled
-            cursorShape: Qt.PointingHandCursor
-            onClicked: control.clicked()
-        }
-    }
 }
