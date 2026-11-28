@@ -57,6 +57,27 @@ SettingsPage {
     }
 
     SettingsCard {
+        title: I18n.tr("settings.appearance.blur.title")
+        description: I18n.tr("settings.appearance.blur.description")
+
+        SettingsSliderRow {
+            title: I18n.tr("settings.appearance.blur.strength.title")
+            description: I18n.tr("settings.appearance.blur.strength.description")
+            value: Theme.blurStrength
+            valueText: Math.round(Theme.blurStrength * 100) + "%"
+            onMoved: v => Settings.setValue("blur.strength", v)
+        }
+
+        SettingsSliderRow {
+            title: I18n.tr("settings.appearance.blur.contrast.title")
+            description: I18n.tr("settings.appearance.blur.contrast.description")
+            value: Theme.cardContrast
+            valueText: Math.round(Theme.cardContrast * 100) + "%"
+            onMoved: v => Settings.setValue("blur.cardContrast", v)
+        }
+    }
+
+    SettingsCard {
         title: I18n.tr("settings.appearance.settingsFile.title")
         description: I18n.tr("settings.appearance.settingsFile.description")
 

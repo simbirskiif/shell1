@@ -59,7 +59,7 @@ Item {
         anchors.fill: parent
         sourceItem: wallpaper
         live: true
-        blurRadius: 58
+        blurRadius: Theme.blurRadius(58)
         saturation: 0.90
         brightness: -0.05
     }

@@ -390,6 +390,24 @@ ShellRoot {
         }
     }
 
+    // Сила blur и контраст карточек снаружи (те же ключи, что в
+    // «Оформление»):
+    //   qs ipc -p ~/shell/quickshell call appearance blur 0.6 0.5
+    IpcHandler {
+        target: "appearance"
+
+        function blur(strength: real, contrast: real): string {
+            Settings.setValue("blur.strength", Math.max(0, Math.min(1, strength)));
+            Settings.setValue("blur.cardContrast", Math.max(0, Math.min(1, contrast)));
+            return state();
+        }
+
+        function state(): string {
+            return "strength=" + Math.round(Theme.blurStrength * 100) + "%"
+                 + " contrast=" + Math.round(Theme.cardContrast * 100) + "%";
+        }
+    }
+
     // Панель плеера снаружи:
     //   qs ipc call player open
     //   qs ipc call player spectrum false

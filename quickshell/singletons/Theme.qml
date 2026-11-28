@@ -67,12 +67,37 @@ Singleton {
     readonly property color sheetSurface: root.veil(root.surfaceContainerHigh, 0.99)
     readonly property color menuSurfaceSolid: root.veil(root.surfaceContainerHigh, 0.995)
 
+    // ===================== Блюр и контраст ==============================
+    // Настройки «Оформление»: сила собственных dual Kawase шейдеров и
+    // плотность тонировки карточек поверх blur. Обе — 0..1, дефолт 0.5.
+    // Значения хранятся в Settings (state/quickshell/settings.json).
+    function settingUnit(key, fallback) {
+        const stored = Settings.value(key, fallback);
+        const value = Number(stored);
+        return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : fallback;
+    }
+
+    readonly property real blurStrength: root.settingUnit("blur.strength", 0.5)
+    readonly property real cardContrast: root.settingUnit("blur.cardContrast", 0.5)
+
+    // Радиус собственных шейдеров (обои блокировки, обложка плеера).
+    // 0 — почти без размытия, 1 — вдвое больше базового радиуса.
+    function blurRadius(base) {
+        return Math.max(0, Number(base) * root.blurStrength * 2);
+    }
+
+    // Плотность тональной подложки поверх размытого фона: выше contrast —
+    // плотнее карточка и контрастнее текст, ниже — сильнее видно blur.
+    // Дефолт 0.5 даёт прежние 0.82/0.86.
+    readonly property real panelAlpha: 0.67 + 0.30 * root.cardContrast
+    readonly property real sheetAlpha: 0.73 + 0.26 * root.cardContrast
+    readonly property real artTintOpacity: 0.59 + 0.30 * root.cardContrast
+
     // Панели поверх окон: фон под ними размывает композитор по запросу
     // BackgroundEffect (ext-background-effect-v1), поэтому плотность ниже,
-    // чем у чисто тональной поверхности. 0.82–0.86 — как у шторки
-    // Android 16/17: глубина читается, а onSurface остаётся контрастным.
-    readonly property color panelBlurSurface: root.veil(root.surfaceContainerLow, 0.82)
-    readonly property color sheetBlurSurface: root.veil(root.surfaceContainerHigh, 0.86)
+    // чем у чисто тональной поверхности.
+    readonly property color panelBlurSurface: root.veil(root.surfaceContainerLow, root.panelAlpha)
+    readonly property color sheetBlurSurface: root.veil(root.surfaceContainerHigh, root.sheetAlpha)
 
     // Подложка диалогов/меню: M3 поверхность + затемнение фона (scrim).
     readonly property color scrimOverlay: root.withAlpha(root.scrim, 0.45)

@@ -236,9 +236,9 @@ PanelWindow {
                 anchors.fill: parent
                 sourceItem: artTexture
                 live: root.visible
-                blurRadius: 64
+                blurRadius: Theme.blurRadius(64)
                 tint: Theme.surfaceContainerLow
-                tintOpacity: 0.74
+                tintOpacity: Theme.artTintOpacity
                 saturation: 1.18
                 cornerRadius: Theme.shape.xl - 1
             }

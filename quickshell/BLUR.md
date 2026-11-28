@@ -142,6 +142,31 @@ qsb --qt6 -o kawase-composite.frag.qsb kawase-composite.frag
 `.qsb` лежат в репозитории рядом с `.frag`; после правки GLSL их нужно
 пересобрать. Проверка: `qsb -d файл.frag.qsb`.
 
+## Настройки силы и контраста
+
+UI: «Оформление» → «Блюр и карточки» (`SettingsAppearancePage.qml`).
+Ключи хранятся в `Settings` (`~/.local/state/quickshell/settings.json`):
+
+- `blur.strength` (0..1, дефолт 0.5) — множитель радиуса **собственных**
+  Kawase-шейдеров: обои блокировки и обложка плеера.
+  `Theme.blurRadius(base) = base * strength * 2`; при 0.5 базовый радиус
+  сохраняется, при 1 — удваивается. У панелей blur делает композитор, и у
+  `ext-background-effect-v1` нет параметра силы: этот слайдер их радиус не
+  меняет (протокол умеет только регион).
+- `blur.cardContrast` (0..1, дефолт 0.5) — плотность тонировки карточек
+  поверх blur. `Theme.panelAlpha = 0.67 + 0.30*contrast`,
+  `sheetAlpha = 0.73 + 0.26*contrast`, `artTintOpacity = 0.59 + 0.30*contrast`.
+  При 0.5 получаются прежние 0.82 / 0.86 / 0.74. Выше — плотнее карточка и
+  контрастнее текст, ниже — сильнее видно размытый фон.
+- IPC (для биндов и проверки):
+  `qs ipc -p ~/shell/quickshell call appearance blur 0.6 0.4`,
+  `... call appearance state`. Вернуть дефолт: `blur 0.5 0.5`.
+
+Если однажды понадобится менять именно радиус панельного blur, это
+композиторская настройка (Hyprland `decoration:blur:size/passes`), а не
+Quickshell. В этом проекте мы её не трогаем: панели получают blur только
+через `BackgroundEffect`.
+
 ## Оптимизации и ограничения
 
 - Основная работа идёт на текстурах 1/4–1/32, финальный проход — один
@@ -174,6 +199,8 @@ qs ipc -p ~/shell/quickshell call player open
 qs ipc -p ~/shell/quickshell call player close
 qs ipc -p ~/shell/quickshell call dock expand
 qs ipc -p ~/shell/quickshell call dock collapse
+qs ipc -p ~/shell/quickshell call appearance blur 0.6 0.4   # сила/контраст
+qs ipc -p ~/shell/quickshell call appearance state
 wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.40       # OSD
 qs log -p ~/shell/quickshell -t 100              # ошибки QML/шейдеров
 hyprctl layers                                    # namespace'ы поверхностей
