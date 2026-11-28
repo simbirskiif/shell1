@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Widgets
 import ".."
@@ -44,25 +43,12 @@ PanelWindow {
     property real anchorPosition: 0
     property double anchorWall: 0
 
-    // Динамическая палитра из обложки.
+    // Динамическая палитра из обложки. Обложку читает тот же Image, что
+    // и встроенный виджет my.player: никаких скачиваний и локальных копий.
     readonly property string artUrl: root.player ? (root.player.trackArtUrl || "") : ""
     property bool artLoaded: false
-    property real artFade: 0
-    property string coverSource: ""
-    property string coverPendingSource: ""
-    property string coverJobUrl: ""
-    property string coverCachePath: ""
-    property bool coverPending: false
-    property int coverToken: 0
-    readonly property bool hasArt: root.artLoaded && root.coverSource !== ""
-    readonly property string cacheRoot: {
-        let dir = Quickshell.shellDir;
-        if (dir.endsWith("/"))
-            dir = dir.slice(0, -1);
-        const slash = dir.lastIndexOf("/");
-        return (slash > 0 ? dir.substring(0, slash) : dir) + "/.probe/player-covers";
-    }
-
+    readonly property bool hasArt: root.artUrl !== "" && root.artLoaded
+    property real artFade: root.hasArt ? 1 : 0
     Behavior on artFade { SpringEffects {} }
 
     property color artSeed: Theme.primary
@@ -144,7 +130,7 @@ PanelWindow {
         height: 24
         opacity: 0.01
 
-        property string src: root.coverSource
+        property string src: root.artUrl
         property string loaded: ""
 
         function refresh() {
@@ -240,7 +226,7 @@ PanelWindow {
 
     Component.onCompleted: {
         root.syncVisibility();
-        root.resolveCover(root.artUrl);
+        Qt.callLater(root.refreshArtLoaded);
     }
 
     Connections {
@@ -262,36 +248,6 @@ PanelWindow {
         onTriggered: {
             root.closing = false;
             root.shown = false;
-        }
-    }
-
-    Timer {
-        id: coverSwitchTimer
-        interval: 180
-        repeat: false
-        onTriggered: {
-            root.coverSource = root.coverPendingSource;
-            root.artLoaded = false;
-            if (root.coverSource === "")
-                root.artFade = 0;
-            Qt.callLater(root.refreshCoverStatus);
-        }
-    }
-
-    Process {
-        id: coverFetcher
-
-        property int jobToken: -1
-
-        onExited: (exitCode, exitStatus) => {
-            if (coverFetcher.jobToken !== root.coverToken
-                    || root.coverJobUrl !== root.artUrl)
-                return;
-            root.coverPending = false;
-            if (exitCode === 0) {
-                root.coverPendingSource = "file://" + root.coverCachePath;
-                coverSwitchTimer.restart();
-            }
         }
     }
 
@@ -321,66 +277,15 @@ PanelWindow {
         return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
     }
 
-    function coverHash(value) {
-        let result = 2166136261;
-        for (let i = 0; i < value.length; ++i) {
-            result ^= value.charCodeAt(i);
-            result = Math.imul(result, 16777619);
-        }
-        return (result >>> 0).toString(16);
+    function refreshArtLoaded() {
+        // Ориентируемся на видимую обложку, как в виджете my.player:
+        // отдельный Image для blur не должен скрывать арт при своей ошибке.
+        root.artLoaded = root.artUrl !== "" && coverImage.status === Image.Ready;
     }
 
-    function resolveCover(url) {
+    onArtUrlChanged: {
         root.artLoaded = false;
-        root.artFade = 0;
-        coverSwitchTimer.stop();
-        coverFetcher.running = false;
-        root.coverToken += 1;
-        root.coverPending = false;
-        root.coverJobUrl = "";
-        root.coverPendingSource = "";
-
-        if (url === "") {
-            coverSwitchTimer.restart();
-            return;
-        }
-        if (url.indexOf("http://") !== 0 && url.indexOf("https://") !== 0) {
-            root.coverPendingSource = url;
-            coverSwitchTimer.restart();
-            return;
-        }
-
-        root.coverCachePath = root.cacheRoot + "/" + root.coverHash(url)
-                              + "-" + Date.now() + ".jpg";
-        root.coverJobUrl = url;
-        root.coverPending = true;
-        coverFetcher.jobToken = root.coverToken;
-        coverFetcher.command = ["curl", "-L", "--fail", "--silent", "--show-error",
-                                "--retry", "2", "--retry-delay", "0",
-                                "--create-dirs", "-o", root.coverCachePath, url];
-        coverFetcher.running = true;
-    }
-
-    onArtUrlChanged: root.resolveCover(root.artUrl)
-
-    function refreshCoverStatus() {
-        if (root.coverSource === "") {
-            root.artLoaded = false;
-            root.artFade = 0;
-            return;
-        }
-        if (artSource.status === Image.Ready) {
-            root.artLoaded = true;
-            root.artFade = 1;
-        } else if (artSource.status === Image.Error) {
-            root.artLoaded = false;
-            root.artFade = 0;
-        }
-    }
-
-    onArtLoadedChanged: {
-        if (!root.artLoaded)
-            root.artFade = 0;
+        Qt.callLater(root.refreshArtLoaded);
     }
 
     onPlayerChanged: root.syncPosition()
@@ -394,11 +299,10 @@ PanelWindow {
         }
 
         function onTrackChanged() {
+            root.artLoaded = false;
             root.syncPosition();
             root.flashTrack();
-            // Пока сервис не отдал новую обложку, показываем fallback;
-            // старый арт не оставляем.
-            root.resolveCover(root.artUrl);
+            Qt.callLater(root.refreshArtLoaded);
         }
 
         function onPlaybackStateChanged() {
@@ -508,7 +412,7 @@ PanelWindow {
                     id: artSource
 
                     anchors.fill: parent
-                    source: root.coverSource
+                    source: root.artUrl
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     cache: true
@@ -665,11 +569,14 @@ PanelWindow {
                             Behavior on scale { SpringSpatialFast {} }
 
                             Image {
+                                id: coverImage
+
                                 anchors.fill: parent
-                                source: root.coverSource
+                                source: root.artUrl
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                                 cache: true
+                                onStatusChanged: root.refreshArtLoaded()
                                 sourceSize.width: 208
                                 sourceSize.height: 208
                             }
